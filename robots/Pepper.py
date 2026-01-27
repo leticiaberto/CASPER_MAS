@@ -37,10 +37,9 @@ def main():
         skill_weights = skill_weights,
         contexts = contexts
     )
+
     print(f"Pepper Robot {pepper_mobile_robot.id} starting up...")
-
-
-
+    pepper_mobile_robot.skills.print_skills_preferences()
     
     delivery = Context("delivery", {"manipulation": 1.0})
     assembly = Context("assembly", {"manipulation": 1.0})

@@ -1,10 +1,19 @@
 from collections import defaultdict
 
 class ContextualSkillModel:
-    def __init__(self, skill_weights, contexts, default=0.1):
+    def __init__(self, skill_weights, contexts, ):
         self.skill_level = defaultdict(dict)        # Stores skill values
         self.skill_preference = defaultdict(dict)    # Stores preference values
+        self.start_skills_and_preferences(skill_weights, contexts)
+        
+    def start_skills_and_preferences(self, skill_weights, contexts, default=0.1):
+        """
+        Sets the skill level and preferences for a given skill in a specific context.
 
+        :param skill_weights: The skill to set the level/preference for. Values to set (between 0.0 and 1.0)
+        :param context: The context in which the skill level is set.
+        :returns: None
+        """
         for context, skills in skill_weights.items():
             for skill, weight in skills.items():
                 self.skill_level[skill][context] = weight[0]
@@ -18,33 +27,15 @@ class ContextualSkillModel:
                 if context not in self.skill_preference[skill]:
                     self.skill_preference[skill][context] = default
 
-    def set_skill(self, skill, context, value):
-        """
-        Sets the skill level for a given skill in a specific context.
-
-        :param skill: The skill to set the level for.
-        :param context: The context in which the skill level is set.
-        :param value: The skill level value to set (between 0.0 and 1.0).
-        :returns: None
-        """
-        self.skill_level[skill][context] = value
-
-    def set_preference(self, skill, context, value):
-        """
-        Sets the skill preference for a given skill in a specific context.
-
-        :param skill: The skill to set the preference for.
-        :param context: The context in which the skill preference is set.
-        :param value: The skill preference value to set (between 0.0 and 1.0).
-        :returns: None
-        """
-        self.skill_preference[skill][context] = value
-
-    def print_skills(self):
+    def print_skills_preferences(self):
         for skill, contexts in self.skill_level.items():
-            print(f"Skill: {skill}")
-            for context, level in contexts.items():
-                print(f"  Context: {context}, Level: {level}")
+            print(f"\nSkill: {skill}")
+            for context in contexts:
+                print(
+                    f"  {context:<10} | "
+                    f"Level: {self.skill_level[skill][context]:.2f} | "
+                    f"Pref: {self.skill_preference[skill][context]:.2f}"
+                )
                 
     def update_skill(self, skill, observed, lr=0.1):
         self.skill_level[skill] += lr * (observed - self.skill_level[skill])

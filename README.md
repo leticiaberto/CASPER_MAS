@@ -1,7 +1,5 @@
 # CASPER_MAS
 
-# Multi-Robot Skill Exchange System (ZeroMQ)
-
 This project provides a simple **multi-robot communication framework** in Python where robots can:
 
 * run on the same machine or across different computers

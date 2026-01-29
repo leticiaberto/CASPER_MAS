@@ -1,20 +1,12 @@
-from Context import ContextualSkillModel
+from ContextualSkill import ContextualSkillModel
 
 class PartnerAgent:
     def __init__(self, skills, contexts, init_trust=0.5):
-        self.skills = ContextualSkillModel(skills.level.keys(), contexts)
-
-        # Initially set the estimated skills to the actual level skills communicated by the partner
-        for skill in skills.level:
-            for context in contexts:
-                self.skills.set_skill(skill, context, skills.level[skill][context])
-                self.skills.set_preference(skill, context, skills.preference[skill][context])
-
+        self.skills = ContextualSkillModel(skills, contexts)
         self.trust = {c: init_trust for c in contexts}
     
     def print_partner_info(self):
-        self.skills.print_skills()
-        
+        self.skills.print_skills_preferences()
         print("Trust Levels:")
         for context, trust_level in self.trust.items():
             print(f"  Context: {context}, Trust Level: {trust_level}")

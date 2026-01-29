@@ -64,17 +64,44 @@ Robots will automatically discover each other and exchange skills.
 
 ### 1. Choose One Machine as the Hub
 
+Find the hub machine IP:
+
+Linux:
+
+```bash
+ip a
+```
+
+Windows:
+
+```cmd
+ipconfig
+```
+
 Example hub IP:
 
 ```
 192.168.1.50
 ```
 
-Run on that machine:
+## Store Hub IP in a Config File
 
-```bash
-python hub.py
+Create:
+
 ```
+configs/network.yaml
+```
+
+Example:
+
+```yaml
+hub_ip: 192.168.1.50
+pub_port: 5555
+sub_port: 5556
+```
+
+Then `robot.py` can load this automatically instead of hardcoding.
+
 
 ### 2. Open Firewall Ports
 
@@ -89,18 +116,6 @@ Linux UFW example:
 sudo ufw allow 5555/tcp
 sudo ufw allow 5556/tcp
 ```
-
-### 3. Connect Robots to the Hub IP
-
-On every robot machine, set:
-
-```python
-hub_ip = "192.168.1.50"
-```
-
-Now robots will communicate across computers.
-
----
 
 ## ⚙️ Robot Skills Configuration
 

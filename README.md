@@ -84,7 +84,7 @@ Example hub IP:
 192.168.1.50
 ```
 
-## Store Hub IP in a Config File
+### 2. Store Hub IP in a Config File
 
 Create:
 
@@ -103,7 +103,7 @@ sub_port: 5556
 Then `robot.py` can load this automatically instead of hardcoding.
 
 
-### 2. Open Firewall Ports
+### 3. Open Firewall Ports
 
 Hub uses:
 

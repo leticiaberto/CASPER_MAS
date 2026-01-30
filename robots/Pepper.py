@@ -1,4 +1,4 @@
-from Agent import Agent
+from src.entities.Agent import Agent
 
 class Pepper(Agent):
     def __init__(self, id, skill_weights, contexts):

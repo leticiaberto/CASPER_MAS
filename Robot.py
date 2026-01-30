@@ -1,5 +1,5 @@
 import time
-from ContextualSkill import Context
+from src.entities.ContextualSkill import Context
 from robots.Pepper import Pepper
 from robots.FrankaResearch3 import FrankaResearch3
 import argparse
@@ -63,6 +63,12 @@ def main():
                         robot.export_data()
                         add = True
 
+                        delivery = Context("delivery", {"manipulation": 1.0})
+                        assembly = Context("assembly", {"manipulation": 1.0})
+
+                        print(robot.evaluate(delivery))   
+                        print(robot.evaluate(assembly))
+            time.sleep(10)
     except KeyboardInterrupt:
         print("Stopping robot...")
 

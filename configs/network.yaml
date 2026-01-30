@@ -1,0 +1,3 @@
+hub_ip: 127.0.0.1
+pub_port: 5555
+sub_port: 5556

@@ -1,0 +1,36 @@
+{
+  "nodes": [
+    {
+      "id": "PickPart",
+      "duration": 3,
+      "requires": ["manipulation"],
+      "context": "assembly",
+      "assigned_agent": "RobotArm"
+    },
+    {
+      "id": "MoveToTable",
+      "duration": 5,
+      "requires": ["mobility"],
+      "context": "navigation",
+      "assigned_agent": "MobileRobot"
+    },
+    {
+      "id": "AssembleFrame",
+      "duration": 10,
+      "requires": ["manipulation"],
+      "context": "assembly"
+    },
+    {
+      "id": "Inspect",
+      "duration": 4,
+      "requires": ["vision"],
+      "context": "quality_check",
+      "assigned_agent": "Drone"
+    }
+  ],
+  "edges": [
+    ["PickPart", "AssembleFrame"],
+    ["MoveToTable", "AssembleFrame"],
+    ["AssembleFrame", "Inspect"]
+  ]
+}

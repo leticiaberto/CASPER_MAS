@@ -101,6 +101,9 @@ class ContextualSkillModel:
 
         print(f"Data appended successfully to {filename}")
 
+    def has_context(self, context):
+        return any(context in contexts for contexts in self.skill_level.values())
+
 class Context:
     def __init__(self, name, relevance):
         self.name = name

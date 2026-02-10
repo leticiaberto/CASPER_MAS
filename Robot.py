@@ -10,7 +10,7 @@ def main():
     # Load config file
     # ===================================================
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default="configs/default.yaml")
+    parser.add_argument("--config", type=str, default="configs/robots/default.yaml")
     args = parser.parse_args()
 
     with open(args.config, "r") as f:

@@ -1,5 +1,5 @@
 #debug: True
-robot_model: FrankaResearch3
+robot_model: Pepper
 robot_id: default
 
 skill_weights:  #[skill weight, preference weight]
@@ -10,5 +10,5 @@ skill_weights:  #[skill weight, preference weight]
 
   assembly:
     navigation: [0.1, 0.8]
-    manipulation: [0.6, 0.2]
+    manipulation: [1.0, 0.2]
     planning: [0.3, 0.5]

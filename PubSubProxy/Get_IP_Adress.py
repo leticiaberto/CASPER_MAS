@@ -12,7 +12,7 @@ def get_network_ip():
         s.close()
     return ip
 
-def update_yaml_config(filename="configs/network.yaml"):
+def update_yaml_config(filename="../configs/network.yaml"):
     """
     Get the current machine's IP address and update the 'hub_ip' field in the specified YAML configuration file.
     """

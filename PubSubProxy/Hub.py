@@ -1,7 +1,7 @@
 import yaml
 import zmq
 
-def load_network_config(path="configs/network.yaml"):
+def load_network_config(path="../configs/network.yaml"):
     """
     Loads the network configuration for the robot communication hub.
 

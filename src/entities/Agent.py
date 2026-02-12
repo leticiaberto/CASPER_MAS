@@ -2,12 +2,20 @@ import time
 from src.entities.ContextualSkill import ContextualSkillModel
 from src.entities.Partner import PartnerAgent
 from src.communication.RobotCommunication import RobotComm
+from src.entities.Supervisor import Supervisor
+from src.graph.Graph import Graph, GraphVisualizer
 
 class Agent:
-    def __init__(self, id, constraints, skills, contexts):
+    def __init__(self, id, constraints, skills, contexts, role):
         self.id = id
         self.constraints = constraints  # Task independent      
         self.skills = ContextualSkillModel(skills, contexts)
+        self.supervisor = None
+        self.role = role
+        
+        if(self.role == "supervisor"):
+            self.supervisor = Supervisor(name=f"Supervisor_{self.id}")
+            
         
         self.assigned_tasks = []
 
@@ -38,8 +46,8 @@ class Agent:
 
     def export_data(self):
         filename = "data/skills_preferences_" + self.id + ".csv"
-        self.skills.export_skills_preferences_to_CSV(self.id, filename)
-        for pid, partner in self.partners.items():
+        self.skills.export_skills_preferences_to_CSV(self.id, filename)# Export my own skills
+        for pid, partner in self.partners.items():# Export partners skills
             partner.skills.export_skills_preferences_to_CSV(pid, filename)
 
     # ----------------------------
@@ -132,6 +140,7 @@ class Agent:
           4. Request skills from others 
         """
 
+        # Add partners
         self.comm.start_listener(self.on_message)
 
         time.sleep(1.0)

@@ -1,5 +1,5 @@
 #debug: True
-robot_model: Pepper
+robot_model: FrankaResearch3
 robot_id: default
 
 skill_weights:  #[skill weight, preference weight]

@@ -1,0 +1,77 @@
+{
+  "tasks": [
+    {
+      "id": "PickPart",
+      "context": "assembly",
+      "required_skills": {
+        "manipulation": 1.0
+      },
+      "required_constraints": {
+        "can_move": false,
+        "can_manipulate": true,
+        "can_show_media": true,
+        "can_transport_objects": false,
+        "max_payload_kg": 0,
+        "workspace": "station_A"
+      },
+      "duration": 3,
+      "priority": 3
+    },
+    {
+      "id": "MoveToTable",
+      "context": "navigation",
+      "required_skills": {
+        "manipulation": 1.0
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_show_media": false,
+        "can_transport_objects": true,
+        "max_payload_kg": 1,
+        "workspace": "global"
+      },
+      "duration": 5,
+      "priority": 4
+    },
+    {
+      "id": "AssembleFrame",
+      "context": "assembly",
+      "required_skills": {
+        "manipulation": 1.0
+      },
+      "required_constraints": {
+        "can_move": false,
+        "can_manipulate": true,
+        "can_show_media": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0,
+        "workspace": "station_A"
+      },
+      "duration": 10,
+      "priority": 5
+    },
+    {
+      "id": "Inspect",
+      "context": "quality_check",
+      "required_skills": {
+        "vision": 1.0
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_show_media": true,
+        "can_transport_objects": false,
+        "max_payload_kg": 0,
+        "workspace": "global"
+      },
+      "duration": 4,
+      "priority": 3
+    }
+  ],
+  "dependencies": [
+    ["PickPart", "AssembleFrame"],
+    ["MoveToTable", "AssembleFrame"],
+    ["AssembleFrame", "Inspect"]
+  ]
+}

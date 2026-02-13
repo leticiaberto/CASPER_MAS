@@ -4,108 +4,104 @@ from robots.Pepper import Pepper
 from robots.FrankaResearch3 import FrankaResearch3
 import argparse
 import yaml
-from src.entities.Supervisor import Supervisor
-from src.graph.Graph import Graph, GraphVisualizer
+from src.graph.Graph import Graph
+import uuid
 
 def main():
     # ===================================================
     # Load config file and args
     # ===================================================
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default="configs/robots/default.yaml")
+    parser.add_argument("--robot", type=str, default="configs/robots/default.yaml")
     parser.add_argument("--role", type=str, default="member", choices=["member", "supervisor"])
-    parser.add_argument("--task", type=str, default="configs/goals/default_graph.json")
-    parser.add_argument("--teamsize", type=int, default=3)
-    parser.add_argument("--topk", type=int, default=2)
+    parser.add_argument("--exp", type=str, default="configs/exp1.yaml")
 
     args = parser.parse_args()
 
-    with open(args.config, "r") as f:
-        config = yaml.safe_load(f)
+    with open(args.robot, "r") as f:
+        robot_config = yaml.safe_load(f)
 
-    print("Loaded config:", args.config)
+    print("Loaded config:", args.robot)
 
-    debug = config.get("debug", False)
+    debug = robot_config.get("debug", False)
 
-    robot_model = config["robot_model"]
-    robot_id = config["robot_id"]
-    skill_weights = config["skill_weights"]
+    robot_model = robot_config["robot_model"]
+    robot_id = robot_config["robot_id"]
+    skill_weights = robot_config["skill_weights"]
 
-    # Automatically get contexts
     contexts = list(skill_weights.keys())
 
     # Only one robot is the supervisor, others are members
     agent_role = args.role
     print(f"Agent role: {agent_role}")  
+
+    with open(args.exp, "r") as f:
+        exp_config = yaml.safe_load(f)
     
-    task_file = args.task
+    task_file = exp_config["task"]
     print(f"Task file: {task_file}")
 
-    teamsize = args.teamsize
-    top_k = args.topk
+    teamsize = exp_config["team_size"]
+    top_k = exp_config["top_k"]
+    optimizeMode = exp_config["optimizeMode"]
     
     # ===================================================
     # Instantiate robot
     # ===================================================
     if(robot_model == "Pepper"):
-        robot = Pepper(
+        agent = Pepper(
             id=robot_id, 
             skill_weights = skill_weights,
             contexts = contexts,
             role = agent_role,
+            teamsize = teamsize,
         )
     elif(robot_model == "FrankaResearch3"):
-        robot = FrankaResearch3(
+        agent = FrankaResearch3(
             id=robot_id, 
             skill_weights = skill_weights,
             contexts = contexts, 
             role = agent_role,
+            teamsize = teamsize,
         )
     else:
-        raise ValueError(f"Unknown robot model: {robot_model}")
+        raise ValueError(f"Unknown agent model: {robot_model}")
         
-    print(f"Robot {robot_id} starting up...")
+    print(f"Agent {robot_id} starting up...")
 
     if(debug):
-        robot.skills.print_skills_preferences()
-    
-    if(robot.supervisor):
-        robot.supervisor.set_teamsize(teamsize)
+        agent.skills.print_skills_preferences()
 
-    # ===================================================
     # Start task graph
-    # ===================================================
-    # All agents know the task graph, but only the supervisor will score agents (the others can, but will not do it here for simplicity)
-    task_graph = Graph()
-    task_graph.load_task_graph(task_file)
-
-    if(robot.supervisor):
-        robot.supervisor.assign_agents_to_tasks(task_graph.G, [robot], "skill", top_k)
-        robot.supervisor.graph_visualizer.export_multiagent_graph(task_graph.G, palette_mode="pastel")
-        
-    add = False
+    agent.load_goal(task_file)
+    teamComplete = False
     try:
-        robot.startup()# 1. Start listener (for adding partners), 2. Announce hello, 3. Send my skills, 4. Request skills from others
+        agent.startup()# 1. Start listener (for adding partners), 2. Announce hello, 3. Send my skills, 4. Request skills from others
         # Keep main thread alive
         while True:
-            if (not add):
-                for i in range(100000000):
-                    if(i == 800000):
-                        robot.export_data()
-                        add = True
+            # Gets the skills and preferences of all the members of the team first
+            if(len(agent.partners) == agent.teamSize -1):
+                teamComplete = True
+            if teamComplete:
+                print("Waiting")
+                time.sleep(1)
+                agent.allocate_task([agent], optimizeMode, top_k, debug)
 
-                        delivery = Context("delivery", {"manipulation": 1.0})
-                        assembly = Context("assembly", {"manipulation": 1.0})
-
-                        print(robot.evaluate(delivery))   
-                        print(robot.evaluate(assembly))
-            time.sleep(10)
+                time.sleep(10)
 
     except KeyboardInterrupt:
-        print("Stopping robot...")
+        print("Stopping agent...")
 
     finally:
-        robot.closeComm()
+        agent.closeComm()
 
 main()
+""""
+agent.export_data()
+delivery = Context("delivery", {"manipulation": 1.0})
+assembly = Context("assembly", {"manipulation": 1.0})
+
+print(agent.evaluate(delivery))   
+print(agent.evaluate(assembly))
+"""
 

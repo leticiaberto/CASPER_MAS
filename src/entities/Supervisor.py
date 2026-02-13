@@ -2,15 +2,11 @@ from src.graph.Graph import GraphVisualizer
 from src.graph.TaskAssignment import TaskAssignment, TaskStatus
     
 class Supervisor:
-    def __init__(self, name):
+    def __init__(self, name, publish_fn):
         self.name = name
-        self.role = "supervisor"
         self.graph_visualizer = GraphVisualizer()# All agentes could have this, but only the supervisor will use it for now.
-        
-    def set_teamsize(self, teamsize):
-        self.teamsize = teamsize
-        print(f"{self.name} set teamsize to {self.teamsize}")
-    
+        self.publish = publish_fn
+            
     #TODO: extend to support contextual trust levels and other constraints. 
     def score_agents_for_task(self, G, agents, mode="combined"):
         """
@@ -142,7 +138,7 @@ class Supervisor:
         return scored[0][0], scored[0][1], scored
     
 
-    def assign_agents_to_tasks(self, G, agents, mode, top_k, debug=False):
+    def assign_agents_to_tasks(self, G, agents, mode, top_k, debug):
         # Score all agents for all tasks
         capable_agents = self.score_agents_for_task(G, agents, mode) 
 
@@ -182,3 +178,14 @@ class Supervisor:
                     f"{selected_agent if selected_agent else None}, "
                     f"score: {selected_score}"
                 )
+        self.send_task_assignment_batch(G)
+
+    def send_task_assignment_batch(self, G):
+        # Collect all serialized assignments
+        all_assignments = {
+            node_id: G.nodes[node_id]["assignment"].serialize()
+            for node_id in G.nodes
+        }
+
+        # Publish all at once
+        self.publish("task_assignment_batch", all_assignments)

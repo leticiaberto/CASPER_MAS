@@ -173,8 +173,6 @@ class GraphVisualizer:
                 top_candidates = []
                 status_text = "UNASSIGNED"
 
-            
-
             # --- Rendering ---
             self._render_node(node, palette, name, duration, status_text, context, selected_agent, selected_score, top_candidates, fillType)
 

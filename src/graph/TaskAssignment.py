@@ -34,3 +34,28 @@ class TaskAssignment:
             f"score={self.selected_score}, "
             f"status={self.status.value})"
         )
+    
+    def serialize(self):
+        """
+        dict for sending over the network
+        """
+        return {
+            "task_id": self.task_id,
+            "selected_agent": self.selected_agent,
+            "selected_score": self.selected_score,
+            "top_candidates": self.top_candidates,
+            "status": self.status.name  # convert enum to string
+        }
+    
+    @classmethod
+    def deserialize(cls, data):
+        """
+        Reconstruct a TaskAssignment object from a serialized dict.
+        """
+        return cls(
+            task_id=data["task_id"],
+            selected_agent=data["selected_agent"],
+            selected_score=data["selected_score"],
+            top_candidates=data["top_candidates"],
+            status=TaskStatus[data["status"]]  # string → enum
+        )

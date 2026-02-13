@@ -4,25 +4,32 @@ from src.entities.Partner import PartnerAgent
 from src.communication.RobotCommunication import RobotComm
 from src.entities.Supervisor import Supervisor
 from src.graph.Graph import Graph, GraphVisualizer
+from enum import Enum
+from src.graph.TaskAssignment import TaskAssignment, TaskStatus
+
+
+class Roles(Enum):
+    SUPERVISOR = "supervisor"
+    MEMBER = "member"
 
 class Agent:
-    def __init__(self, id, constraints, skills, contexts, role):
+    def __init__(self, id, constraints, skills, contexts, role, teamsize):
         self.id = id
         self.constraints = constraints  # Task independent      
         self.skills = ContextualSkillModel(skills, contexts)
         self.supervisor = None
-        self.role = role
-        
-        if(self.role == "supervisor"):
-            self.supervisor = Supervisor(name=f"Supervisor_{self.id}")
-            
-        
+        self.role = Roles(role)
+        self.teamSize = teamsize
+
+        if(self.role == Roles.SUPERVISOR):
+            self.supervisor = Supervisor(name=f"Supervisor_{self.id}", publish_fn=self.publish)            
+
         self.assigned_tasks = []
 
         self.partners = {}
 
         # Create communication
-        self.comm = RobotComm(self.id)
+        self.comm = RobotComm(self.id, self.teamSize)
 
     def add_partner(self, partner_id, skills, contexts):
         self.partners[partner_id] = PartnerAgent(skills, contexts)
@@ -50,28 +57,45 @@ class Agent:
         for pid, partner in self.partners.items():# Export partners skills
             partner.skills.export_skills_preferences_to_CSV(pid, filename)
 
+    def allocate_task(self, agents, mode, top_k, debug=False):
+        if(self.role == Roles.SUPERVISOR):
+            self.supervisor.assign_agents_to_tasks(self.task_graph.G, agents, mode, top_k, debug)
+            self.supervisor.graph_visualizer.export_multiagent_graph(self.task_graph.G, output_name="data/"+self.id, palette_mode="pastel")
+        else:
+            print("Waiting Supervisor allocate task.")
+    
+    def print_graph(self):
+        graph_visualizer = GraphVisualizer()
+        graph_visualizer.export_multiagent_graph(self.task_graph.G,output_name="data/"+self.id, palette_mode="pastel")
+
+    def load_goal(self, task_file):
+        # All agents know the task graph, but only the supervisor will score agents (the others can, but will not do it here for simplicity)
+        self.task_graph = Graph()
+        self.task_graph.load_task_graph(task_file)
     # ----------------------------
     # Messaging Protocol
     # ----------------------------
+    def publish(self, msg_type, data, target=None):
+        payload = data.copy()
+
+        if target is not None:
+            payload["target"] = target
+
+        self.comm.broadcast(msg_type, payload)
+
     def send_hello(self):
-        self.comm.broadcast("hello", {"Hello from ": self.id})
+        # self.comm.broadcast("hello", {"Hello from ": self.id})
+        self.publish("hello", {"msg": f"Hello from {self.id}"})
 
     def request_skills(self):
-        self.comm.broadcast("skills_request", {})
+        self.publish("skills_request", {})
 
     def send_skills(self, target=None):
         """
         Send skills_update.
         If target is set, only that robot processes it.
         """
-        payload = {
-            "skill_weights": self.skills.export_skill_weights()
-        }
-
-        if target is not None:
-            payload["target"] = target
-
-        self.comm.broadcast("skills_update", payload)
+        self.publish("skills_update", {"skill_weights": self.skills.export_skill_weights()}, target=target)
 
     # ----------------------------
     # Listener Callback
@@ -79,7 +103,23 @@ class Agent:
     def on_message(self, msg):
         msg_type = msg["type"]
         sender = msg["from"]
+        """
+        request_id = msg.get("data", {}).get("id")
+        now = time.time()
 
+        # remove expired
+        self.processed_requests = {
+            k: v for k, v in self.processed_requests.items()
+            if now - v < 30 # Keep this request if it was processed less than 30 seconds ago.
+        }
+
+        # Ignore if already handled
+        if request_id in self.processed_requests:
+            return
+
+        # Mark as processed
+        self.processed_requests[request_id] = now
+        """
         # ----------------------------
         # HELLO
         # ----------------------------
@@ -120,7 +160,8 @@ class Agent:
                 self.add_partner(sender, received_weights, contexts)
                 print(f"Created partner {sender} skills!")
             else:
-                #partner_agent = robot.partners[sender] # Could update in case receive new info
+                #partner_agent = self.partners[sender] # Could update in case receive new info
+                #self.partners[sender].skills.
                 print(f"Updated partner {sender} skills!")
 
 
@@ -128,7 +169,14 @@ class Agent:
 
             #self.partners[sender].skills.print_skills_preferences()
 
-    # ----------------------------
+        elif msg["type"] == "task_assignment_batch":
+            for task_id, assignment_data in msg["data"].items():
+                assignment = TaskAssignment.deserialize(assignment_data)
+                self.task_graph.G.nodes[task_id]["assignment"] = assignment
+                #print(f"[{self.id}] Task {task_id} assigned to {assignment.selected_agent}")
+
+            self.print_graph()
+        # ----------------------------
     # Startup Procedure
     # ----------------------------
     def startup(self):

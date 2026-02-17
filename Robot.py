@@ -74,7 +74,7 @@ def main():
     agent.load_goal(task_file)
     teamComplete = False
     try:
-        agent.startup()# 1. Start listener (for adding partners), 2. Announce hello, 3. Send my skills
+        agent.comm_handler.startup()# 1. Start listener (for adding partners), 2. Announce hello, 3. Send my skills
         time.sleep(2)
         # Keep main thread alive
         while True:
@@ -96,7 +96,7 @@ def main():
         print("Stopping agent...")
 
     finally:
-        agent.closeComm()
+        agent.comm_handler.closeComm()
 
 main()
 """"

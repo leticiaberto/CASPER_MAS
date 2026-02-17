@@ -5,8 +5,10 @@ from typing import List, Optional
 class TaskStatus(Enum):
     PENDING = "pending"
     ASSIGNED = "assigned"
+    READY = "ready"
     RUNNING = "running"
-    COMPLETED = "completed"
+    DONE = "done"
+    NOTASSIGNED = "notassigned"
 
 @dataclass
 class TaskAssignment:
@@ -21,7 +23,7 @@ class TaskAssignment:
             self.status = TaskStatus.RUNNING
 
     def complete(self):
-        self.status = TaskStatus.COMPLETED
+        self.status = TaskStatus.DONE
 
     def assign(self):
         if self.selected_agent:

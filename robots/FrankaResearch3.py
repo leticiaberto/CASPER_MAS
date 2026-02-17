@@ -12,3 +12,11 @@ class FrankaResearch3(Agent):
             "workspace": "station_A"
         }
         super().__init__(id, constraints, skill_weights, contexts, role, teamsize)
+
+    def _execute_task_specific(self, task):
+        if task.type == "grasp":
+            return self._grasp(task)
+        elif task.type == "move_arm":
+            return self._move_arm(task)
+        else:
+            raise NotImplementedError

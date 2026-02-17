@@ -11,3 +11,11 @@ class Pepper(Agent):
             "workspace": "global"
         }
         super().__init__(id, constraints, skill_weights, contexts, role, teamsize)
+
+    def _execute_task_specific(self, task):
+        if task.type == "speak":
+            return self._speak(task)
+        elif task.type == "navigate":
+            return self._navigate(task)
+        else:
+            raise NotImplementedError

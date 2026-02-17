@@ -4,8 +4,6 @@ from robots.Pepper import Pepper
 from robots.FrankaResearch3 import FrankaResearch3
 import argparse
 import yaml
-from src.graph.Graph import Graph
-import uuid
 
 def main():
     # ===================================================

@@ -1,4 +1,4 @@
-from src.graph.Graph import GraphVisualizer
+from src.graph.GraphVisualizer import GraphVisualizer
 from src.graph.TaskAssignment import TaskAssignment, TaskStatus
     
 class Supervisor:

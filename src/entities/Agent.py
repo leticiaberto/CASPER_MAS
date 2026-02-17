@@ -22,7 +22,7 @@ class Agent:
         self.teamSize = teamsize
 
         if(self.role == Roles.SUPERVISOR):
-            self.supervisor = Supervisor(name=f"Supervisor_{self.id}", publish_fn=self.publish)            
+            self.supervisor = Supervisor(name=f"Supervisor_{self.id}", agent = self, publish_fn=self.publish)            
 
         self.assigned_tasks = []
 
@@ -37,7 +37,7 @@ class Agent:
     def print_partners(self):
         print("------\n Partners of ", self.id)
         for pid, partner in self.partners.items():
-            print(f"Partner_ID: {pid}")
+            print(f"\nPartner_ID: {pid}")
             partner.print_partner_info()
         print("------")
 
@@ -97,6 +97,8 @@ class Agent:
         """
         self.publish("skills_update", {"skill_weights": self.skills.export_skill_weights()}, target=target)
 
+    def send_constraints(self, target=None):
+        self.publish("constraints_update", {"constraints":self.constraints}, target=target)
     # ----------------------------
     # Listener Callback
     # ----------------------------
@@ -128,6 +130,7 @@ class Agent:
 
             # Reply directly with my skills
             self.send_skills(target=sender)
+            self.send_constraints(target=sender)
 
         # ----------------------------
         # SKILLS REQUEST
@@ -160,8 +163,7 @@ class Agent:
                 self.add_partner(sender, received_weights, contexts)
                 print(f"Created partner {sender} skills!")
             else:
-                #partner_agent = self.partners[sender] # Could update in case receive new info
-                #self.partners[sender].skills.
+                self.partners[sender].skills.update_skills_and_preferences(received_weights)
                 print(f"Updated partner {sender} skills!")
 
 
@@ -169,13 +171,15 @@ class Agent:
 
             #self.partners[sender].skills.print_skills_preferences()
 
-        elif msg["type"] == "task_assignment_batch":
+        elif msg_type == "task_assignment_batch":
             for task_id, assignment_data in msg["data"].items():
                 assignment = TaskAssignment.deserialize(assignment_data)
                 self.task_graph.G.nodes[task_id]["assignment"] = assignment
                 #print(f"[{self.id}] Task {task_id} assigned to {assignment.selected_agent}")
 
             self.print_graph()
+        elif msg_type == "constraints_update":
+            self.partners[sender].constraints = msg["data"].get("constraints", None)
         # ----------------------------
     # Startup Procedure
     # ----------------------------
@@ -199,7 +203,10 @@ class Agent:
         # Step 2: broadcast my skills once
         self.send_skills()
 
-        # Step 3: request everyone else's skills (optional, because they may have already sent them as a reply to hello)
+        # Step 3: broadcast my constraints once
+        self.send_constraints()
+
+        # Step 4: request everyone else's skills (optional, because they may have already sent them as a reply to hello)
         #self.request_skills()
 
     def closeComm(self):

@@ -2,23 +2,29 @@ from src.graph.Graph import GraphVisualizer
 from src.graph.TaskAssignment import TaskAssignment, TaskStatus
     
 class Supervisor:
-    def __init__(self, name, publish_fn):
+    def __init__(self, name, agent, publish_fn):
         self.name = name
         self.graph_visualizer = GraphVisualizer()# All agentes could have this, but only the supervisor will use it for now.
         self.publish = publish_fn
-            
+        self.agent = agent   # reference to owner Agent
+    
+    @property
+    def constraints(self):
+        return self.agent.constraints
+
+    @property
+    def skill_model(self):
+        return self.agent.skills
+
     #TODO: extend to support contextual trust levels and other constraints. 
     def score_agents_for_task(self, G, agents, mode="combined"):
         """
         Returns a dict {task_id: [(agent_id, score), ...]} sorted by score descending.
-        
+
         Parameters:
         - G: networkx DiGraph with tasks as nodes.
-        - agents: list of Agent objects.
+        - agents: dict {agent_id: ContextualSkillModel OR PartnerAgent}
         - mode: str, one of ["skill", "preference", "combined"]
-            "skill"      -> score = sum of skill levels only
-            "preference" -> score = sum of preferences only
-            "combined"   -> score = sum(level * (1 + pref))
         """
 
         assert mode in {"skill", "preference", "combined"}, f"Invalid mode: {mode}"
@@ -34,11 +40,23 @@ class Supervisor:
 
             scored_agents = []
 
-            for agent in agents:
+            # Iterate over dictionary
+            for agent_id, agent_obj in agents.items():
+
+                # --- Extract skill model ---
+                if hasattr(agent_obj, "skills"):  
+                    # PartnerAgent case
+                    skill_model = agent_obj.skills
+                    constraints = getattr(agent_obj, "constraints", {})
+                else:
+                    # ContextualSkillModel case
+                    skill_model = self.skill_model
+                    constraints = self.constraints
+
                 # --- 1. Context check ---
                 agent_contexts = set()
-                for s in agent.skills.skill_level:
-                    agent_contexts.update(agent.skills.skill_level[s].keys())
+                for s in skill_model.skill_level:
+                    agent_contexts.update(skill_model.skill_level[s].keys())
 
                 if context not in agent_contexts:
                     continue
@@ -48,8 +66,8 @@ class Supervisor:
                 score = 0.0
 
                 for skill, min_level in required_skills.items():
-                    level = agent.skills.skill_level.get(skill, {}).get(context, 0.0)
-                    pref = agent.skills.skill_preference.get(skill, {}).get(context, 0.0)
+                    level = skill_model.skill_level.get(skill, {}).get(context, 0.0)
+                    pref = skill_model.skill_preference.get(skill, {}).get(context, 0.0)
 
                     if level < min_level:
                         skill_ok = False
@@ -65,14 +83,14 @@ class Supervisor:
                 if not skill_ok:
                     continue
 
-                # ---- 3. Constraint check (lenient) ----
+                # --- 3. Constraint check ---
                 constraint_ok = True
                 for key, value in required_constraints.items():
-                    # Constraints become blocking only when explicitly incompatible. Tasks can introduce new constraints without breaking old agents. unknown ≠ forbidden
-                    if key not in agent.constraints:
-                        continue  # assume agent satisfies it. 
 
-                    agent_value = agent.constraints[key]
+                    if key not in constraints:
+                        continue  # unknown ≠ forbidden
+
+                    agent_value = constraints[key]
 
                     if isinstance(value, (int, float)):
                         if agent_value < value:
@@ -86,7 +104,7 @@ class Supervisor:
                 if not constraint_ok:
                     continue
 
-                scored_agents.append((agent.id, score))
+                scored_agents.append((agent_id, score))
 
             # --- 4. Sort descending ---
             scored_agents.sort(key=lambda x: x[1], reverse=True)

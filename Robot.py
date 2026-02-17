@@ -76,16 +76,21 @@ def main():
     agent.load_goal(task_file)
     teamComplete = False
     try:
-        agent.startup()# 1. Start listener (for adding partners), 2. Announce hello, 3. Send my skills, 4. Request skills from others
+        agent.startup()# 1. Start listener (for adding partners), 2. Announce hello, 3. Send my skills
+        time.sleep(2)
         # Keep main thread alive
         while True:
             # Gets the skills and preferences of all the members of the team first
+            
             if(len(agent.partners) == agent.teamSize -1):
                 teamComplete = True
+                #agent.print_partners()
             if teamComplete:
                 print("Waiting")
                 time.sleep(1)
-                agent.allocate_task([agent], optimizeMode, top_k, debug)
+                # Add yourself as agent to be considered in the task allocation
+                all_agents = {agent.id: agent.skills} | agent.partners
+                agent.allocate_task(all_agents, optimizeMode, top_k, debug)
 
                 time.sleep(10)
 

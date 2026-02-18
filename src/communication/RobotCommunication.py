@@ -118,10 +118,13 @@ class RobotComm:
                 # Non-blocking timeout reached
                 return None
 
-            # Ignore self messages
+            # Ignore self messages except TASK_UPDATE
+            print(msg)
             if self.ignore_self and msg.get("from") == self.robot_id:
-                continue
+                if msg.get("type") != "TASK_DONE":
+                    continue
 
+            
             # Avoid duplicate processing
             msg_id = msg.get("id")
             now = time.time()

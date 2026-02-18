@@ -169,7 +169,6 @@ class Supervisor:
         
         # Select + store results inside each task
         for node_id in G.nodes:
-
             task = G.nodes[node_id]
 
             # Selected agent

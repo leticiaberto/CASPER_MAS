@@ -1,5 +1,6 @@
 import colorsys
 import hashlib
+from enum import Enum
 
 # -----------------------------
 # Palette classes
@@ -43,3 +44,7 @@ class DistinctPalette:
 
     def get_color(self, label):
         return self.map.get(label, "white")
+    
+class Roles(Enum):
+    SUPERVISOR = "supervisor"
+    MEMBER = "member"

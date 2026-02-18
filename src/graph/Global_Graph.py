@@ -45,12 +45,30 @@ class GlobalGraph:
             target = self.clean_id(raw_target)
             self.G.add_edge(source, target)
 
-    def is_task_ready(self, task_id):
-        predecessors = self.graph.predecessors(task_id)
-        return all(self.graph.nodes[p]["assignment"].status == TaskStatus.DONE
-                for p in predecessors)
+    def update_status(self, task_id, status):
+        """
+        Update the status of a task in the global graph.
+        """
+        if task_id not in self.G:
+            raise ValueError(f"Task {task_id} not found.")
+
+        if not isinstance(status, TaskStatus):
+            raise TypeError("status must be TaskStatus Enum.")
     
-    def notify_successors(self, task_id):
-        for succ in self.graph.successors(task_id):
-            if self.is_task_ready(succ):
-                self.graph.nodes[succ]["assignment"].status = TaskStatus.READY
+        current = self.G.nodes[task_id].get("status", TaskStatus.NOTASSIGNED)
+
+        allowed_transitions = {
+            TaskStatus.NOTASSIGNED: {TaskStatus.ASSIGNED},
+            TaskStatus.PENDING: {TaskStatus.ASSIGNED},
+            TaskStatus.ASSIGNED: {TaskStatus.READY},
+            TaskStatus.READY: {TaskStatus.RUNNING},
+            TaskStatus.RUNNING: {TaskStatus.DONE},
+            TaskStatus.DONE: set()
+        }
+
+        if status not in allowed_transitions.get(current, set()):
+            raise ValueError(
+                f"Illegal transition {current.name} → {status.name}"
+            )
+
+        self.G.nodes[task_id]["status"] = status

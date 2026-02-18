@@ -43,7 +43,7 @@ class LocalGraph:
 
         # Check all predecessors in the global graph
         for pred in self.global_graph.predecessors(task):
-            assigned = self.global_graph.nodes[pred]["assigned_agent"]
+            assigned = self.global_graph.nodes[pred]["assignment"].selected_agent
 
             # Local dependency
             if assigned == self.agent_id:

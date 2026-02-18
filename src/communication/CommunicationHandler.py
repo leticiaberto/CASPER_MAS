@@ -1,11 +1,13 @@
 import time
 from src.communication.RobotCommunication import RobotComm
+from utils import Roles
+from src.graph.TaskAssignment import TaskStatus
 
 class CommunicationHandler:
-    def __init__(self, agent, teamSize):
+    def __init__(self, agent, comm):
         self.agent = agent
         # Create communication
-        self.comm = RobotComm(self.agent.id, teamSize)
+        self.comm = comm
     
     # ----------------------------
     # Messaging Protocol
@@ -33,16 +35,8 @@ class CommunicationHandler:
         self.publish("skills_update", {"skill_weights": self.agent.skills.export_skill_weights()}, target=target)
 
     def send_constraints(self, target=None):
-        self.publish("constraints_update", {"constraints":self.agent.constraints}, target=target)
+        self.publish("constraints_update", {"constraints": self.agent.constraints}, target=target)
     
-    def publish_task_completed(self, task_id):
-        msg = {
-            "type": "TASK_COMPLETED",
-            "task_id": task_id,
-            "agent_id": self.agent.id
-        }
-
-        self.publish(msg)
     # ----------------------------
     # Listener Callback
     # ----------------------------
@@ -102,68 +96,30 @@ class CommunicationHandler:
             received_weights = msg["data"]["skill_weights"]
             contexts = list(received_weights.keys())
 
-            # Add partner if not already present
-            if sender not in self.agent.partners:
-                self.agent.add_partner(sender, received_weights, contexts)
-                print(f"Created partner {sender} skills!")
-            else:
-                self.agent.partners[sender].skills.update_skills_and_preferences(received_weights)
-                print(f"Updated partner {sender} skills!")
-
-
-            print(f"[{self.agent.id}] Partner table updated: {list(self.agent.partners.keys())}")
-
-            #self.partners[sender].skills.print_skills_preferences()
+            self.agent.partners_skills_update(sender, received_weights, contexts)
 
         elif msg_type == "task_assignment_batch":
-            self.agent.update_global_graph(msg)
-            self.agent.save_graphVisualization(self.agent.global_graph.G, output_name="data/Global_"+self.agent.id, palette_mode="pastel")
-            self.agent.get_assigned_tasks()
+            self.agent.get_task_assignment_batch(msg)
 
         elif msg_type == "constraints_update":
-            self.agent.partners[sender].constraints = msg["data"].get("constraints", None)
+            new = msg["data"].get("constraints", None)
+            self.agent.partners_constratints_update(sender, new)
         
-        elif msg_type == "TASK_COMPLETED":
-            task_id = msg["task_id"]
+        elif msg_type == "TASK_DONE":
+            print(msg)
+            task_id = msg["data"]["task_id"]
+            target = msg["data"]["target"]
+            
+            # Ignore if not meant for me
+            if target is not None and target != self.agent.id:
+                return
 
-            if msg.get("agent_id") != self.agent.id:
-                # Register external completion
-                self.agent.completed_external.add(task_id)
-                if self.agent.local_graph.depends_on_external(task_id):
-                    self.agent.local_graph.handle_external_completion(task_id)
-        
+            self.agent.update_task_status(task_id)
+            
         elif msg_type == "Rebuild_GlobalGraph":
             self.agent.update_global_graph(msg)
             self.agent.local_graph.rebuild(self.agent.global_graph)
 
-    # ----------------------------
-    # Startup Procedure
-    # ----------------------------
-    def startup(self):
-        """
-        Late join safe startup:
-          1. Start listener
-          2. Announce hello
-          3. Send my skills
-          4. Request skills from others 
-        """
+        elif msg_type == "SUPERVISOR":
+            self.agent.set_supervisor(msg["data"]["supervisor_id"]) 
 
-        # Add partners
-        self.comm.start_listener(self.on_message)
-
-        time.sleep(1.0)
-
-        # Step 1: announce join
-        self.send_hello()
-
-        # Step 2: broadcast my skills once
-        self.send_skills()
-
-        # Step 3: broadcast my constraints once
-        self.send_constraints()
-
-        # Step 4: request everyone else's skills (optional, because they may have already sent them as a reply to hello)
-        #self.request_skills()
-
-    def closeComm(self):
-        self.comm.close()

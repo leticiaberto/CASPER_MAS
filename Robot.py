@@ -73,30 +73,31 @@ def main():
     # Start task graph
     agent.load_goal(task_file)
     teamComplete = False
+    ready = False
     try:
-        agent.comm_handler.startup()# 1. Start listener (for adding partners), 2. Announce hello, 3. Send my skills
+        agent.startup()# 1. Start listener (for adding partners), 2. Announce hello, 3. Send my skills
         time.sleep(2)
         # Keep main thread alive
         while True:
             # Gets the skills and preferences of all the members of the team first
-            
-            if(len(agent.partners) == agent.teamSize -1):
-                teamComplete = True
-                #agent.print_partners()
-            if teamComplete:
-                print("Waiting")
-                time.sleep(1)
-                # Add yourself as agent to be considered in the task allocation
-                all_agents = {agent.id: agent.skills} | agent.partners
-                agent.allocate_task(all_agents, optimizeMode, top_k, debug)
-
-                time.sleep(10)
+            if(not ready):
+                if(len(agent.partners) == agent.teamSize -1):
+                    teamComplete = True
+                    #agent.print_partners()
+                if teamComplete:
+                    # Add yourself as agent to be considered in the task allocation
+                    all_agents = {agent.id: agent.skills} | agent.partners
+                    agent.allocate_task(all_agents, optimizeMode, top_k, debug)
+                    time.sleep(3)
+                    ready = True
+            else:
+                agent.step()
 
     except KeyboardInterrupt:
         print("Stopping agent...")
 
     finally:
-        agent.comm_handler.closeComm()
+        agent.closeComm()
 
 main()
 """"

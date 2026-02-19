@@ -77,7 +77,6 @@ class Agent:
             self.comm_handler.publish("SUPERVISOR", {"supervisor_id": self.id})
             self.supervisor_id = self.id
             self.supervisor.assign_agents_to_tasks(self.global_graph.G, agents, mode, top_k, debug)
-            self.get_assigned_tasks()
             self.save_graphVisualization(self.global_graph.G, output_name="data/Global_"+self.id, palette_mode="pastel")
         else:
             print("Waiting Supervisor allocate task.")
@@ -85,18 +84,30 @@ class Agent:
 
     def get_assigned_tasks(self):
         self.local_graph = LocalGraph(self.id, self.global_graph.G, self.completed_external)
+        for node_id in self.local_graph.graph.nodes:
+            self.publish_task_status_update(node_id, self.local_graph.graph.nodes[node_id]["status"])
+            time.sleep(7)
         self.save_graphVisualization(self.local_graph.graph, output_name="data/Local_"+self.id, graphType="local", palette_mode="pastel")
         
     def step(self):
         ready_tasks = self.local_graph.get_ready_tasks()
+        
         if not ready_tasks:
             pass
         else:
+            # Inform all the tasks ready to be executed (to improve explanation and trust)
             for task in ready_tasks:
-                self.local_graph.mark_running(task)
+                self.publish_task_status_update(task, TaskStatus.READY)
+                time.sleep(6)
+            # Execute each ready task
+            for task in ready_tasks:
+                self.local_graph.update_status(task, TaskStatus.RUNNING)
+                self.publish_task_status_update(task, TaskStatus.RUNNING)
+                time.sleep(3)
                 self._execute_task_specific(task) # Physical execution
-                self.local_graph.mark_done(task)
-                self.publish_task_done(task)
+                time.sleep(10)
+                self.local_graph.update_status(task, TaskStatus.DONE)
+                self.publish_task_status_update(task, TaskStatus.DONE)
                 if(self.role == Roles.SUPERVISOR):
                     self.save_graphVisualization(self.global_graph.G, output_name="data/Global_"+self.id, palette_mode="pastel")
                 time.sleep(2)
@@ -152,25 +163,16 @@ class Agent:
     def get_task_assignment_batch(self, msg):
             self.update_global_graph(msg)
             self.save_graphVisualization(self.global_graph.G, output_name="data/Global_"+self.id, palette_mode="pastel")
-            self.get_assigned_tasks()
-
-    def update_task_status(self, task_id):
-        # Register external completion
-        self.completed_external.add(task_id)
-        if self.local_graph.depends_on_external(task_id):
-            self.local_graph.handle_external_completion(task_id)
-
-        if self.role == Roles.SUPERVISOR:
-            print("Supervisor updating global graph")
-            self.global_graph.update_status(task_id, TaskStatus.DONE)
+            self.get_assigned_tasks()       
 
     def set_supervisor(self, supervisor_id):
         print(supervisor_id)
         self.supervisor_id = supervisor_id
 
-    def publish_task_done(self, task_id):
+    def publish_task_status_update(self, task_id, task_status):
         # Always notify supervisor
-        self.comm_handler.publish("TASK_DONE", {"task_id": task_id, "agent_id": self.id}, self.supervisor_id)
+        self.comm_handler.publish("task_status_update_supervisor", {"task_id": task_id, "agent_id": self.id, "status":task_status.to_wire()}, self.supervisor_id)
+        
         # Notify only agents that depend on this task
         successor_agents = set()
 
@@ -185,11 +187,25 @@ class Agent:
             if assigned_agent and assigned_agent != self.id:
                 successor_agents.add(assigned_agent)
         #print("successor_agents ", successor_agents)
+        
         # Send message only once per agent
         for agent_id in successor_agents:
-            self.publish("TASK_DONE", {"task_id": task_id, "agent_id": self.id}, agent_id)
+            self.comm_handler.publish("task_status_update", {"task_id": task_id, "agent_id": self.id, "status":task_status.to_wire()}, agent_id)
     
-        # ----------------------------
+    def update_task_status_received_general(self, task_id, task_status):
+        # Register external completion
+        if(task_status == TaskStatus.DONE):
+            self.completed_external.add(task_id)
+        if self.local_graph.depends_on_external(task_id):
+            self.local_graph.handle_external_completion(task_id)
+
+    def update_task_status_received_supervisor(self, task_id, task_status):
+            print("Supervisor updating global graph")
+            self.global_graph.update_status(task_id, task_status)
+            #self.save_graphVisualization(self.global_graph.G, output_name="data/Global_"+self.id+time.strftime("%Y%m%d-%H%M%S"), palette_mode="pastel")
+
+
+    # ----------------------------
     # Startup Procedure
     # ----------------------------
     def startup(self):

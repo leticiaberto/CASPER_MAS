@@ -55,20 +55,17 @@ class GlobalGraph:
         if not isinstance(status, TaskStatus):
             raise TypeError("status must be TaskStatus Enum.")
     
-        current = self.G.nodes[task_id].get("status", TaskStatus.NOTASSIGNED)
+        assignment = self.G.nodes[task_id].get("assignment")
+        if assignment is None:
+            current = TaskStatus.NOT_ASSIGNED
+        else:
+            current = assignment.status
 
-        allowed_transitions = {
-            TaskStatus.NOTASSIGNED: {TaskStatus.ASSIGNED},
-            TaskStatus.PENDING: {TaskStatus.ASSIGNED},
-            TaskStatus.ASSIGNED: {TaskStatus.READY},
-            TaskStatus.READY: {TaskStatus.RUNNING},
-            TaskStatus.RUNNING: {TaskStatus.DONE},
-            TaskStatus.DONE: set()
-        }
+            if not TaskStatus.is_valid_transition(current, status):
+                raise ValueError(
+                    f"[{task_id}] Illegal transition {current.name} → {status.name}"
+                )
 
-        if status not in allowed_transitions.get(current, set()):
-            raise ValueError(
-                f"Illegal transition {current.name} → {status.name}"
-            )
+            self.G.nodes[task_id]["assignment"].status = status
 
-        self.G.nodes[task_id]["status"] = status
+            print("UPDATED: ", self.G.nodes[task_id]["assignment"].status)

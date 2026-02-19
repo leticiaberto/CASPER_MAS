@@ -103,4 +103,28 @@ class LocalGraph:
                 return True
         return False
 
+    def update_status(self, task_id, status):
+        """
+        Update the status of a task in the global graph.
+        """
+        if task_id not in self.G:
+            raise ValueError(f"Task {task_id} not found.")
+
+        if not isinstance(status, TaskStatus):
+            raise TypeError("status must be TaskStatus Enum.")
+    
+        assignment = self.G.nodes[task_id].get("assignment")
+        if assignment is None:
+            current = TaskStatus.NOT_ASSIGNED
+        else:
+            current = assignment.status
+
+            if not TaskStatus.is_valid_transition(current, status):
+                raise ValueError(
+                    f"[{task_id}] Illegal transition {current.name} → {status.name}"
+                )
+
+            self.G.nodes[task_id]["assignment"].status = status
+
+            #print("UPDATED: ", self.G.nodes[task_id]["assignment"].status)
     

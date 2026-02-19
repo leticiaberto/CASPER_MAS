@@ -105,16 +105,27 @@ class CommunicationHandler:
             new = msg["data"].get("constraints", None)
             self.agent.partners_constratints_update(sender, new)
         
-        elif msg_type == "TASK_DONE":
-            print(msg)
+        elif msg_type == "task_status_update":
             task_id = msg["data"]["task_id"]
             target = msg["data"]["target"]
-            
+            task_status = TaskStatus.from_wire(msg["data"]["status"])
+
             # Ignore if not meant for me
             if target is not None and target != self.agent.id:
                 return
 
-            self.agent.update_task_status(task_id)
+            self.agent.update_task_status_received_general(task_id, task_status)
+
+        elif msg_type == "task_status_update_supervisor":
+            task_id = msg["data"]["task_id"]
+            target = msg["data"]["target"]
+            task_status = TaskStatus.from_wire(msg["data"]["status"])
+            
+             # Ignore if not meant for me
+            if target is not None and target != self.agent.id:
+                return
+            self.agent.update_task_status_received_supervisor(task_id, task_status)
+
             
         elif msg_type == "Rebuild_GlobalGraph":
             self.agent.update_global_graph(msg)

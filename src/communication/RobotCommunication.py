@@ -19,7 +19,7 @@ class RobotComm:
     for 'task_assign' and 'task_update' message types.
     """
 
-    ACK_TYPES = {"task_assignment_batch", "task_update"}  # Only these trigger ACKs
+    ACK_TYPES = {"_task_assignment_batch", "task_update"}  # Only these trigger ACKs
 
     def __init__(self, robot_id: str, team_size: int = 1, ignore_self: bool = True):
         self.robot_id = robot_id
@@ -117,11 +117,10 @@ class RobotComm:
             except zmq.Again:
                 # Non-blocking timeout reached
                 return None
-
-            # Ignore self messages except TASK_UPDATE
             print(msg)
+            # Ignore self messages except 'task_status_update' to update the global graph
             if self.ignore_self and msg.get("from") == self.robot_id:
-                if msg.get("type") != "TASK_DONE":
+                if msg.get("type") != "task_status_update_supervisor" and msg.get("type") != "task_assignment_batch":
                     continue
 
             

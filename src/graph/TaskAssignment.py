@@ -8,7 +8,28 @@ class TaskStatus(Enum):
     READY = "ready"
     RUNNING = "running"
     DONE = "done"
-    NOTASSIGNED = "notassigned"
+    NOT_ASSIGNED = "not assigned"
+
+    @classmethod
+    def is_valid_transition(cls, current, new):
+        allowed_transitions = {
+            cls.NOT_ASSIGNED: {cls.ASSIGNED},
+            cls.ASSIGNED: {cls.PENDING},
+            cls.PENDING: {cls.READY},
+            cls.READY: {cls.RUNNING},
+            cls.RUNNING: {cls.DONE},
+            cls.DONE: set(),
+        }
+        return new in allowed_transitions.get(current, set())
+
+    def to_wire(self) -> str:
+        """Convert enum to JSON-safe wire format."""
+        return self.value
+
+    @classmethod
+    def from_wire(cls, value: str) -> "TaskStatus":
+        """Rebuild enum from wire format."""
+        return cls(value)
 
 @dataclass
 class TaskAssignment:
@@ -16,7 +37,7 @@ class TaskAssignment:
     selected_agent: Optional[object]
     selected_score: Optional[float]
     top_candidates: List[object] = field(default_factory=list)
-    status: TaskStatus = TaskStatus.PENDING
+    status: TaskStatus = TaskStatus.NOT_ASSIGNED
 
     def start(self):
         if self.selected_agent:

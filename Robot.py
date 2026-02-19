@@ -74,6 +74,7 @@ def main():
     agent.load_goal(task_file)
     teamComplete = False
     ready = False
+    first = True
     try:
         agent.startup()# 1. Start listener (for adding partners), 2. Announce hello, 3. Send my skills
         time.sleep(2)
@@ -91,7 +92,10 @@ def main():
                     time.sleep(3)
                     ready = True
             else:
-                agent.step()
+                if(first):
+                    time.sleep(5)
+                    agent.step()
+                    first = False
 
     except KeyboardInterrupt:
         print("Stopping agent...")

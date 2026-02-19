@@ -176,14 +176,13 @@ class Supervisor:
 
             # Top candidates
             top_candidates = self.get_top_candidates(task, scored, selected_agent, top_k)
-            
-            
+     
             assignment = TaskAssignment(
                 task_id=node_id,
                 selected_agent=selected_agent,
                 selected_score=selected_score,
                 top_candidates=top_candidates,
-                status=TaskStatus.ASSIGNED if selected_agent else TaskStatus.PENDING
+                status=TaskStatus.ASSIGNED if selected_agent else TaskStatus.NOT_ASSIGNED
             )
 
             # Store ONE structured object

@@ -2,6 +2,8 @@ from networkx.drawing.nx_pydot import to_pydot
 import math
 from utils import PastelPalette, DistinctPalette
 from src.graph.TaskAssignment import TaskStatus
+import networkx as nx
+from graphviz import Digraph
 
 class GraphVisualizer:
     def graphviz_safe_graph(self, G):
@@ -177,3 +179,100 @@ class GraphVisualizer:
         dot.write_png(f"{output_name}.png")
         dot.write_pdf(f"{output_name}.pdf")
         print(f"Exported agent local graph: {output_name}.png / .pdf")
+
+
+#######################################################################
+    def build_plot_graph(self, graph):
+        """
+        Build a visualization-only graph.
+        Uses ONLY self.graph (local graph).
+        """
+        Gp = nx.DiGraph()
+
+        # --- Add local nodes ---
+        for task_id, data in graph.nodes(data=True):
+            Gp.add_node(
+                task_id,
+                node_type="local",
+                status=data["status"],
+            )
+
+        # --- Add local edges (solid) ---
+        for u, v in graph.edges():
+            Gp.add_edge(u, v, edge_type="local")
+
+        # --- External predecessors (dashed incoming) ---
+        for task_id, data in graph.nodes(data=True):
+            for ext in data["external_predecessors"]:
+                if not Gp.has_node(ext):
+                    Gp.add_node(ext, node_type="external")
+                Gp.add_edge(ext, task_id, edge_type="external")
+
+        # --- External successors (dashed outgoing) ---
+        for task_id, data in graph.nodes(data=True):
+            for ext in data["external_successors"]:
+                if not Gp.has_node(ext):
+                    Gp.add_node(ext, node_type="external")
+                Gp.add_edge(task_id, ext, edge_type="external")
+
+        return Gp
+    
+    from graphviz import Digraph
+
+    def plot_task_graph(self, graph, filename="task_graph"):
+        """
+        Render the local task graph with:
+        - solid rectangles for local tasks
+        - dashed rectangles for external tasks
+        - solid edges for local deps
+        - dashed edges for external deps
+        Outputs both PDF and PNG.
+        """
+        Gp = self.build_plot_graph(graph)
+
+        dot = Digraph(comment="Local Task Graph")
+        dot.attr(rankdir="TB", splines="ortho")
+
+        # --- Nodes ---
+        for node, data in Gp.nodes(data=True):
+            if data["node_type"] == "local":
+                dot.node(
+                    str(node),
+                    label=str(node),
+                    shape="box",
+                    style="filled",
+                    fillcolor=_status_color(data["status"]),
+                )
+            else:
+                # External predecessor / successor
+                dot.node(
+                    str(node),
+                    label=str(node),
+                    shape="box",
+                    style="dashed,filled",
+                    fillcolor="lightgrey",
+                )
+
+        # --- Edges ---
+        for u, v, data in Gp.edges(data=True):
+            if data["edge_type"] == "local":
+                dot.edge(str(u), str(v), style="solid")
+            else:
+                dot.edge(str(u), str(v), style="dashed")
+
+        # --- Save outputs ---
+        dot.format = "png"
+        dot.render(filename, cleanup=True)
+
+        dot.format = "pdf"
+        dot.render(filename, cleanup=True)
+
+
+
+def _status_color(status):
+    return {
+        TaskStatus.PENDING: "lightyellow",
+        TaskStatus.RUNNING: "lightskyblue",
+        TaskStatus.DONE: "palegreen",
+        TaskStatus.READY: "lightcoral",
+    }.get(status, "white")

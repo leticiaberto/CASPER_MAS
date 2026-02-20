@@ -91,7 +91,7 @@ class Agent:
         
     def step(self):
         ready_tasks = self.local_graph.get_ready_tasks()
-        
+        self.graph_visualizer.plot_task_graph(self.local_graph.graph, "data/_"+self.id)
         if not ready_tasks:
             pass
         else:

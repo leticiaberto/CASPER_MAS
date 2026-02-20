@@ -59,6 +59,8 @@ class Agent:
             partner.skills.export_skills_preferences_to_CSV(pid, filename)
     
     def save_graphVisualization(self, graph, output_name, graphType = "global", palette_mode="pastel"):
+        if not graph: # graph is empty
+            return
         if(graphType == "global"):
             self.graph_visualizer.export_multiagent_graph(graph,output_name, palette_mode)
         else:
@@ -97,7 +99,7 @@ class Agent:
         else:
             # Inform all the tasks ready to be executed (to improve explanation and trust)
             for task in ready_tasks:
-                self.publish_task_status_update(task, TaskStatus.READY)
+                self.publish_task_status_update(task, TaskStatus.READY) #Do not need to update local because get_ready_tasks() does
                 time.sleep(6)
             # Execute each ready task
             for task in ready_tasks:
@@ -202,7 +204,7 @@ class Agent:
     def update_task_status_received_supervisor(self, task_id, task_status):
             print("Supervisor updating global graph")
             self.global_graph.update_status(task_id, task_status)
-            #self.save_graphVisualization(self.global_graph.G, output_name="data/Global_"+self.id+time.strftime("%Y%m%d-%H%M%S"), palette_mode="pastel")
+            self.save_graphVisualization(self.global_graph.G, output_name="data/Global_"+self.id+time.strftime("%Y%m%d-%H%M%S"), palette_mode="pastel")
 
 
     # ----------------------------

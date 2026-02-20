@@ -68,4 +68,4 @@ class GlobalGraph:
 
             self.G.nodes[task_id]["assignment"].status = status
 
-            print("UPDATED: ", self.G.nodes[task_id]["assignment"].status)
+            #print("UPDATED: ", self.G.nodes[task_id]["assignment"].status)

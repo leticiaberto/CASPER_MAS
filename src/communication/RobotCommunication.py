@@ -117,7 +117,7 @@ class RobotComm:
             except zmq.Again:
                 # Non-blocking timeout reached
                 return None
-            print(msg)
+            #print(msg)
             # Ignore self messages except 'task_status_update' to update the global graph
             if self.ignore_self and msg.get("from") == self.robot_id:
                 if msg.get("type") != "task_status_update_supervisor" and msg.get("type") != "task_assignment_batch":

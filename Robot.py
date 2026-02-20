@@ -92,10 +92,10 @@ def main():
                     time.sleep(3)
                     ready = True
             else:
-                if(first):
-                    time.sleep(5)
-                    agent.step()
-                    first = False
+                #if(first):
+                time.sleep(5)
+                agent.step()
+                first = False
 
     except KeyboardInterrupt:
         print("Stopping agent...")

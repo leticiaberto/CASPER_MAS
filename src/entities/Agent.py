@@ -30,8 +30,6 @@ class Agent:
 
         self.partners = {}
 
-        self.completed_external = set()
-
         self.graph_visualizer = GraphVisualizer()
 
         self.supervisor_id = None
@@ -85,7 +83,7 @@ class Agent:
             #self.get_assigned_tasks()
 
     def get_assigned_tasks(self):
-        self.local_graph = LocalGraph(self.id, self.global_graph.G, self.completed_external)
+        self.local_graph = LocalGraph(self.id, self.global_graph.G)
         for node_id in self.local_graph.graph.nodes:
             self.publish_task_status_update(node_id, self.local_graph.graph.nodes[node_id]["status"])
             time.sleep(7)
@@ -176,30 +174,14 @@ class Agent:
         self.comm_handler.publish("task_status_update_supervisor", {"task_id": task_id, "agent_id": self.id, "status":task_status.to_wire()}, self.supervisor_id)
         
         # Notify only agents that depend on this task
-        successor_agents = set()
-
-        for succ in self.global_graph.G.successors(task_id):
-            assigned_agent = self.global_graph.G.nodes[succ].get("assignment").selected_agent
-            #print("assigned_agent: ", assigned_agent)
-            '''
-            The agent already knows it completed the task.
-            Its local graph is already updated via mark_done().
-            It already triggered readiness updates locally.
-            '''
-            if assigned_agent and assigned_agent != self.id:
-                successor_agents.add(assigned_agent)
-        #print("successor_agents ", successor_agents)
-        
-        # Send message only once per agent
+        successor_agents = self.local_graph.get_successors(task_id)
+        # Send one message per agent
         for agent_id in successor_agents:
-            self.comm_handler.publish("task_status_update", {"task_id": task_id, "agent_id": self.id, "status":task_status.to_wire()}, agent_id)
-    
+            self.comm_handler.publish("task_status_update", {"task_id": task_id, "agent_id": self.id, "status": task_status.to_wire()}, agent_id)
+        
     def update_task_status_received_general(self, task_id, task_status):
-        # Register external completion
-        if(task_status == TaskStatus.DONE):
-            self.completed_external.add(task_id)
         if self.local_graph.depends_on_external(task_id):
-            self.local_graph.handle_external_completion(task_id)
+            self.local_graph.handle_external_completion(task_id, task_status)
 
     def update_task_status_received_supervisor(self, task_id, task_status):
             print("Supervisor updating global graph")

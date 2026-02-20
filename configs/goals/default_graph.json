@@ -19,9 +19,9 @@
     },
     {
       "id": "MoveToTable",
-      "context": "navigation",
+      "context": "delivery",
       "required_skills": {
-        "manipulation": 1.0
+        "navigation": 0.4
       },
       "required_constraints": {
         "can_move": true,
@@ -55,15 +55,15 @@
       "id": "Inspect",
       "context": "quality_check",
       "required_skills": {
-        "vision": 1.0
+        "manipulation": 0.8
       },
       "required_constraints": {
-        "can_move": true,
-        "can_manipulate": false,
-        "can_show_media": true,
+        "can_move": false,
+        "can_manipulate": true,
+        "can_show_media": false,
         "can_transport_objects": false,
         "max_payload_kg": 0,
-        "workspace": "global"
+        "workspace": "station_A"
       },
       "duration": 4,
       "priority": 3

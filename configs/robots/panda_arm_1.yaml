@@ -8,7 +8,7 @@ skill_weights:  #[skill weight, preference weight]
     manipulation: [0.2, 0.6]
     planning: [0.2, 0.3]
 
-  assembly:
+  quality_check:
     navigation: [0.1, 0.8]
     manipulation: [1.0, 0.2]
     planning: [0.3, 0.5]

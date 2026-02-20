@@ -19,6 +19,8 @@ class FrankaResearch3(Agent):
             return self._grasp(task)
         elif task == "move_arm":
             return self._move_arm(task)
+        elif task == "Inspect":
+            return self._inspect(task)
         #else:
             #raise NotImplementedError
         
@@ -26,4 +28,7 @@ class FrankaResearch3(Agent):
         print(f"{task} Not Implemented")
 
     def _move_arm(self, task):
+        print(f"{task} Not Implemented")
+    
+    def _inspect(self, task):
         print(f"{task} Not Implemented")

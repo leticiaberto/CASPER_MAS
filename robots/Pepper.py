@@ -14,9 +14,14 @@ class Pepper(Agent):
 
     def _execute_task_specific(self, task):
         print(f"{self.id} executing {task}")
-        if task.type == "speak":
+        if task == "speak":
             return self._speak(task)
-        elif task.type == "navigate":
+        elif task == "navigate":
             return self._navigate(task)
+        elif task == "MoveToTable":
+            return self._move_to_table(task)
         #else:# Add when we implemente all the behaviors. Removed for now to not stop the running
             #raise NotImplementedError
+
+    def _move_to_table(self, task):
+        print(f"{task} Not Implemented")

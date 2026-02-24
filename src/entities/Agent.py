@@ -56,14 +56,11 @@ class Agent:
         for pid, partner in self.partners.items():# Export partners skills
             partner.skills.export_skills_preferences_to_CSV(pid, filename)
     
-    def save_graphVisualization(self, graph, output_name, graphType = "global", palette_mode="pastel"):
+    def save_graphVisualization(self, graph, output_name, palette_mode="pastel"):
         if not graph: # graph is empty
             return
-        if(graphType == "global"):
-            self.graph_visualizer.export_multiagent_graph(graph,output_name, palette_mode)
-        else:
-            self.graph_visualizer.export_agent_task_graph(graph,output_name, palette_mode)
-   
+        self.graph_visualizer.export_multiagent_graph(graph,output_name, palette_mode)
+
     def load_goal(self, task_file):
         # All agents know the task graph, but only the supervisor will score agents
         self.global_graph = GlobalGraph() # full DAG (read-only knowledge)
@@ -77,42 +74,44 @@ class Agent:
             self.comm_handler.publish("SUPERVISOR", {"supervisor_id": self.id})
             self.supervisor_id = self.id
             self.supervisor.assign_agents_to_tasks(self.global_graph.G, agents, mode, top_k, debug)
-            self.save_graphVisualization(self.global_graph.G, output_name="data/Global_"+self.id, palette_mode="pastel")
+            self.save_graphVisualization(self.global_graph.G, output_name="data/["+self.id+"] Global", palette_mode="pastel")
         else:
             print("Waiting Supervisor allocate task.")
-            #self.get_assigned_tasks()
 
     def get_assigned_tasks(self):
         self.local_graph = LocalGraph(self.id, self.global_graph.G)
+        self.graph_visualizer.plot_task_graph(self.local_graph.graph, "data/["+self.id+"] Local_")
         for node_id in self.local_graph.graph.nodes:
             self.publish_task_status_update(node_id, self.local_graph.graph.nodes[node_id]["status"])
-            time.sleep(7)
-        self.save_graphVisualization(self.local_graph.graph, output_name="data/Local_"+self.id, graphType="local", palette_mode="pastel")
-        
+            time.sleep(3)
+
     def step(self):
         ready_tasks = self.local_graph.get_ready_tasks()
-        self.graph_visualizer.plot_task_graph(self.local_graph.graph, "data/_"+self.id)
         if not ready_tasks:
             pass
         else:
+            #print(f"Ready tasks for execution: {ready_tasks}")
             # Inform all the tasks ready to be executed (to improve explanation and trust)
             for task in ready_tasks:
                 self.publish_task_status_update(task, TaskStatus.READY) #Do not need to update local because get_ready_tasks() does
                 time.sleep(6)
+                self.graph_visualizer.plot_task_graph(self.local_graph.graph, "data/["+self.id+"] Local_")
             # Execute each ready task
             for task in ready_tasks:
                 self.local_graph.update_status(task, TaskStatus.RUNNING)
                 self.publish_task_status_update(task, TaskStatus.RUNNING)
+                self.graph_visualizer.plot_task_graph(self.local_graph.graph, "data/["+self.id+"] Local_")
                 time.sleep(3)
                 self._execute_task_specific(task) # Physical execution
                 time.sleep(10)
                 self.local_graph.update_status(task, TaskStatus.DONE)
                 self.publish_task_status_update(task, TaskStatus.DONE)
+                self.graph_visualizer.plot_task_graph(self.local_graph.graph, "data/["+self.id+"] Local_")
+                # Supervisor update its local graph and also the global one
                 if(self.role == Roles.SUPERVISOR):
-                    self.save_graphVisualization(self.global_graph.G, output_name="data/Global_"+self.id, palette_mode="pastel")
-                time.sleep(2)
-                self.save_graphVisualization(self.local_graph.graph, output_name="data/Local_"+self.id, graphType="local", palette_mode="pastel")
-                
+                    print("Supervisor updating global graph")
+                    self.save_graphVisualization(self.global_graph.G, output_name="data/["+self.id+"] Global_", palette_mode="pastel")
+                time.sleep(2)               
 
     @abstractmethod
     def _execute_task_specific(self, task):
@@ -162,7 +161,7 @@ class Agent:
 
     def get_task_assignment_batch(self, msg):
             self.update_global_graph(msg)
-            self.save_graphVisualization(self.global_graph.G, output_name="data/Global_"+self.id, palette_mode="pastel")
+            self.save_graphVisualization(self.global_graph.G, output_name="data/["+self.id+"] Global_", palette_mode="pastel")
             self.get_assigned_tasks()       
 
     def set_supervisor(self, supervisor_id):
@@ -180,13 +179,14 @@ class Agent:
             self.comm_handler.publish("task_status_update", {"task_id": task_id, "agent_id": self.id, "status": task_status.to_wire()}, agent_id)
         
     def update_task_status_received_general(self, task_id, task_status):
+        #print(f"Received update that task {task_id} is now {task_status.value}")
         if self.local_graph.depends_on_external(task_id):
             self.local_graph.handle_external_completion(task_id, task_status)
 
     def update_task_status_received_supervisor(self, task_id, task_status):
-            print("Supervisor updating global graph")
+            #print("Supervisor updating global graph")
             self.global_graph.update_status(task_id, task_status)
-            self.save_graphVisualization(self.global_graph.G, output_name="data/Global_"+self.id+time.strftime("%Y%m%d-%H%M%S"), palette_mode="pastel")
+            self.save_graphVisualization(self.global_graph.G, output_name="data/["+self.id+"] Global_", palette_mode="pastel")
 
 
     # ----------------------------

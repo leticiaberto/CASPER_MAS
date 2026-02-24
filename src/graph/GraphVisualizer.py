@@ -1,3 +1,5 @@
+import time
+
 from networkx.drawing.nx_pydot import to_pydot
 import math
 from utils import PastelPalette, DistinctPalette
@@ -136,8 +138,9 @@ class GraphVisualizer:
             # --- Rendering ---
             self._render_node(node, palette, name, duration, status_text, context, selected_agent, selected_score, top_candidates, fillType)
 
-        dot.write_png(f"{output_name}.png")
-        dot.write_pdf(f"{output_name}.pdf")
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        dot.write_png(f"{output_name}{timestamp}.png")
+        dot.write_pdf(f"{output_name}{timestamp}.pdf")
         print(f"Exported multi-agent graph: {output_name}.png / .pdf")
 
     # -----------------------------
@@ -149,37 +152,6 @@ class GraphVisualizer:
             f"{duration}s\\n"
             f"Status: {status_text}"
         )
-
-    def export_agent_task_graph(self, G, output_name="data/task_graph_agent", palette_mode="distinct", fillType="agent"):
-        G_viz = self.graphviz_safe_graph(G)
-        dot = to_pydot(G_viz)
-        dot.set_rankdir("TB")
-        dot.set_splines("ortho")
-
-        contexts = [G.nodes[n].get("context", "none") for n in G.nodes]
-        palette = PastelPalette() if palette_mode == "pastel" else DistinctPalette(contexts)
-
-        for node in dot.get_nodes():
-            node_id = node.get_name().strip('"')
-
-            if node_id not in G.nodes:
-                continue
-
-            task = G.nodes[node_id]
-
-            name = task.get("original_name", node_id)
-            duration = float(task.get("duration", 1))
-    
-            selected_agent = None
-            status_text = task["status"].value.upper()
-
-            # --- Rendering ---
-            self._render_node(node, palette, name, duration, status_text, None, selected_agent, None, None, fillType, "local")
-
-        dot.write_png(f"{output_name}.png")
-        dot.write_pdf(f"{output_name}.pdf")
-        print(f"Exported agent local graph: {output_name}.png / .pdf")
-
 
 #######################################################################
     def build_plot_graph(self, graph):
@@ -261,18 +233,21 @@ class GraphVisualizer:
                 dot.edge(str(u), str(v), style="dashed")
 
         # --- Save outputs ---
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        base = filename + timestamp
+
         dot.format = "png"
-        dot.render(filename, cleanup=True)
+        dot.render(base, cleanup=False)# Keep source
 
+        time.sleep(1) # Ensure file is written before next render
+        
         dot.format = "pdf"
-        dot.render(filename, cleanup=True)
-
-
+        dot.render(base, cleanup=True)# Delete source after last render
 
 def _status_color(status):
     return {
-        TaskStatus.PENDING: "lightyellow",
+        TaskStatus.PENDING: "lightcoral",
+        TaskStatus.READY: "lightyellow",
         TaskStatus.RUNNING: "lightskyblue",
         TaskStatus.DONE: "palegreen",
-        TaskStatus.READY: "lightcoral",
     }.get(status, "white")

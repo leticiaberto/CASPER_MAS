@@ -204,4 +204,4 @@ class Supervisor:
         }
 
         # Publish all at once
-        self.publish("task_assignment_batch", all_assignments)
+        self.publish("task_assignment_batch", all_assignments)       

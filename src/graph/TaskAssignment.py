@@ -30,6 +30,16 @@ class TaskStatus(Enum):
     def from_wire(cls, value: str) -> "TaskStatus":
         """Rebuild enum from wire format."""
         return cls(value)
+    
+    def _status_color(status):
+        return {
+            TaskStatus.PENDING: "lightcoral",
+            TaskStatus.READY: "palegoldenrod",
+            TaskStatus.RUNNING: "lightskyblue",
+            TaskStatus.DONE: "palegreen",
+            TaskStatus.ASSIGNED: "lightgray",
+            TaskStatus.NOT_ASSIGNED: "snow"
+        }.get(status, "red")  # default to red for unknown statuses
 
 @dataclass
 class TaskAssignment:

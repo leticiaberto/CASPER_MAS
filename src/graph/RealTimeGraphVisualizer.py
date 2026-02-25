@@ -3,6 +3,8 @@ import networkx as nx
 import threading
 from src.graph.TaskAssignment import TaskStatus
 import math
+import warnings
+warnings.filterwarnings("ignore", message="Starting a Matplotlib GUI outside of the main thread")
 
 class RealTimeGraphVisualizer:
     def __init__(self, G, vis_queue):

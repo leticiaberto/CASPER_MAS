@@ -28,7 +28,7 @@ class Agent:
         
         if(self.role == Roles.SUPERVISOR):
             self.supervisor = Supervisor(name=f"Supervisor_{self.id}", agent = self, publish_fn=self.comm_handler.publish)            
-        
+            
         self.assigned_tasks = []
 
         self.partners = {}
@@ -36,6 +36,8 @@ class Agent:
         self.graph_visualizer = GraphVisualizer()
 
         self.supervisor_id = None
+
+        self.goal_finished = False
 
     # ----------------------------
     # Partners
@@ -54,7 +56,7 @@ class Agent:
     # Load/Save data
     # ----------------------------
     def export_data(self):
-        filename = "data/skills_preferences_" + self.id + ".csv"
+        filename = "skills_preferences_" + self.id + ".csv"
         self.skills.export_skills_preferences_to_CSV(self.id, filename)# Export my own skills
         for pid, partner in self.partners.items():# Export partners skills
             partner.skills.export_skills_preferences_to_CSV(pid, filename)
@@ -72,7 +74,7 @@ class Agent:
             self.comm_handler.publish("SUPERVISOR", {"supervisor_id": self.id})
             self.supervisor_id = self.id
             self.supervisor.assign_agents_to_tasks(self.global_graph.G, agents, mode, top_k, debug)
-            self.graph_visualizer.export_multiagent_graph(self.global_graph.G, output_name=f"data/["+self.id+"] Global", palette_mode="pastel")
+            self.graph_visualizer.export_multiagent_graph(self.global_graph.G, output_name=f"["+self.id+"] Global", palette_mode="pastel")
             self.vis_queue = queue.Queue()
             visualizer = RealTimeGraphVisualizer(
                 self.global_graph.G,
@@ -84,7 +86,7 @@ class Agent:
 
     def get_assigned_tasks(self):
         self.local_graph = LocalGraph(self.id, self.global_graph.G)
-        self.graph_visualizer.plot_task_graph(self.local_graph.graph, "data/["+self.id+"] Local_")
+        self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
         for node_id in self.local_graph.graph.nodes:
             self.publish_task_status_update(node_id, self.local_graph.graph.nodes[node_id]["status"])
             time.sleep(3)
@@ -100,23 +102,32 @@ class Agent:
             for task in ready_tasks:
                 self.publish_task_status_update(task, TaskStatus.READY) #Do not need to update local because get_ready_tasks() does
                 time.sleep(6)
-                self.graph_visualizer.plot_task_graph(self.local_graph.graph, "data/["+self.id+"] Local_")
+                self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
             # Execute each ready task
             for task in ready_tasks:
                 self.local_graph.update_status(task, TaskStatus.RUNNING)
                 self.publish_task_status_update(task, TaskStatus.RUNNING)
-                self.graph_visualizer.plot_task_graph(self.local_graph.graph, "data/["+self.id+"] Local_")
+                self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
                 time.sleep(3)
                 self._execute_task_specific(task) # Physical execution
                 time.sleep(10)
                 self.local_graph.update_status(task, TaskStatus.DONE)
                 self.publish_task_status_update(task, TaskStatus.DONE)
-                self.graph_visualizer.plot_task_graph(self.local_graph.graph, "data/["+self.id+"] Local_")
-                # Supervisor update its local graph and also the global one
-                if(self.role == Roles.SUPERVISOR):
-                    print("Supervisor updating global graph")
-                    self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="data/["+self.id+"] Global_", palette_mode="pastel", graphType="updated")
-                time.sleep(2)               
+                self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
+                time.sleep(2)
+        if(self.role == Roles.SUPERVISOR):
+            if(self.check_all_tasks_done()):
+                print("All tasks are done!")
+                self.comm_handler.publish("all_tasks_done", {"agent_id": self.id})
+                time.sleep(2)
+                self.goal_finished = True
+
+    def check_all_tasks_done(self):
+        all_done = all(
+            self.global_graph.G.nodes[n]["assignment"].status == TaskStatus.DONE
+            for n in self.global_graph.G.nodes
+        )
+        return all_done
 
     @abstractmethod
     def _execute_task_specific(self, task):
@@ -166,7 +177,7 @@ class Agent:
 
     def get_task_assignment_batch(self, msg):
             self.update_global_graph(msg)
-            self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="data/["+self.id+"] Global_", palette_mode="pastel")
+            self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="["+self.id+"] Global_", palette_mode="pastel")
             self.get_assigned_tasks()       
 
     def set_supervisor(self, supervisor_id):
@@ -191,7 +202,7 @@ class Agent:
     def update_task_status_received_supervisor(self, task_id, task_status):
             self.vis_queue.put(("refresh",))
             self.global_graph.update_status(task_id, task_status)
-            self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="data/["+self.id+"] Global_", palette_mode="pastel", graphType="updated")
+            self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="["+self.id+"] Global_", palette_mode="pastel", graphType="updated")
 
     # ----------------------------
     # Startup Procedure

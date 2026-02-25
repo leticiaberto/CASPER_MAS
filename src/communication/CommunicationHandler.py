@@ -132,5 +132,9 @@ class CommunicationHandler:
             self.agent.local_graph.rebuild(self.agent.global_graph)
 
         elif msg_type == "SUPERVISOR":
-            self.agent.set_supervisor(msg["data"]["supervisor_id"]) 
+            self.agent.set_supervisor(msg["data"]["supervisor_id"])
 
+        elif msg_type == "all_tasks_done": 
+            if sender == self.agent.supervisor_id:
+                print(f"[{self.agent.id}] Received all_tasks_done message. Shutting down.")
+                self.agent.goal_finished = True

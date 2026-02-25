@@ -4,8 +4,12 @@ from robots.Pepper import Pepper
 from robots.FrankaResearch3 import FrankaResearch3
 import argparse
 import yaml
+from pathlib import Path
 
 def main():
+    folder_path = Path("data")
+    folder_path.mkdir(parents=True, exist_ok=True) # create folder if it does not exist
+
     # ===================================================
     # Load config file and args
     # ===================================================
@@ -95,13 +99,16 @@ def main():
                 #if(first):
                 time.sleep(5)
                 agent.step()
+                if agent.goal_finished:
+                    print("Goal Finished! Stopping agent...")
+                    break
                 
-
     except KeyboardInterrupt:
         print("Stopping agent...")
 
     finally:
         agent.closeComm()
+    agent.closeComm()
 
 main()
 """"

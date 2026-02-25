@@ -3,4 +3,5 @@ pyyaml
 networkx
 pydot
 graphviz
+pygraphviz
 matplotlib

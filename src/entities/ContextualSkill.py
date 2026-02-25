@@ -102,14 +102,14 @@ class ContextualSkillModel:
             * relevance
         )
 
-    def export_skills_preferences_to_CSV(self, agent_id, filename="data/skills_preferences.csv"):
+    def export_skills_preferences_to_CSV(self, agent_id, filename="skills_preferences.csv"):
         # Check if file already exists (to decide whether to write header)
         file_exists = os.path.isfile(filename)
 
         # Current timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        with open(filename, mode="a", newline="") as file:
+        with open("data/" + filename, mode="a", newline="") as file:
             writer = csv.writer(file)
 
             # Write header only if file is new

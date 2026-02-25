@@ -110,7 +110,7 @@ class GraphVisualizer:
     # -----------------------------
     # Multi-agent capability graph
     # -----------------------------
-    def export_multiagent_graph(self, G, output_name="data/task_graph_multiagent", palette_mode="distinct", fillType="agent", graphType="global"):
+    def export_multiagent_graph(self, G, output_name="task_graph_multiagent", palette_mode="distinct", fillType="agent", graphType="global"):
         G_viz = self.graphviz_safe_graph(G)
         dot = to_pydot(G_viz)
         dot.set_rankdir("TB")
@@ -147,8 +147,8 @@ class GraphVisualizer:
             self._render_node(node, palette, name, duration, status_text, context, selected_agent, selected_score, top_candidates, fillType, graphType)
 
         timestamp = time.strftime("%Y%m%d-%H%M%S")
-        dot.write_png(f"{output_name}{timestamp}.png")
-        dot.write_pdf(f"{output_name}{timestamp}.pdf")
+        dot.write_png(f"data/{output_name}{timestamp}.png")
+        dot.write_pdf(f"data/{output_name}{timestamp}.pdf")
         print(f"Exported multi-agent graph: {output_name}.png / .pdf")
 
 
@@ -231,7 +231,7 @@ class GraphVisualizer:
 
         # --- Save outputs ---
         timestamp = time.strftime("%Y%m%d-%H%M%S")
-        base = filename + timestamp
+        base = "data/" + filename + timestamp
 
         dot.format = "png"
         dot.render(base, cleanup=False)# Keep source

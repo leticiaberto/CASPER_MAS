@@ -1,3 +1,5 @@
+import queue
+from src.graph.RealTimeGraphVisualizer import RealTimeGraphVisualizer
 from src.entities.ContextualSkill import ContextualSkillModel
 from src.entities.Partner import PartnerAgent
 from src.communication.CommunicationHandler import CommunicationHandler
@@ -10,6 +12,7 @@ from src.graph.TaskAssignment import TaskAssignment, TaskStatus
 from abc import abstractmethod
 from utils import Roles
 import time
+
 class Agent:
     def __init__(self, id, constraints, skills, contexts, role, teamsize):
         self.id = id
@@ -56,11 +59,6 @@ class Agent:
         for pid, partner in self.partners.items():# Export partners skills
             partner.skills.export_skills_preferences_to_CSV(pid, filename)
     
-    def save_graphVisualization(self, graph, output_name, palette_mode="pastel"):
-        if not graph: # graph is empty
-            return
-        self.graph_visualizer.export_multiagent_graph(graph,output_name, palette_mode)
-
     def load_goal(self, task_file):
         # All agents know the task graph, but only the supervisor will score agents
         self.global_graph = GlobalGraph() # full DAG (read-only knowledge)
@@ -74,7 +72,13 @@ class Agent:
             self.comm_handler.publish("SUPERVISOR", {"supervisor_id": self.id})
             self.supervisor_id = self.id
             self.supervisor.assign_agents_to_tasks(self.global_graph.G, agents, mode, top_k, debug)
-            self.save_graphVisualization(self.global_graph.G, output_name="data/["+self.id+"] Global", palette_mode="pastel")
+            self.graph_visualizer.export_multiagent_graph(self.global_graph.G, output_name=f"data/["+self.id+"] Global", palette_mode="pastel")
+            self.vis_queue = queue.Queue()
+            visualizer = RealTimeGraphVisualizer(
+                self.global_graph.G,
+                self.vis_queue
+            )
+            visualizer.start()
         else:
             print("Waiting Supervisor allocate task.")
 
@@ -84,6 +88,7 @@ class Agent:
         for node_id in self.local_graph.graph.nodes:
             self.publish_task_status_update(node_id, self.local_graph.graph.nodes[node_id]["status"])
             time.sleep(3)
+        print("Assigned tasks received and local graph initialized.")
 
     def step(self):
         ready_tasks = self.local_graph.get_ready_tasks()
@@ -110,7 +115,7 @@ class Agent:
                 # Supervisor update its local graph and also the global one
                 if(self.role == Roles.SUPERVISOR):
                     print("Supervisor updating global graph")
-                    self.save_graphVisualization(self.global_graph.G, output_name="data/["+self.id+"] Global_", palette_mode="pastel")
+                    self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="data/["+self.id+"] Global_", palette_mode="pastel", graphType="updated")
                 time.sleep(2)               
 
     @abstractmethod
@@ -161,7 +166,7 @@ class Agent:
 
     def get_task_assignment_batch(self, msg):
             self.update_global_graph(msg)
-            self.save_graphVisualization(self.global_graph.G, output_name="data/["+self.id+"] Global_", palette_mode="pastel")
+            self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="data/["+self.id+"] Global_", palette_mode="pastel")
             self.get_assigned_tasks()       
 
     def set_supervisor(self, supervisor_id):
@@ -184,10 +189,9 @@ class Agent:
             self.local_graph.handle_external_completion(task_id, task_status)
 
     def update_task_status_received_supervisor(self, task_id, task_status):
-            #print("Supervisor updating global graph")
+            self.vis_queue.put(("refresh",))
             self.global_graph.update_status(task_id, task_status)
-            self.save_graphVisualization(self.global_graph.G, output_name="data/["+self.id+"] Global_", palette_mode="pastel")
-
+            self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="data/["+self.id+"] Global_", palette_mode="pastel", graphType="updated")
 
     # ----------------------------
     # Startup Procedure

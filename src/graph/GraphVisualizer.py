@@ -66,26 +66,34 @@ class GraphVisualizer:
 
         return (
             f"{name}\\n"
-            f"{duration}s\\n"
-            f"Ctx {context}\\n"
+            f"Duration: {duration}s\\n"
+            f"Context: {context}\\n"
             f"Status: {status_text}\\n"
             f"Selected: {selected_text}\\n"
             f"Top candidates:\\n"
             f"{top_text}"
         )
 
+    def _build_node_label_local(self, name, duration, status_text, selected_agent):
+        return (
+            f"{name}\\n"
+            f"{duration}s\\n"
+            f"{status_text}\\n"
+            f"{selected_agent}"
+        )
+    
     def _render_node(self, dot_node, palette, name, duration, status_text, context, selected_agent, selected_score, top_candidates, fillType, graphType = "global"):
-
         if(graphType == "global"):
             label = self._build_node_label_global(name, duration, status_text, context, selected_agent, selected_score, top_candidates )
+            if fillType == "context":
+                fillcolor = palette.get_color(context)
+            else:
+                key = selected_agent if selected_agent else None
+                fillcolor = palette.get_color(key)
         else:
-            label = self._build_node_label_local(name, duration, status_text)
-        
-        if fillType == "context":
-            fillcolor = palette.get_color(context)
-        else:
-            key = selected_agent if selected_agent else None
-            fillcolor = palette.get_color(key)
+            label = self._build_node_label_local(name, duration, status_text, selected_agent)
+            fillcolor = TaskStatus._status_color(TaskStatus(status_text.lower())) # Use status text to determine color
+
 
         width, height = self.duration_to_size(duration, mode="duration")
 
@@ -102,7 +110,7 @@ class GraphVisualizer:
     # -----------------------------
     # Multi-agent capability graph
     # -----------------------------
-    def export_multiagent_graph(self, G, output_name="data/task_graph_multiagent", palette_mode="distinct", fillType="agent"):
+    def export_multiagent_graph(self, G, output_name="data/task_graph_multiagent", palette_mode="distinct", fillType="agent", graphType="global"):
         G_viz = self.graphviz_safe_graph(G)
         dot = to_pydot(G_viz)
         dot.set_rankdir("TB")
@@ -136,22 +144,13 @@ class GraphVisualizer:
                 status_text = TaskStatus.NOTASSIGNED
 
             # --- Rendering ---
-            self._render_node(node, palette, name, duration, status_text, context, selected_agent, selected_score, top_candidates, fillType)
+            self._render_node(node, palette, name, duration, status_text, context, selected_agent, selected_score, top_candidates, fillType, graphType)
 
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         dot.write_png(f"{output_name}{timestamp}.png")
         dot.write_pdf(f"{output_name}{timestamp}.pdf")
         print(f"Exported multi-agent graph: {output_name}.png / .pdf")
 
-    # -----------------------------
-    # Multi-agent capability graph
-    # -----------------------------
-    def _build_node_label_local(self, name, duration, status_text):
-        return (
-            f"{name}\\n"
-            f"{duration}s\\n"
-            f"Status: {status_text}"
-        )
 
 #######################################################################
     def build_plot_graph(self, graph):
@@ -188,8 +187,6 @@ class GraphVisualizer:
                 Gp.add_edge(task_id, ext, edge_type="external")
 
         return Gp
-    
-    from graphviz import Digraph
 
     def plot_task_graph(self, graph, filename="task_graph"):
         """
@@ -210,10 +207,10 @@ class GraphVisualizer:
             if data["node_type"] == "local":
                 dot.node(
                     str(node),
-                    label=str(node),
+                    label=str(node)+f"\\n {data['status'].value}",
                     shape="box",
                     style="filled",
-                    fillcolor=_status_color(data["status"]),
+                    fillcolor=TaskStatus._status_color(data["status"]),
                 )
             else:
                 # External predecessor / successor
@@ -240,14 +237,6 @@ class GraphVisualizer:
         dot.render(base, cleanup=False)# Keep source
 
         time.sleep(1) # Ensure file is written before next render
-        
+
         dot.format = "pdf"
         dot.render(base, cleanup=True)# Delete source after last render
-
-def _status_color(status):
-    return {
-        TaskStatus.PENDING: "lightcoral",
-        TaskStatus.READY: "lightyellow",
-        TaskStatus.RUNNING: "lightskyblue",
-        TaskStatus.DONE: "palegreen",
-    }.get(status, "white")

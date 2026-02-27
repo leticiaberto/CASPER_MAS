@@ -1,5 +1,0 @@
-#debug: True
-task: configs/goals/default_graph.json
-team_size: 3
-top_k: 2
-optimizeMode: skill

@@ -16,7 +16,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--robot", type=str, default="configs/robots/default.yaml")
     parser.add_argument("--role", type=str, default="member", choices=["member", "supervisor"])
-    parser.add_argument("--exp", type=str, default="configs/exp1.yaml")
+    parser.add_argument("--exp", type=str, default="configs/exps/exp1.yaml")
 
     args = parser.parse_args()
 

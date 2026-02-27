@@ -62,7 +62,7 @@ Example hub IP:
 
 ### 2. Store Hub IP Automatically
 
-You **do not need to edit any network files manually**.
+You **do not need to edit any network files manually if runnining in the same machine**.
 
 Simply run:
 

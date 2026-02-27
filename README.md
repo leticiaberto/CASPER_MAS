@@ -133,9 +133,7 @@ Robots automatically export this structure and share it at startup.
 
 Before running any experiment, the **goal of the task must be defined**.
 
-Goals are specified as **JSON files** inside:
-
-    configs/goals/
+Goals are specified as **JSON files** inside: `configs/goals/`
 
 Each goal file defines **what the system should achieve**, independently of:
 - the robots involved
@@ -143,9 +141,7 @@ Each goal file defines **what the system should achieve**, independently of:
 - execution parameters
 - dependencies
 
-Example goal file:
-
-    configs/goals/assembly_goal.json
+Example goal file: `configs/goals/assembly_goal.json`
 
 
 Goals are **not passed directly to robots**.  
@@ -157,17 +153,13 @@ Instead, they are **referenced by experiment configurations**, allowing the same
 
 Experiments define **how a goal is executed** and with which parameters.
 
-Experiment configuration files are stored in:
-
-    configs/exps/
+Experiment configuration files are stored in: `configs/exps/`
 
 An experiment configuration:
 - references a goal defined in `configs/goals/`
 - specifies experiment-specific parameters (e.g., timeouts, policies, constraints, coordination modes)
 
-Example experiment file:
-
-    configs/exps/exp1.yaml
+Example experiment file: `configs/exps/exp1.yaml`
 
 Experiments are specified using the `--exp` flag.
 

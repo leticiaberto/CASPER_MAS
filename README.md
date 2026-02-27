@@ -144,6 +144,7 @@ Each goal file defines **what the system should achieve**, independently of:
 - dependencies
 
 Example goal file:
+
     configs/goals/assembly_goal.json
 
 
@@ -157,6 +158,7 @@ Instead, they are **referenced by experiment configurations**, allowing the same
 Experiments define **how a goal is executed** and with which parameters.
 
 Experiment configuration files are stored in:
+
     configs/exps/
 
 An experiment configuration:
@@ -164,6 +166,7 @@ An experiment configuration:
 - specifies experiment-specific parameters (e.g., timeouts, policies, constraints, coordination modes)
 
 Example experiment file:
+
     configs/exps/exp1.yaml
 
 Experiments are specified using the `--exp` flag.

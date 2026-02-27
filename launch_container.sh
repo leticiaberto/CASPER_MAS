@@ -5,9 +5,13 @@
 # ===========================
 
 IMAGE_NAME="casper_mas"
-CONTAINER_NAME="casper_mas-container"
+DEFAULT_CONTAINER_NAME="casper_mas-container"
+
+# If a command-line argument is provided, use it as container name
+CONTAINER_NAME="${1:-$DEFAULT_CONTAINER_NAME}"
 
 DOCKERFILE_PATH="Dockerfile"
+REQUIREMENTS_PATH="requirements.txt"
 CHECKSUM_FILE=".dockerfile_checksum"
 
 # ---------------------------
@@ -19,18 +23,18 @@ xhost +local:root
 # ---------------------------
 # Check Dockerfile changes and rebuild image if needed
 # ---------------------------
-CURRENT_HASH=$(sha256sum $DOCKERFILE_PATH | awk '{print $1}')
+CURRENT_HASH=$(sha256sum $DOCKERFILE_PATH $REQUIREMENTS_PATH | sha256sum | awk '{print $1}')
 OLD_HASH=""
 if [[ -f $CHECKSUM_FILE ]]; then
     OLD_HASH=$(cat $CHECKSUM_FILE)
 fi
 
 if [[ "$CURRENT_HASH" != "$OLD_HASH" ]] || [[ "$(docker images -q $IMAGE_NAME 2> /dev/null)" == "" ]]; then
-    echo "🔨 Dockerfile changed or image missing. Building $IMAGE_NAME..."
+    echo "🔨 Dockerfile or requirements.txt changed, or image missing. Building $IMAGE_NAME..."
     docker build -t $IMAGE_NAME -f $DOCKERFILE_PATH .
     echo "$CURRENT_HASH" > $CHECKSUM_FILE
 else
-    echo "✅ Dockerfile unchanged and image exists. Skipping build."
+    echo "✅ Dockerfile and requirements.txt unchanged, image exists. Skipping build."
 fi
 
 # ---------------------------

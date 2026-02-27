@@ -100,9 +100,7 @@ Linux UFW example:
 
 Each robot must define its skills and preferences in the `configs/robots/` folder.
 
-Example file:
-
-    configs/robots/robot_1.yaml
+Example file: `configs/robots/robot_1.yaml`
 
 Example structure:
 

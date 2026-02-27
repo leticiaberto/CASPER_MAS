@@ -1,6 +1,6 @@
 FROM nvidia/cuda:13.0.1-cudnn-devel-ubuntu24.04
 
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive 
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=all
 
@@ -10,7 +10,12 @@ RUN apt-get update && \
         python3 \
         python3-venv \
         python3-pip \
+        python3-dev \
         graphviz \
+        graphviz-dev \
+        libgraphviz-dev \
+        pkg-config \
+        python3-full \
         locales \
         build-essential \
         libgl1 \
@@ -29,6 +34,10 @@ RUN apt-get update && \
 # Set locales
 RUN locale-gen en_US.UTF-8
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
+
+#Tell pip where to find Graphviz headers
+ENV CFLAGS="-I/usr/include/graphviz"
+ENV LDFLAGS="-L/usr/lib/x86_64-linux-gnu"
 
 # Create Python virtual environment
 RUN python3 -m venv /venv

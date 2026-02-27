@@ -116,7 +116,7 @@ class Agent:
                 self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
                 time.sleep(2)
         if(self.role == Roles.SUPERVISOR):
-            if(self.check_all_tasks_done()):
+            if(self.check_all_tasks_done()):# Check everytime in case one can change the status back
                 print("All tasks are done!")
                 self.comm_handler.publish("all_tasks_done", {"agent_id": self.id})
                 time.sleep(2)

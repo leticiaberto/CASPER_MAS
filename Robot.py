@@ -5,6 +5,8 @@ from robots.FrankaResearch3 import FrankaResearch3
 import argparse
 import yaml
 from pathlib import Path
+import subprocess
+import os
 
 def main():
     folder_path = Path("data")
@@ -46,7 +48,23 @@ def main():
     teamsize = exp_config["team_size"]
     top_k = exp_config["top_k"]
     optimizeMode = exp_config["optimizeMode"]
-    
+
+    USE_SIM = exp_config["USE_SIM"]
+    agent_agnostic = exp_config["agent_agnostic"]
+    print(f"Agent agnostic mode: {agent_agnostic}, USE_SIM={USE_SIM}")
+
+    # Set env ONLY for ROS
+    os.environ['USE_SIM'] = str(USE_SIM).lower()
+
+   # -------------------------------
+    # Launch ROS 2 (simulation or real robot)
+    # -------------------------------
+    subprocess.Popen(
+        ["ros2", "launch", "ros_adapters",
+        "sim.launch.py" if USE_SIM else "real.launch.py"],
+        env=os.environ.copy()
+    )
+
     # ===================================================
     # Instantiate robot
     # ===================================================
@@ -57,6 +75,8 @@ def main():
             contexts = contexts,
             role = agent_role,
             teamsize = teamsize,
+            use_sim = USE_SIM,
+            agent_agnostic = agent_agnostic,
         )
     elif(robot_model == "FrankaResearch3"):
         agent = FrankaResearch3(
@@ -65,11 +85,15 @@ def main():
             contexts = contexts, 
             role = agent_role,
             teamsize = teamsize,
+            use_sim = USE_SIM,
+            agent_agnostic = agent_agnostic,
         )
     else:
         raise ValueError(f"Unknown agent model: {robot_model}")
         
     print(f"Agent {robot_id} starting up...")
+
+    agent.start()   # start ROS if needed
 
     if(debug):
         agent.skills.print_skills_preferences()
@@ -108,7 +132,9 @@ def main():
 
     finally:
         agent.closeComm()
+        agent.stop()     # clean exit
     agent.closeComm()
+    agent.stop()
 
 main()
 """"

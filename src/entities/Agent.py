@@ -157,6 +157,16 @@ class Agent:
         )
     
     # ----------------------------
+    # Decisions - Todo: now just for testing the connection with the robot using ROS
+    def decide(self):
+        return {
+            "action": "pick_and_place",
+            "pick": [0.5, 0.0, 0.1],
+            "place": [0.3, -0.3, 0.1]
+        }
+    # ----------------------------
+
+    # ----------------------------
     # Used in the message protocol
     # ----------------------------
     def partners_skills_update(self, sender, received_weights, contexts):

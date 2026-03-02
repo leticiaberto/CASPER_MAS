@@ -1,7 +1,8 @@
 from src.entities.Agent import Agent
+from ros_adapters.adapters.FrankaMoveItAdapter import FrankaMoveItAdapter
 
 class FrankaResearch3(Agent):
-    def __init__(self, id, skill_weights, contexts, role, teamsize):
+    def __init__(self, id, skill_weights, contexts, role, teamsize, use_sim, agent_agnostic=True):
         constraints={
             "can_move": False,
             "can_manipulate": True,
@@ -12,6 +13,13 @@ class FrankaResearch3(Agent):
             "workspace": "station_A"
         }
         super().__init__(id, constraints, skill_weights, contexts, role, teamsize)
+        self.adapter = FrankaMoveItAdapter(use_sim=use_sim, agent_agnostic=agent_agnostic)
+
+    def start(self):
+        self.adapter.initialize()
+    
+    def stop(self):
+        self.adapter.shutdown()
 
     def _execute_task_specific(self, task):
         print(f"{self.id} executing {task}")
@@ -21,6 +29,11 @@ class FrankaResearch3(Agent):
             return self._move_arm(task)
         elif task == "Inspect":
             return self._inspect(task)
+        elif task == "pick_and_place": #task["action"] == "pick_and_place"
+            return self.adapter.pick_and_place(
+                            task["pick"],
+                            task["place"]
+                        )
         #else:
             #raise NotImplementedError
         

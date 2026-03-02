@@ -1,7 +1,7 @@
 {
   "tasks": [
     {
-      "id": "PickPart",
+      "id": "pick_and_place",
       "context": "assembly",
       "required_skills": {
         "manipulation": 1.0
@@ -70,7 +70,7 @@
     }
   ],
   "dependencies": [
-    ["PickPart", "AssembleFrame"],
+    ["pick_and_place", "AssembleFrame"],
     ["MoveToTable", "AssembleFrame"],
     ["AssembleFrame", "Inspect"]
   ]

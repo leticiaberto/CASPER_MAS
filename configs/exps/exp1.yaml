@@ -3,3 +3,6 @@ task: configs/goals/default_graph.json
 team_size: 3
 top_k: 2
 optimizeMode: skill
+
+agent_agnostic: True  # True = ROS-agnostic test, False = use ROS/MoveIt
+USE_SIM: False          # True = simulation mode, False = real robot

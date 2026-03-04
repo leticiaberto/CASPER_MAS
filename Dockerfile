@@ -1,10 +1,10 @@
 # ===============================
-# Dockerfile for Experiments
-# CUDA + ROS 2 Jazzy + Gazebo (GUI) + Python + ROS Adapters
+# Dockerfile for CASPER_MAS Experiments
+# CUDA + ROS 2 Humble + Gazebo + MoveIt 2 + Python + CASPER Adapters
 # ===============================
 
 # Base image with CUDA + cuDNN
-FROM nvidia/cuda:13.0.1-cudnn-devel-ubuntu24.04
+FROM nvidia/cuda:13.0.1-cudnn-devel-ubuntu22.04
 
 # ------------------------------
 # Environment for noninteractive installs and GPU
@@ -12,22 +12,28 @@ FROM nvidia/cuda:13.0.1-cudnn-devel-ubuntu24.04
 ENV DEBIAN_FRONTEND=noninteractive 
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=all
-ENV ROS_DISTRO=jazzy
+ENV ROS_DISTRO=humble
 SHELL ["/bin/bash", "-c"]
 
 # ------------------------------
 # System dependencies: Python + OpenGL/EGL + general tools
 # ------------------------------
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Step 1: install software-properties-common first
+RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common
+
+# Step 2: now universe repository is available and git can be installed
+RUN add-apt-repository universe && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
         python3 \
         python3-venv \
         python3-pip \
         python3-dev \
+        python3-full \
         graphviz \
         graphviz-dev \
         libgraphviz-dev \
         pkg-config \
-        python3-full \
         locales \
         build-essential \
         libgl1 \
@@ -44,7 +50,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         gnupg2 \
         lsb-release \
-        software-properties-common \
+        git \
     && rm -rf /var/lib/apt/lists/*
 
 # ------------------------------
@@ -54,74 +60,92 @@ RUN locale-gen en_US.UTF-8
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
 # ------------------------------
-# Tell pip where to find Graphviz headers
+# Graphviz headers for pip
 # ------------------------------
 ENV CFLAGS="-I/usr/include/graphviz"
 ENV LDFLAGS="-L/usr/lib/x86_64-linux-gnu"
 
 # ------------------------------
-# Python virtual environment
+# ROS 2 Humble + Gazebo
 # ------------------------------
-RUN python3 -m venv /venv
-ENV VIRTUAL_ENV=/venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+# Add ROS apt repo
+RUN ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest \
+        | grep -F "tag_name" | awk -F\" '{print $4}') \
+    && curl -L -o /tmp/ros2-apt-source.deb \
+        "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo ${UBUNTU_CODENAME})_all.deb" \
+    && dpkg -i /tmp/ros2-apt-source.deb \
+    && rm /tmp/ros2-apt-source.deb 
 
-# ------------------------------
-# ROS 2 Jazzy + Gazebo (GUI) installation
-# ------------------------------
-RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2.list' \
-    && apt-get update && apt-get install -y --no-install-recommends \
-    ros-jazzy-desktop \    
-    ros-jazzy-ros-gz \          
-    python3-colcon-common-extensions \
+# Install ROS + Gazebo packages
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+        ros-${ROS_DISTRO}-desktop \
+        ros-${ROS_DISTRO}-ros-gz \
+        ros-dev-tools \
     && rm -rf /var/lib/apt/lists/*
+
+# Initialize rosdep
+RUN rosdep init && rosdep update
+
+# Set Gazebo Version
+RUN export GZ_VERSION=fortress
 
 # ------------------------------
 # Source ROS automatically
 # ------------------------------
-RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> ~/.bashrc
+RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" 
 
 # ------------------------------
-# Rendering configuration
+# MoveIt 2 (ROS 2 Humble)
+# ------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ros-${ROS_DISTRO}-moveit \
+        ros-${ROS_DISTRO}-moveit-resources \
+    && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------
+# Rendering / headless configuration
 # ------------------------------
 ENV PYOPENGL_PLATFORM=egl
 ENV DISPLAY=:0
-# Audio dummy for headless compatibility
-ENV SDL_AUDIODRIVER=dummy 
+ENV SDL_AUDIODRIVER=dummy
 ENV ALSA_CARD=none
 
 # ------------------------------
-# ROS workspace
+# ROS workspace for CASPER adapters
 # ------------------------------
 WORKDIR /ros2_ws
-RUN mkdir -p src
 
-# ------------------------------
 # Copy ROS adapters package 
-# ------------------------------
-COPY ros_adapters ./src/ros_adapters
+COPY ros2_ws/src ./src
+
+#COPY ros_adapters ./src/ros_adapters
+RUN rosdep install --from-paths src --ignore-src -r -y
 
 # ------------------------------
-# Build workspace
+# Python dependencies for adapters 
 # ------------------------------
-RUN . /opt/ros/$ROS_DISTRO/setup.sh && colcon build
-
-# ------------------------------
-# Workspace
-# ------------------------------
-WORKDIR /app 
-
-# Copy Python requirements and install
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt && rm requirements.txt
 
 # ------------------------------
-# Always source ROS and workspace for all shells
+# Build workspace
 # ------------------------------
-RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> /etc/bash.bashrc
-RUN echo "source /ros2_ws/install/setup.bash" >> /etc/bash.bashrc
-RUN echo "source /venv/bin/activate" >> /etc/bash.bashrc
+RUN . /opt/ros/$ROS_DISTRO/setup.sh && colcon build --symlink-install
 
+# ------------------------------
+# Workspace
+# ------------------------------
+WORKDIR /app
+
+# ------------------------------
+# Always source ROS, workspace, and venv in all shells
+# ------------------------------
+RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> /etc/bash.bashrc && \
+    echo "source /ros2_ws/install/setup.bash" >> /etc/bash.bashrc 
+ #  &&\ echo "source /venv/bin/activate" >> /etc/bash.bashrc
+
+# ------------------------------
 # Default command
+# ------------------------------
 CMD ["/bin/bash"]

@@ -72,9 +72,12 @@ docker run -it \
   --volume /tmp/.X11-unix:/tmp/.X11-unix \
   --env QT_X11_NO_MITSHM=1 \
   --mount type=bind,source=/home/e10738lb/Development/CASPER_MAS,target=/app/CASPER_MAS,readonly=false,bind-propagation=rslave \
+  -v $(pwd)/ros2_ws:/ros2_ws \
   -w /app/CASPER_MAS \
   --name $CONTAINER_NAME \
   $IMAGE_NAME 
 
 # Revoke X access for security after exit
 xhost -local:root
+
+  

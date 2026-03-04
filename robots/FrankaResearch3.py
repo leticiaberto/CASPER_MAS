@@ -1,5 +1,5 @@
 from src.entities.Agent import Agent
-from ros_adapters.adapters.FrankaMoveItAdapter import FrankaMoveItAdapter
+from robots_adapters.FrankaMoveItAdapter import FrankaMoveItAdapter
 
 class FrankaResearch3(Agent):
     def __init__(self, id, skill_weights, contexts, role, teamsize, use_sim, agent_agnostic=True):
@@ -13,7 +13,7 @@ class FrankaResearch3(Agent):
             "workspace": "station_A"
         }
         super().__init__(id, constraints, skill_weights, contexts, role, teamsize)
-        self.adapter = FrankaMoveItAdapter(use_sim=use_sim, agent_agnostic=agent_agnostic)
+        self.adapter = FrankaMoveItAdapter(id, use_sim=use_sim, agent_agnostic=agent_agnostic)
 
     def start(self):
         self.adapter.initialize()

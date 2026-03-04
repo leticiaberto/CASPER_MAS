@@ -1,5 +1,5 @@
 from src.entities.Agent import Agent
-from ros_adapters.adapters.PepperAdapter import PepperAdapter
+from robots_adapters.PepperAdapter import PepperAdapter
 
 
 class Pepper(Agent):
@@ -13,7 +13,7 @@ class Pepper(Agent):
             "workspace": "global"
         }
         super().__init__(id, constraints, skill_weights, contexts, role, teamsize)
-        self.adapter = PepperAdapter(use_sim=use_sim, agent_agnostic=agent_agnostic)
+        self.adapter = PepperAdapter(id, use_sim=use_sim, agent_agnostic=agent_agnostic)
 
     def start(self):
         self.adapter.initialize()

@@ -102,7 +102,7 @@ def main():
     agent.load_goal(task_file)
     teamComplete = False
     ready = False
-    
+
     try:
         agent.startup()# 1. Start listener (for adding partners), 2. Announce hello, 3. Send my skills
         time.sleep(2)

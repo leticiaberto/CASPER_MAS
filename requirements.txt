@@ -1,7 +1,7 @@
 pyzmq==27.1.0
 PyYAML==6.0.3
-networkx==3.6.1
+networkx==3.4.2
 pydot==4.0.1
 graphviz==0.21
-pygraphviz==1.14
-matplotlib==3.10.8
+pygraphviz>=1.11
+matplotlib

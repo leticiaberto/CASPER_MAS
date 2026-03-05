@@ -120,7 +120,7 @@ WORKDIR /ros2_ws
 COPY ros2_ws/src ./src
 
 #COPY ros_adapters ./src/ros_adapters
-RUN rosdep install --from-paths src --ignore-src -r -y
+RUN rosdep install -i --from-path src --ignore-src --rosdistro $ROS_DISTRO -y
 
 # ------------------------------
 # Python dependencies for adapters 

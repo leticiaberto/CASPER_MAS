@@ -100,20 +100,15 @@ class Agent:
             #print(f"Ready tasks for execution: {ready_tasks}")
             # Inform all the tasks ready to be executed (to improve explanation and trust)
             for task in ready_tasks:
-                self.publish_task_status_update(task, TaskStatus.READY) #Do not need to update local because get_ready_tasks() does
+                self.task_update_status_and_publish(task, TaskStatus.READY, ignore=True) # #Do not need to update local because get_ready_tasks() does
                 time.sleep(6)
-                self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
             # Execute each ready task
             for task in ready_tasks:
-                self.local_graph.update_status(task, TaskStatus.RUNNING)
-                self.publish_task_status_update(task, TaskStatus.RUNNING)
-                self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
+                self.task_update_status_and_publish(task, TaskStatus.RUNNING)
                 time.sleep(3)
                 self._execute_task_specific(task) # Physical execution
                 time.sleep(10)
-                self.local_graph.update_status(task, TaskStatus.DONE)
-                self.publish_task_status_update(task, TaskStatus.DONE)
-                self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
+                self.task_update_status_and_publish(task, TaskStatus.DONE)
                 time.sleep(2)
         if(self.role == Roles.SUPERVISOR):
             if(self.check_all_tasks_done()):# Check everytime in case one can change the status back
@@ -122,6 +117,12 @@ class Agent:
                 time.sleep(2)
                 self.goal_finished = True
 
+    def task_update_status_and_publish(self, task, new_status, ignore=False):
+        if not ignore:
+            self.local_graph.update_status(task, new_status)
+        self.publish_task_status_update(task, new_status)
+        self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
+                
     def check_all_tasks_done(self):
         all_done = all(
             self.global_graph.G.nodes[n]["assignment"].status == TaskStatus.DONE

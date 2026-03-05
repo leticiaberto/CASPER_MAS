@@ -48,7 +48,7 @@ class RealTimeGraphVisualizer:
         while not self.queue.empty():
             self.queue.get()
 
-    def duration_to_size(self, duration, base=3000, scale=2500):
+    def duration_to_size(self, duration, base=4000, scale=2500):
         """
         duration: numeric (seconds, steps, etc.)
         base: minimum node size
@@ -72,7 +72,8 @@ class RealTimeGraphVisualizer:
         labels = {
             n:  f"{self.G.nodes[n]['assignment'].task_id}\n"
                 f"{self.G.nodes[n]['duration']:.1f}s\n"
-                f"{self.G.nodes[n]['assignment'].status.value}"
+                f"{self.G.nodes[n]['assignment'].status.value}\n"
+                f"{self.G.nodes[n]['assignment'].selected_agent}"
             for n in self.G.nodes
         }
 

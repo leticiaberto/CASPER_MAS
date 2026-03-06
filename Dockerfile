@@ -116,8 +116,10 @@ ENV ALSA_CARD=none
 # ------------------------------
 WORKDIR /ros2_ws
 
+RUN mkdir src
+
 # Copy ROS adapters package 
-COPY ros2_ws/src ./src
+COPY ros2_packages/ ./src
 
 #COPY ros_adapters ./src/ros_adapters
 RUN rosdep install -i --from-path src --ignore-src --rosdistro $ROS_DISTRO -y

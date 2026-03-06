@@ -50,11 +50,13 @@ def main():
     optimizeMode = exp_config["optimizeMode"]
 
     USE_SIM = exp_config["USE_SIM"]
-    agent_agnostic = exp_config["agent_agnostic"]
-    print(f"Agent agnostic mode: {agent_agnostic}, USE_SIM={USE_SIM}")
+    mock = exp_config["mock"]
+    print(f"Agent agnostic mode: {mock}, USE_SIM={USE_SIM}")
 
     # Set env ONLY for ROS
     os.environ['USE_SIM'] = str(USE_SIM).lower()
+    os.environ['ROBOT_ID'] = str(robot_id).lower()
+    os.environ['ROBOT_MODEL'] = str(robot_model).lower()
 
    # -------------------------------
     # Launch ROS 2 (simulation or real robot)
@@ -76,7 +78,7 @@ def main():
             role = agent_role,
             teamsize = teamsize,
             use_sim = USE_SIM,
-            agent_agnostic = agent_agnostic,
+            mock = mock,
         )
     elif(robot_model == "FrankaResearch3"):
         agent = FrankaResearch3(
@@ -86,14 +88,14 @@ def main():
             role = agent_role,
             teamsize = teamsize,
             use_sim = USE_SIM,
-            agent_agnostic = agent_agnostic,
+            mock = mock,
         )
     else:
         raise ValueError(f"Unknown agent model: {robot_model}")
         
     print(f"Agent {robot_id} starting up...")
 
-    agent.start()   # start ROS if needed
+    agent.start_adapter()   # start ROS if needed
 
     if(debug):
         agent.skills.print_skills_preferences()
@@ -132,9 +134,10 @@ def main():
 
     finally:
         agent.closeComm()
-        agent.stop()     # clean exit
+        agent.shutdown_adapter()     # clean exit
+    
     agent.closeComm()
-    agent.stop()
+    agent.shutdown_adapter()
 
 main()
 """"

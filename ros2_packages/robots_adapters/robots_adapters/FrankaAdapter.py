@@ -1,82 +1,146 @@
 import time
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import PoseStamped
+from rclpy.action import ActionClient
 
-from moveit.planning import MoveItPy
+from geometry_msgs.msg import PoseStamped
+from moveit_msgs.action import MoveGroup
+from moveit_msgs.msg import MotionPlanRequest, Constraints, PositionConstraint
+from shape_msgs.msg import SolidPrimitive
+from geometry_msgs.msg import Pose
 
 from robots_adapters.ros_context import ROSContextManager
 
 class FrankaAdapter:
     def __init__(self, robot_id, use_sim=True, mock=False):
         self.robot_id = robot_id
-        self.namespace = f"/{robot_id}"
-        self.node_name = f"{robot_id}_moveit_adapter"
+        self.namespace = f"/{robot_id}"  # namespace per robot
+        self.node_name = f"{robot_id}_adapter"
+
         self.use_sim = use_sim
         self.mock = mock
 
         self.node: Node = None
-        self.moveit: MoveItPy = None
-        self.planning_component = None
-        self.current_handle = None
+        self.move_client: ActionClient = None
+        self.goal_handle = None
 
         print(f"[FrankaAdapter] id={robot_id} sim={use_sim} mock={mock}")
 
+    # -----------------------------
+    # Initialization
+    # -----------------------------
     def initialize(self):
         if self.mock:
-            print("[FrankaAdapter] MOCK mode — no ROS started")
+            print(f"[{self.robot_id}] MOCK mode — no ROS node started")
             return
 
+        # Acquire shared ROS context
         ROSContextManager.acquire()
-        self.node = Node(self.node_name, namespace=self.namespace)
-        self.moveit = MoveItPy(node=self.node)
-        self.planning_component = self.moveit.get_planning_component("panda_arm")
-        print(f"[FrankaAdapter] MoveItPy ready for {self.robot_id}")
 
+        # Create node in the robot namespace
+        self.node = Node(self.node_name, namespace=self.namespace)
+        ROSContextManager.add_node(self.node)
+
+        # Connect to MoveIt action server under the namespace
+        move_action_name = f"{self.namespace}/move_action"
+        self.move_client = ActionClient(self.node, MoveGroup, move_action_name)
+
+        self.node.get_logger().info(f"[{self.robot_id}] Waiting for MoveGroup server at '{move_action_name}'...")
+        self.move_client.wait_for_server()
+        self.node.get_logger().info(f"[{self.robot_id}] Connected to MoveGroup server")
+
+    # -----------------------------
+    # Shutdown
+    # -----------------------------
     def shutdown(self):
         if self.mock:
             return
+
         if self.node:
+            ROSContextManager.remove_node(self.node)
             self.node.destroy_node()
         ROSContextManager.release()
 
-    # -------------------------------
-    # Motion with async handle
-    # -------------------------------
+    # -----------------------------
+    # Motion commands
+    # -----------------------------
     def move_to_pose(self, xyz, wait=True):
         if self.mock:
             print(f"[MOCK {self.robot_id}] Move to {xyz}")
             time.sleep(1)
             return True
 
-        pose = PoseStamped()
-        pose.header.frame_id = "panda_link0"
-        pose.pose.position.x, pose.pose.position.y, pose.pose.position.z = xyz
-        pose.pose.orientation.w = 1.0
+        # Build goal message
+        goal_msg = MoveGroup.Goal()
+        req = MotionPlanRequest()
+        req.group_name = "panda_arm"
+        req.allowed_planning_time = 5.0
 
-        self.planning_component.set_goal_state(pose_stamped_msg=pose, pose_link="panda_link8")
-        plan = self.planning_component.plan()
-        if not plan:
-            print(f"[{self.robot_id}] Planning failed")
+        # Position constraint
+        constraint = Constraints()
+        pos_constraint = PositionConstraint()
+        pos_constraint.link_name = "panda_link8"
+
+        primitive = SolidPrimitive()
+        primitive.type = SolidPrimitive.BOX
+        primitive.dimensions = [0.01, 0.01, 0.01]
+
+        pose = Pose()
+        pose.position.x = xyz[0]
+        pose.position.y = xyz[1]
+        pose.position.z = xyz[2]
+        pose.orientation.w = 1.0
+
+        pos_constraint.constraint_region.primitives.append(primitive)
+        pos_constraint.constraint_region.primitive_poses.append(pose)
+        pos_constraint.weight = 1.0
+
+        constraint.position_constraints.append(pos_constraint)
+        req.goal_constraints.append(constraint)
+        goal_msg.request = req
+
+        self.node.get_logger().info(f"[{self.robot_id}] Sending MoveGroup goal: {xyz}")
+
+        # Send goal asynchronously
+        send_goal_future = self.move_client.send_goal_async(goal_msg)
+
+        # Wait for goal acceptance
+        rclpy.spin_until_future_complete(self.node, send_goal_future)
+        self.goal_handle = send_goal_future.result()
+        if not self.goal_handle.accepted:
+            self.node.get_logger().error(f"[{self.robot_id}] Goal rejected")
             return False
 
-        self.current_handle = self.planning_component.execute_async(plan)
+        # Get result future
+        result_future = self.goal_handle.get_result_async()
+
         if wait:
-            while not self.current_handle.done():
-                time.sleep(0.05)
-            return self.current_handle.result()
-        return self.current_handle
+            # Non-blocking spin loop for this node only
+            rclpy.spin_until_future_complete(self.node, result_future)
+            result = result_future.result().result
+            return result
 
+        return result_future
+
+    # -----------------------------
+    # Stop / cancel motion
+    # -----------------------------
     def stop(self):
-        if self.current_handle and not self.current_handle.done():
-            self.current_handle.cancel()
-            print(f"[{self.robot_id}] Motion preempted")
+        if self.goal_handle and not self.goal_handle.done():
+            cancel_future = self.goal_handle.cancel_goal_async()
+            rclpy.spin_until_future_complete(self.node, cancel_future)
+            print(f"[{self.robot_id}] Motion cancelled")
 
-# -------------------------------
-# Optional ROS Node entry point
-# -------------------------------
+
+# -----------------------------
+# Optional standalone test
+# -----------------------------
 def main(args=None):
-    adapter = FrankaAdapter(robot_id="franka_1", use_sim=True, mock=False)
-    adapter.initialize()
-    adapter.move_to_pose([0.4, 0.2, 0.3])
-    adapter.shutdown()
+    franka1 = FrankaAdapter("franka_1", use_sim=True, mock=False)
+    franka1.initialize()
+    # Move both robots concurrently
+    franka1.move_to_pose([0.4, 0.1, 0.4], wait=True)
+    # Add small sleep to observe mock logs
+    time.sleep(1)
+    franka1.stop()
+    franka1.shutdown()

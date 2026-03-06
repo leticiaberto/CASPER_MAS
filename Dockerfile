@@ -101,6 +101,9 @@ RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash"
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ros-${ROS_DISTRO}-moveit \
         ros-${ROS_DISTRO}-moveit-resources \
+        ros-${ROS_DISTRO}-moveit-resources-panda-moveit-config \
+        ros-${ROS_DISTRO}-ros2-control \
+        ros-${ROS_DISTRO}-ros2-controllers \
     && rm -rf /var/lib/apt/lists/*
 
 # ------------------------------

@@ -1,8 +1,8 @@
 from src.entities.Agent import Agent
-from robots_adapters.FrankaMoveItAdapter import FrankaMoveItAdapter
+from robots_adapters.FrankaAdapter import FrankaAdapter
 
 class FrankaResearch3(Agent):
-    def __init__(self, id, skill_weights, contexts, role, teamsize, use_sim, agent_agnostic=True):
+    def __init__(self, id, skill_weights, contexts, role, teamsize, use_sim, mock=False):
         constraints={
             "can_move": False,
             "can_manipulate": True,
@@ -13,13 +13,16 @@ class FrankaResearch3(Agent):
             "workspace": "station_A"
         }
         super().__init__(id, constraints, skill_weights, contexts, role, teamsize)
-        self.adapter = FrankaMoveItAdapter(id, use_sim=use_sim, agent_agnostic=agent_agnostic)
+        self.adapter = FrankaAdapter(id, use_sim=use_sim, mock=mock)
 
-    def start(self):
+    def start_adapter(self):
         self.adapter.initialize()
     
-    def stop(self):
+    def shutdown_adapter(self):
         self.adapter.shutdown()
+
+    def stop_adapter(self):
+        self.adapter.stop()
 
     def _execute_task_specific(self, task):
         print(f"{self.id} executing {task}")

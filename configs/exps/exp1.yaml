@@ -4,5 +4,5 @@ team_size: 3
 top_k: 2
 optimizeMode: skill
 
-agent_agnostic: True  # True = ROS-agnostic test, False = use ROS/MoveIt
-USE_SIM: False          # True = simulation mode, False = real robot
+mock: False  # True = ROS-agnostic test, False = use ROS/MoveIt
+USE_SIM: True          # True = simulation mode, False = real robot

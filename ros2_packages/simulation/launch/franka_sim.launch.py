@@ -10,9 +10,6 @@ def generate_launch_description():
     pkg_sim = get_package_share_directory('simulation')
     world_path = os.path.join(pkg_sim, 'worlds', 'franka.sdf')
     models_path = os.path.join(pkg_sim, 'models')
-    print(models_path)
-    # Make sure IGN_GAZEBO_RESOURCE_PATH includes your models folder
-    ign_resource_path = models_path + ":" + os.environ.get("IGN_GAZEBO_RESOURCE_PATH", "")
 
     return LaunchDescription([
         # Set environment variable so it's visible to Gazebo subprocess

@@ -106,7 +106,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ros-${ROS_DISTRO}-ros2-controllers \
     && rm -rf /var/lib/apt/lists/*
 
-# ------------------------------
+# ------------------------------ 
 # Rendering / headless configuration
 # ------------------------------
 ENV PYOPENGL_PLATFORM=egl
@@ -115,8 +115,8 @@ ENV SDL_AUDIODRIVER=dummy
 ENV ALSA_CARD=none
 
 # ------------------------------
-# ROS workspace for CASPER adapters
-# ------------------------------
+# ROS workspace for CASPER adapters and simulation 
+# ------------------------------  
 WORKDIR /ros2_ws
 
 RUN mkdir src
@@ -124,7 +124,6 @@ RUN mkdir src
 # Copy ROS adapters package 
 COPY ros2_packages/ ./src
 
-#COPY ros_adapters ./src/ros_adapters
 RUN rosdep install -i --from-path src --ignore-src --rosdistro $ROS_DISTRO -y
 
 # ------------------------------
@@ -136,7 +135,7 @@ RUN pip3 install --no-cache-dir -r requirements.txt && rm requirements.txt
 # ------------------------------
 # Build workspace
 # ------------------------------
-RUN . /opt/ros/$ROS_DISTRO/setup.sh && colcon build --symlink-install
+RUN . /opt/ros/$ROS_DISTRO/setup.sh && rm -rf build install log && colcon build --symlink-install
 
 # ------------------------------
 # Workspace

@@ -82,6 +82,9 @@ RUN apt-get update && apt-get upgrade -y \
         ros-${ROS_DISTRO}-desktop \
         ros-${ROS_DISTRO}-ros-gz \
         ros-dev-tools \
+        ros-${ROS_DISTRO}-gazebo-ros-pkgs \
+        ros-${ROS_DISTRO}-ros-ign-bridge \
+        ros-${ROS_DISTRO}-xacro \
     && rm -rf /var/lib/apt/lists/*
 
 # Initialize rosdep
@@ -116,18 +119,22 @@ ENV ALSA_CARD=none
 
 # ------------------------------
 # ROS workspace for CASPER adapters and simulation 
-# ------------------------------  
+# ------------------------------ 
 WORKDIR /ros2_ws
 
 RUN mkdir src
 
-# Copy ROS adapters package 
+# Copy ROS pacakages
 COPY ros2_packages/ ./src
+
+# Clone franka_description only if it doesn't exist
+RUN cd src && \
+    [ ! -d franka_description ] && git clone https://github.com/frankarobotics/franka_description.git || echo "franka_description exists, skipping"
 
 RUN rosdep install -i --from-path src --ignore-src --rosdistro $ROS_DISTRO -y
 
 # ------------------------------
-# Python dependencies for adapters 
+# Python dependencies 
 # ------------------------------
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt && rm requirements.txt

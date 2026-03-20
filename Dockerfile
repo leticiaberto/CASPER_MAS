@@ -82,21 +82,26 @@ RUN apt-get update && apt-get upgrade -y \
         ros-${ROS_DISTRO}-desktop \
         ros-${ROS_DISTRO}-ros-gz \
         ros-dev-tools \
-        ros-${ROS_DISTRO}-gazebo-ros-pkgs \
         ros-${ROS_DISTRO}-ros-ign-bridge \
         ros-${ROS_DISTRO}-xacro \
+        # Ignition Fortress specific (replaces gazebo-ros-pkgs for Ignition)
+        ros-${ROS_DISTRO}-ros-gz-sim \
+        ros-${ROS_DISTRO}-ros-gz-bridge \
+        ros-${ROS_DISTRO}-gz-ros2-control \
+        ros-${ROS_DISTRO}-ign-ros2-control \
     && rm -rf /var/lib/apt/lists/*
 
 # Initialize rosdep
 RUN rosdep init && rosdep update
 
-# Set Gazebo Version
-RUN export GZ_VERSION=fortress
+# Set Gazebo Version — must be ENV not export (export doesn't persist between layers)
+ENV GZ_VERSION=fortress
+ENV IGN_VERSION=fortress
 
 # ------------------------------
 # Source ROS automatically
 # ------------------------------
-RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" 
+RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> ~/.bashrc
 
 # ------------------------------
 # MoveIt 2 (ROS 2 Humble)
@@ -107,6 +112,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ros-${ROS_DISTRO}-moveit-resources-panda-moveit-config \
         ros-${ROS_DISTRO}-ros2-control \
         ros-${ROS_DISTRO}-ros2-controllers \
+        # Controller types
+        ros-${ROS_DISTRO}-joint-trajectory-controller \
+        ros-${ROS_DISTRO}-joint-state-broadcaster \
+        ros-${ROS_DISTRO}-controller-manager \
     && rm -rf /var/lib/apt/lists/*
 
 # ------------------------------ 
@@ -119,7 +128,7 @@ ENV ALSA_CARD=none
 
 # ------------------------------
 # ROS workspace for CASPER adapters and simulation 
-# ------------------------------ 
+# ------------------------------
 WORKDIR /ros2_ws
 
 RUN mkdir src

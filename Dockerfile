@@ -127,9 +127,19 @@ RUN mkdir src
 # Copy ROS pacakages
 COPY ros2_packages/ ./src
 
-# Clone franka_description only if it doesn't exist
+# ------------------------------
+# Clone franka_description on humble branch only if it doesn't exist. 
+# It clones the specific version used to develop the simulation, which is compatible with Gazebo Fortress. 
+# This avoids potential issues with newer versions of franka_description that may not be compatible with the current setup. 
+# If want the latest version, simply delete "&& cd franka_description && git checkout 2c4610f4df7e736b44882483598856819cd6b6f6"
+# If the directory already exists, it skips cloning to save time and bandwidth.
+# ------------------------------
 RUN cd src && \
-    [ ! -d franka_description ] && git clone https://github.com/frankarobotics/franka_description.git || echo "franka_description exists, skipping"
+    if [ ! -d franka_description ]; then \
+        git clone --branch humble --single-branch https://github.com/frankarobotics/franka_description.git && cd franka_description && git checkout 2c4610f4df7e736b44882483598856819cd6b6f6; \
+    else \
+        echo "franka_description already exists, skipping clone"; \
+    fi
 
 RUN rosdep install -i --from-path src --ignore-src --rosdistro $ROS_DISTRO -y
 

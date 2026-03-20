@@ -7,6 +7,8 @@
   <maintainer email="leticia.berto@manchester.ac.uk">Leticia Berto</maintainer>
   <license>Apache-2.0</license>
 
+  <depend>franka_description</depend>
+  
   <export>
     <build_type>ament_cmake</build_type>
   </export>

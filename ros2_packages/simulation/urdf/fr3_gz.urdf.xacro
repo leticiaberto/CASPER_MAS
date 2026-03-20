@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="fr3">
+
+  <xacro:arg name="arm_prefix"      default="" />
+  <xacro:arg name="robot_namespace" default="" />
+  <xacro:arg name="controllers_file" default="" />   <!-- add this -->
+  <!--
+    ros2_control:=false  → skip upstream's broken gz_ros2_control block
+    gazebo:=false        → skip ROS1 transmissions
+    We add our own correct ign_ros2_control block below.
+  -->
+  <xacro:include filename="$(find franka_description)/robots/fr3/fr3.urdf.xacro"/>
+
+  <!-- ── Correct plugin for Ignition Fortress ─────────────────────────── -->
+  <gazebo>
+    <plugin
+      filename="ign_ros2_control-system"
+      name="ign_ros2_control::IgnitionROS2ControlPlugin">
+      <ros>
+        <namespace>$(arg robot_namespace)</namespace>
+      </ros>
+      <parameters>$(arg controllers_file)</parameters>
+    </plugin>
+  </gazebo>
+
+  <!-- ── ros2_control block with IgnitionSystem hardware ──────────────── -->
+  <ros2_control name="$(arg arm_prefix)_fr3_ign" type="system">
+    <hardware>
+      <plugin>ign_ros2_control/IgnitionSystem</plugin>
+    </hardware>
+
+    <joint name="$(arg arm_prefix)_fr3_joint1">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="$(arg arm_prefix)_fr3_joint2">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">-0.785398</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="$(arg arm_prefix)_fr3_joint3">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="$(arg arm_prefix)_fr3_joint4">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">-2.356194</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="$(arg arm_prefix)_fr3_joint5">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="$(arg arm_prefix)_fr3_joint6">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">1.570796</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="$(arg arm_prefix)_fr3_joint7">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.785398</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="$(arg arm_prefix)_fr3_finger_joint1">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+</robot>

@@ -93,7 +93,7 @@ def generate_launch_description():
         SetEnvironmentVariable(
             name='IGN_GAZEBO_RESOURCE_PATH',
             value=os.pathsep.join([
-                os.path.join(get_package_share_directory('franka_description'), 'share'),
+                os.path.dirname(get_package_share_directory('franka_description')),
                 models_path
             ])
         ),

@@ -1,7 +1,6 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import (TimerAction, IncludeLaunchDescription,
-                             SetEnvironmentVariable, RegisterEventHandler)
+from launch.actions import (TimerAction, IncludeLaunchDescription, SetEnvironmentVariable, RegisterEventHandler)
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, PathJoinSubstitution
@@ -33,8 +32,9 @@ def generate_launch_description():
         launch_arguments={'gz_args': f'-r {world_path}'}.items()
     )
 
-    # ── Robot 1 ──────────────────────────────────────────────────────────────
-
+    # ------------------------------
+    # Robot 1
+    # ------------------------------
     robot1_rsp = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -60,7 +60,7 @@ def generate_launch_description():
         arguments=[
             '-name', 'fr3_1',
             '-topic', '/robot1/robot_description',
-            '-x', '0.0', '-y', '0.0', '-z', '0.0',
+            '-x', '-0.3', '-y', '0.0', '-z', '1.1',
         ],
         output='screen'
     )
@@ -86,8 +86,10 @@ def generate_launch_description():
         output='screen'
     )
 
-    # ── Robot 2 ──────────────────────────────────────────────────────────────
-
+    
+    # ------------------------------
+    # Robot 2
+    # ------------------------------
     robot2_rsp = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -113,7 +115,7 @@ def generate_launch_description():
         arguments=[
             '-name', 'fr3_2',
             '-topic', '/robot2/robot_description',
-            '-x', '1.5', '-y', '0.0', '-z', '0.0',
+            '-x', '0.5', '-y', '0.0', '-z', '1.1',
         ],
         output='screen'
     )
@@ -139,8 +141,10 @@ def generate_launch_description():
         output='screen'
     )
 
-    # ── Event-driven controller startup ──────────────────────────────────────
 
+    # ------------------------------
+    # Event-driven controller startup
+    # ------------------------------
     start_r1_jsb = RegisterEventHandler(
         OnProcessExit(target_action=spawn_robot1, on_exit=[robot1_jsb])
     )

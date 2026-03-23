@@ -18,8 +18,13 @@ CHECKSUM_FILE=".dockerfile_checksum"
 # Allow Docker (root) to access X server
 # ---------------------------
 xhost +SI:localuser:$(whoami)
-#xhost +local:docker #root
 
+# ---------------------------
+# Setup Xauthority for container access
+# ---------------------------
+XAUTH_FILE=/tmp/.docker.xauth
+xauth nlist $DISPLAY | sed -e 's/^..../ffff/' | xauth -f $XAUTH_FILE nmerge -
+chmod 777 $XAUTH_FILE
 
 # ---------------------------
 # Check Dockerfile / requirements / ros2_packages changes and rebuild image if needed
@@ -48,7 +53,7 @@ else
 fi
 
 # ---------------------------
-# Stop and remove any existing ADIRL container (if still running)
+# Stop and remove any existing container (if still running)
 # ---------------------------
 if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
   echo "🛑 Stopping existing $CONTAINER_NAME..."
@@ -71,16 +76,18 @@ fi
 export LIBGL_ALWAYS_INDIRECT=0
 
 # ---------------------------
-# Launch ADIRL container (add --rm to auto-deletes on exit):
+# Launch container:
 # ---------------------------
 docker run -it \
     --gpus all \
     --device=/dev/dri \
     -e NVIDIA_DRIVER_CAPABILITIES=all \
     -e DISPLAY=$DISPLAY \
+    -e XAUTHORITY=$XAUTH_FILE \
     -e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
     -e QT_X11_NO_MITSHM=1 \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -v $XAUTH_FILE:$XAUTH_FILE \
     --ipc=host \
     --mount type=bind,source=/home/e10738lb/Development/CASPER_MAS,target=/app/CASPER_MAS,readonly=false,bind-propagation=rslave \
     -v $(pwd)/ros2_packages:/ros2_ws/src \
@@ -90,5 +97,8 @@ docker run -it \
 
 docker stop $CONTAINER_NAME
 
-# Revoke X access for security after exit
+# ---------------------------
+# Cleanup on exit
+# ---------------------------
 xhost -SI:localuser:$(whoami)
+rm -f $XAUTH_FILE

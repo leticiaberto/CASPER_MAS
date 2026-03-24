@@ -1,0 +1,57 @@
+"""
+Launch just the world without any robots
+ros2 launch simulation world.launch.py world_name:=franka
+"""
+
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable
+from launch.substitutions import LaunchConfiguration
+from launch.actions import IncludeLaunchDescription, OpaqueFunction
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
+import os
+
+
+def launch_setup(context, *args, **kwargs):
+    world_name = LaunchConfiguration('world_name').perform(context)
+
+    pkg_sim = get_package_share_directory('simulation')
+    world_path = os.path.join(pkg_sim, 'worlds', f'{world_name}.sdf')
+
+    if not os.path.exists(world_path):
+        raise FileNotFoundError(f"World file not found: {world_path}")
+
+    gz_sim = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory('ros_gz_sim'),
+                'launch', 'gz_sim.launch.py'
+            )
+        ),
+        launch_arguments={'gz_args': f'-r {world_path}'}.items()
+    )
+
+    return [gz_sim]
+
+
+def generate_launch_description():
+    pkg_sim = get_package_share_directory('simulation')
+    models_path = os.path.join(pkg_sim, 'models')
+
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            'world_name',
+            default_value='franka',
+            description='Name of the world file (without .sdf extension) inside worlds/'
+        ),
+
+        SetEnvironmentVariable(
+            name='IGN_GAZEBO_RESOURCE_PATH',
+            value=os.pathsep.join([
+                os.path.dirname(get_package_share_directory('franka_description')),
+                models_path
+            ])
+        ),
+
+        OpaqueFunction(function=launch_setup),
+    ])

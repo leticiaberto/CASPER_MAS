@@ -3,13 +3,13 @@
 <package format="3">
   <name>simulation</name>
   <version>0.0.0</version>
-  <description>Simulation package for Franka Emika Panda robot</description>
+  <description>Simulation package for Gazebo</description>
   <maintainer email="leticia.berto@manchester.ac.uk">Leticia Berto</maintainer>
   <license>Apache-2.0</license>
 
   <depend>franka_description</depend>
   
   <export>
-    <build_type>ament_cmake</build_type>
+    <build_type>ament_python</build_type>
   </export>
 </package>

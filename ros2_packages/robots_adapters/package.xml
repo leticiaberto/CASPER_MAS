@@ -16,10 +16,12 @@
     <build_type>ament_python</build_type>
   </export>
 
-  <depend>rclpy</depend>
-  <depend>geometry_msgs</depend>
-  <depend>moveit_msgs</depend>
-  <depend>control_msgs</depend>
+  <!--<depend>moveit_msgs</depend>--> <!-- Not used — we talk directly to the controller, not MoveIt --> 
+
+  <depend>rclpy</depend> <!-- Core ROS2 Python runtime -->
+  <depend>control_msgs</depend> <!-- FollowJointTrajectory action -->
+  <depend>trajectory_msgs</depend> <!-- JointTrajectory, JointTrajectoryPoint -->
+  <depend>builtin_interfaces</depend> <!-- Duration (used in trajectory points) -->
 
   <exec_depend>ros2launch</exec_depend>
 

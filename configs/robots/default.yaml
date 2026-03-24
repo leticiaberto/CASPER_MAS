@@ -1,6 +1,6 @@
 debug: False
 robot_model: FrankaResearch3
-robot_id: default
+robot_id: fr3_default
 
 skill_weights:  #[skill weight, preference weight]
   delivery:

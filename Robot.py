@@ -8,6 +8,20 @@ from pathlib import Path
 import subprocess
 import os
 
+def launch_robot(launch_file: str, robot_name: str, x_pos: str, 
+                 y_pos: str = '0.0', z_pos: str = '1.03', yaw: str = '0.0', spawn_delay: str = '3.0'):
+    cmd = [
+        'ros2', 'launch', 'robots_adapters', launch_file,
+        f'robot_name:={robot_name}',
+        f'x_pos:={x_pos}',
+        f'y_pos:={y_pos}',
+        f'z_pos:={z_pos}',
+        f'yaw:={yaw}',
+        f'spawn_delay:={spawn_delay}',
+    ]
+    return subprocess.Popen(cmd)  # non-blocking
+
+
 def main():
     folder_path = Path("data")
     folder_path.mkdir(parents=True, exist_ok=True) # create folder if it does not exist
@@ -31,6 +45,13 @@ def main():
 
     robot_model = robot_config["robot_model"]
     robot_id = robot_config["robot_id"]
+    
+    x_pos = robot_config.get("x_pos", "0.0")
+    y_pos = robot_config.get("y_pos", "0.0")
+    z_pos = robot_config.get("z_pos", "1.0")
+    yaw = robot_config.get("yaw", "0.0")
+    spawn_delay = robot_config.get("spawn_delay", "3.0")
+
     skill_weights = robot_config["skill_weights"]
 
     contexts = list(skill_weights.keys())
@@ -53,19 +74,7 @@ def main():
     mock = exp_config["mock"]
     print(f"Agent agnostic mode: {mock}, USE_SIM={USE_SIM}")
 
-    # Set env ONLY for ROS
-    os.environ['USE_SIM'] = str(USE_SIM).lower()
-    os.environ['ROBOT_ID'] = str(robot_id).lower()
-    os.environ['ROBOT_MODEL'] = str(robot_model).lower()
-
-   # -------------------------------
-    # Launch ROS 2 (simulation or real robot)
-    # -------------------------------
-    subprocess.Popen(
-        ["ros2", "launch", "ros_adapters",
-        "sim.launch.py" if USE_SIM else "real.launch.py"],
-        env=os.environ.copy()
-    )
+    launch_file = None
 
     # ===================================================
     # Instantiate robot
@@ -81,7 +90,9 @@ def main():
             mock = mock,
         )
     elif(robot_model == "FrankaResearch3"):
-        agent = FrankaResearch3(
+        subprocess.run(["python3", "ros2_packages/robots_adapters/scripts/franka_generate_config.py", f"{robot_id}"])
+        launch_file = 'franka_sim.launch.py'
+        """agent = FrankaResearch3(
             id=robot_id, 
             skill_weights = skill_weights,
             contexts = contexts, 
@@ -89,10 +100,26 @@ def main():
             teamsize = teamsize,
             use_sim = USE_SIM,
             mock = mock,
-        )
+        )"""
     else:
         raise ValueError(f"Unknown agent model: {robot_model}")
-        
+    
+    ## Launch robot in Gazebo if needed
+    if USE_SIM and launch_file is not None:
+        process = launch_robot(
+                launch_file=launch_file,
+                robot_name=robot_id,
+                x_pos=x_pos,
+                y_pos=y_pos,
+                z_pos=z_pos,
+                yaw=yaw,
+                spawn_delay=spawn_delay
+            )
+        try:
+            process.wait()
+        except KeyboardInterrupt:
+            process.terminate()
+
     print(f"Agent {robot_id} starting up...")
 
     agent.start_adapter()   # start ROS if needed

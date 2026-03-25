@@ -1,3 +1,4 @@
+<?xml version='1.0'?>
 <sdf version='1.9'>
   <world name='empty'>
     <physics name='1ms' type='ignored'>
@@ -17,6 +18,7 @@
       <background>0.7 0.7 0.7 1</background>
       <shadows>true</shadows>
     </scene>
+
     <model name='ground_plane'>
       <static>true</static>
       <link name='link'>
@@ -28,9 +30,7 @@
             </plane>
           </geometry>
           <surface>
-            <friction>
-              <ode/>
-            </friction>
+            <friction><ode/></friction>
             <bounce/>
             <contact/>
           </surface>
@@ -48,26 +48,11 @@
             <specular>0.8 0.8 0.8 1</specular>
           </material>
         </visual>
-        <pose>0 0 0 0 -0 0</pose>
-        <inertial>
-          <pose>0 0 0 0 -0 0</pose>
-          <mass>1</mass>
-          <inertia>
-            <ixx>1</ixx>
-            <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyy>1</iyy>
-            <iyz>0</iyz>
-            <izz>1</izz>
-          </inertia>
-        </inertial>
-        <enable_wind>false</enable_wind>
       </link>
-      <pose>0 0 0 0 -0 0</pose>
-      <self_collide>false</self_collide>
     </model>
+
     <light name='sun' type='directional'>
-      <pose>0 0 10 0 -0 0</pose>
+      <pose>0 0 10 0 0 0</pose>
       <cast_shadows>true</cast_shadows>
       <intensity>1</intensity>
       <direction>-0.5 0.1 -0.9</direction>
@@ -76,19 +61,88 @@
       <attenuation>
         <range>1000</range>
         <linear>0.01</linear>
-        <constant>0.90000000000000002</constant>
+        <constant>0.9</constant>
         <quadratic>0.001</quadratic>
       </attenuation>
-      <spot>
-        <inner_angle>0</inner_angle>
-        <outer_angle>0</outer_angle>
-        <falloff>0</falloff>
-      </spot>
     </light>
+
+    <!-- ==================== TABLE 1 (y=0) ==================== -->
     <include>
-      <uri>
-        model://Table
-      </uri>
-  </include>
+      <uri>model://Table</uri>
+      <name>table_1</name>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <!-- Basket: left side of table 1 (negative Y, not at corner) -->
+    <include>
+      <uri>model://Threshold_Basket_Natural_Finish_Fabric_Liner_Small</uri>
+      <name>basket_1</name>
+      <pose>0 -0.25 1.015 0 0 0</pose>
+    </include>
+
+    <!-- Cubes: right side of table 1 (positive Y) -->
+    <include>
+      <uri>model://cube_red</uri>
+      <name>table1_cube_red_1</name>
+      <pose>0.1 0.25 1.68 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://cube_red</uri>
+      <name>table1_cube_red_2</name>
+      <pose>-0.1 0.25 1.68 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://cube_blue</uri>
+      <name>table1_cube_blue_1</name>
+      <pose>0.1 0.35 1.68 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://cube_blue</uri>
+      <name>table1_cube_blue_2</name>
+      <pose>-0.1 0.35 1.68 0 0 0</pose>
+    </include>
+
+    <!-- ==================== TABLE 2 (y=2) ==================== -->
+    <include>
+      <uri>model://Table</uri>
+      <name>table_2</name>
+      <pose>0 2 0 0 0 0</pose>
+    </include>
+
+    <!-- Basket: left side of table 2 (positive Y relative to table, so y=2+0.25) -->
+    <include>
+      <uri>model://Threshold_Basket_Natural_Finish_Fabric_Liner_Small</uri>
+      <name>basket_2</name>
+      <pose>0 2.25 1.015 0 0 0</pose>
+    </include>
+
+    <!-- Cubes: right side of table 2 (negative Y relative to table, so y=2-0.25) -->
+    <include>
+      <uri>model://cube_red</uri>
+      <name>table2_cube_red_1</name>
+      <pose>0.1 1.75 1.68 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://cube_red</uri>
+      <name>table2_cube_red_2</name>
+      <pose>-0.1 1.75 1.68 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://cube_blue</uri>
+      <name>table2_cube_blue_1</name>
+      <pose>0.1 1.65 1.68 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://cube_blue</uri>
+      <name>table2_cube_blue_2</name>
+      <pose>-0.1 1.65 1.68 0 0 0</pose>
+    </include>
+
   </world>
 </sdf>

@@ -1,0 +1,34 @@
+model {
+  file: "model.sdf"
+}
+name: "Threshold_Basket_Natural_Finish_Fabric_Liner_Small"
+description: "Threshold Basket, Natural Finish, Fabric Liner, Small"
+version: 1
+authors {
+  name: "Google"
+  email: "scanned-objects@google.com"
+}
+legal {
+  copyright: "Copyright 2020 Google LLC."
+  license: "Creative Commons Attribution 4.0 International"
+}
+annotations {
+  key: "brand"
+  value: "Threshold"
+}
+annotations {
+  key: "gtin"
+  value: "00490642003840"
+}
+annotations {
+  key: "sku"
+  value: "00490642003840"
+}
+compatibilities {
+  name: "Gazebo"
+  version {
+    major: 11
+  }
+}
+categories {
+}

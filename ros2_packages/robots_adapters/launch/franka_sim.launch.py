@@ -1,7 +1,7 @@
 """
 Add robots individually (in separate terminals or scripts)
-ros2 launch simulation franka_sim.launch.py robot_name:=robot1 x_pos:=-0.3 spawn_delay:=3.0
-ros2 launch simulation franka_sim.launch.py robot_name:=robot2 x_pos:=0.5  spawn_delay:=3.0
+ros2 launch robots_adapters franka_sim.launch.py robot_name:=robot1 x_pos:=-0.3 spawn_delay:=3.0
+ros2 launch robots_adapters franka_sim.launch.py robot_name:=robot2 x_pos:=0.5  spawn_delay:=3.0
 """
 
 from launch import LaunchDescription
@@ -20,6 +20,7 @@ def launch_setup(context, *args, **kwargs):
     x_pos       = LaunchConfiguration('x_pos').perform(context)
     y_pos       = LaunchConfiguration('y_pos').perform(context)
     z_pos       = LaunchConfiguration('z_pos').perform(context)
+    yaw         = LaunchConfiguration('yaw').perform(context)
     spawn_delay = float(LaunchConfiguration('spawn_delay').perform(context))
 
     pkg_robots = get_package_share_directory('robots_adapters')
@@ -66,6 +67,7 @@ def launch_setup(context, *args, **kwargs):
             '-x', x_pos,
             '-y', y_pos,
             '-z', z_pos,
+            '-Y', yaw,
         ],
         output='screen'
     )
@@ -115,9 +117,10 @@ def generate_launch_description():
             default_value='robot1',
             description='Robot name — used for namespace, arm_prefix, topic and controllers file'
         ),
-        DeclareLaunchArgument('x_pos',       default_value='0.0'),
-        DeclareLaunchArgument('y_pos',       default_value='0.0'),
-        DeclareLaunchArgument('z_pos',       default_value='1.1'),
+        DeclareLaunchArgument('x_pos', default_value='0.0'),
+        DeclareLaunchArgument('y_pos', default_value='0.0'),
+        DeclareLaunchArgument('z_pos', default_value='1.0'),
+        DeclareLaunchArgument('yaw', default_value='0.0'),
         DeclareLaunchArgument(
             'spawn_delay',
             default_value='3.0',

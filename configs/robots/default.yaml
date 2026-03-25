@@ -2,6 +2,11 @@ debug: False
 robot_model: FrankaResearch3
 robot_id: fr3_default
 
+x_pos: 0.3
+y_pos: 0.0
+z_pos: 1.03
+yaw: -3.14
+
 skill_weights:  #[skill weight, preference weight]
   delivery:
     navigation: [0.6, 0.1]

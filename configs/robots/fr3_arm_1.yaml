@@ -4,7 +4,8 @@ robot_id: fr3_arm_1
 
 x_pos: -0.3
 y_pos: 0.0
-z_pos: 1.1
+z_pos: 1.03
+yaw: 0.0
 spawn_delay: 3.0
 
 skill_weights:  #[skill weight, preference weight]

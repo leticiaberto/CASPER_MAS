@@ -3,7 +3,7 @@
 
   <xacro:arg name="arm_prefix"      default="" />
   <xacro:arg name="robot_namespace" default="" />
-  <xacro:arg name="controllers_file" default="" />   <!-- add this -->
+  <xacro:arg name="controllers_file" default="" />  
   <!--
     ros2_control:=false  → skip upstream's broken gz_ros2_control block
     gazebo:=false        → skip ROS1 transmissions
@@ -72,8 +72,24 @@
       <state_interface name="effort"/>
     </joint>
     <joint name="$(arg arm_prefix)_fr3_finger_joint1">
-      <command_interface name="position"/>
-      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <command_interface name="position">
+        <param name="min">0.0</param>
+        <param name="max">0.04</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.04</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="$(arg arm_prefix)_fr3_finger_joint2">
+      <command_interface name="position">
+        <param name="min">0.0</param>
+        <param name="max">0.04</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.04</param>
+      </state_interface>
       <state_interface name="velocity"/>
     </joint>
   </ros2_control>

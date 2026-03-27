@@ -79,6 +79,7 @@ def launch_setup(context, *args, **kwargs):
         arguments=[
             'joint_state_broadcaster',
             '--controller-manager', f'/{robot_name}/controller_manager',
+            '--param-file', controllers_file,
         ],
         output='screen'
     )
@@ -93,13 +94,29 @@ def launch_setup(context, *args, **kwargs):
         ],
         output='screen'
     )
+    
+    # Gripper controller — spawned after arm controller is ready
+    gripper = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=[
+            'gripper_controller',
+            '--controller-manager', f'/{robot_name}/controller_manager',
+            '--param-file', controllers_file,
+        ],
+        output='screen'
+    )
 
     # --- Event chain: spawn → jsb → arm ---
     start_jsb = RegisterEventHandler(
-        OnProcessExit(target_action=spawn, on_exit=[jsb])
+        OnProcessExit(target_action=spawn, on_exit=[TimerAction(period=2.0, actions=[jsb])])
     )
     start_arm = RegisterEventHandler(
         OnProcessExit(target_action=jsb, on_exit=[arm])
+    )
+
+    start_gripper = RegisterEventHandler(
+        OnProcessExit(target_action=arm, on_exit=[gripper])
     )
 
     return [
@@ -107,6 +124,7 @@ def launch_setup(context, *args, **kwargs):
         TimerAction(period=spawn_delay, actions=[spawn]),
         start_jsb,
         start_arm,
+        start_gripper,
     ]
 
 
@@ -114,12 +132,12 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'robot_name',
-            default_value='robot1',
+            default_value='fr3_robot1',
             description='Robot name — used for namespace, arm_prefix, topic and controllers file'
         ),
         DeclareLaunchArgument('x_pos', default_value='0.0'),
         DeclareLaunchArgument('y_pos', default_value='0.0'),
-        DeclareLaunchArgument('z_pos', default_value='1.0'),
+        DeclareLaunchArgument('z_pos', default_value='1.03'),
         DeclareLaunchArgument('yaw', default_value='0.0'),
         DeclareLaunchArgument(
             'spawn_delay',

@@ -50,6 +50,9 @@ def build_config(robot_name: str) -> dict:
                     "arm_controller": {
                         "type": "joint_trajectory_controller/JointTrajectoryController"
                     },
+                    "gripper_controller": {
+                        "type": "joint_trajectory_controller/JointTrajectoryController"
+                    }
                 }
             },
             "joint_state_broadcaster": {
@@ -61,6 +64,20 @@ def build_config(robot_name: str) -> dict:
                 "ros__parameters": {
                    "type": "joint_trajectory_controller/JointTrajectoryController",
                     "joints": [f"{robot_name}_fr3_joint{i}" for i in range(1, 8)],
+                    "command_interfaces": ["position"],
+                    "state_interfaces": ["position", "velocity"],
+                    "state_publish_rate": 100.0,
+                    "action_monitor_rate": 20.0,
+                    "allow_partial_joints_goal": False,
+                }
+            },
+            "gripper_controller": {
+                "ros__parameters": {
+                    "type": "joint_trajectory_controller/JointTrajectoryController",
+                    "joints": [
+                        f"{robot_name}_fr3_finger_joint1",
+                        f"{robot_name}_fr3_finger_joint2"
+                    ],
                     "command_interfaces": ["position"],
                     "state_interfaces": ["position", "velocity"],
                     "state_publish_rate": 100.0,

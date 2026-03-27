@@ -1,6 +1,8 @@
-# ===============================
+# =============================== 
 # Dockerfile for CASPER_MAS Experiments
-# CUDA + ROS 2 Humble + Gazebo + MoveIt 2 + Python + CASPER Adapters
+# CUDA + ROS 2 Humble + Gazebo + Python + CASPER Adapters
+# FR3 (simulation + physical via Franky) + Tiago (simulation only)
+# No MoveIt — uses ikpy for lightweight IK in simulation
 # ===============================
 
 # Base image with CUDA + cuDNN
@@ -104,21 +106,32 @@ ENV IGN_VERSION=fortress
 RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> ~/.bashrc
 
 # ------------------------------
-# MoveIt 2 (ROS 2 Humble)
+# ros2_control + controllers
+# JointTrajectoryController — arm motion
+# GripperActionController   — gripper open/close
+# No MoveIt needed.
 # ------------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ros-${ROS_DISTRO}-moveit \
-        ros-${ROS_DISTRO}-moveit-resources \
-        ros-${ROS_DISTRO}-moveit-resources-panda-moveit-config \
         ros-${ROS_DISTRO}-ros2-control \
         ros-${ROS_DISTRO}-ros2-controllers \
-        # Controller types
         ros-${ROS_DISTRO}-joint-trajectory-controller \
         ros-${ROS_DISTRO}-joint-state-broadcaster \
         ros-${ROS_DISTRO}-controller-manager \
+        ros-${ROS_DISTRO}-gripper-controllers \
+        ros-${ROS_DISTRO}-control-msgs \
     && rm -rf /var/lib/apt/lists/*
 
-# ------------------------------ 
+# ------------------------------
+# Navigation2 — for Tiago mobile base transport
+# ------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ros-${ROS_DISTRO}-navigation2 \
+        ros-${ROS_DISTRO}-nav2-bringup \
+        ros-${ROS_DISTRO}-nav2-simple-commander \
+        ros-${ROS_DISTRO}-nav2-msgs \
+    && rm -rf /var/lib/apt/lists/*
+ 
+# ------------------------------
 # Rendering / headless configuration
 # ------------------------------
 ENV PYOPENGL_PLATFORM=egl
@@ -127,8 +140,8 @@ ENV SDL_AUDIODRIVER=dummy
 ENV ALSA_CARD=none
 
 # ------------------------------
-# ROS workspace for CASPER adapters and simulation 
-# ------------------------------
+# ROS workspace
+# ------------------------------ 
 WORKDIR /ros2_ws
 
 RUN mkdir src
@@ -141,7 +154,7 @@ COPY ros2_packages/ ./src
 # It clones the specific version used to develop the simulation, which is compatible with Gazebo Fortress. 
 # This avoids potential issues with newer versions of franka_description that may not be compatible with the current setup. 
 # If want the latest version, simply delete "&& cd franka_description && git checkout 2c4610f4df7e736b44882483598856819cd6b6f6"
-# If the directory already exists, it skips cloning to save time and bandwidth.
+# If the directory already exists, it skips cloning to save time and bandwidth. 
 # ------------------------------
 RUN cd src && \
     if [ ! -d franka_description ]; then \
@@ -149,8 +162,30 @@ RUN cd src && \
     else \
         echo "franka_description already exists, skipping clone"; \
     fi
+# ------------------------------ 
+# Tiago source clone
+# ------------------------------
+RUN cd src && \
+    if [ ! -d tiago_robot ]; then \
+        git clone --branch humble-devel --single-branch \
+            https://github.com/pal-robotics/tiago_robot.git; \
+    fi && \
+    if [ ! -d tiago_simulation ]; then \
+        git clone --branch humble-devel --single-branch \
+            https://github.com/pal-robotics/tiago_simulation.git; \
+    fi
 
-RUN rosdep install -i --from-path src --ignore-src --rosdistro $ROS_DISTRO -y
+RUN cd src && \
+    if [ ! -d pmb2_robot ]; then \
+        git clone --branch humble-devel --single-branch \
+            https://github.com/pal-robotics/pmb2_robot.git; \
+    fi && \
+    if [ ! -d pmb2_simulation ]; then \
+        git clone --branch humble-devel --single-branch \
+            https://github.com/pal-robotics/pmb2_simulation.git; \
+    fi
+
+RUN apt-get update && rosdep install -i --from-path src --ignore-src --rosdistro $ROS_DISTRO -y --skip-keys="diagnostic_aggregator urdf_test"
 
 # ------------------------------
 # Python dependencies 
@@ -161,7 +196,8 @@ RUN pip3 install --no-cache-dir -r requirements.txt && rm requirements.txt
 # ------------------------------
 # Build workspace
 # ------------------------------
-RUN . /opt/ros/$ROS_DISTRO/setup.sh && rm -rf build install log && colcon build --symlink-install
+RUN . /opt/ros/$ROS_DISTRO/setup.sh && rm -rf build install log && colcon build --symlink-install 
+#--cmake-args -DBUILD_TESTING=OFF
 
 # ------------------------------
 # Workspace
@@ -169,11 +205,10 @@ RUN . /opt/ros/$ROS_DISTRO/setup.sh && rm -rf build install log && colcon build 
 WORKDIR /app
 
 # ------------------------------
-# Always source ROS, workspace, and venv in all shells
+# Always source ROS, workspace
 # ------------------------------
 RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> /etc/bash.bashrc && \
     echo "source /ros2_ws/install/setup.bash" >> /etc/bash.bashrc 
- #  &&\ echo "source /venv/bin/activate" >> /etc/bash.bashrc
 
 # ------------------------------
 # Default command

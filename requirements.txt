@@ -5,3 +5,6 @@ pydot==4.0.1
 graphviz==0.21
 pygraphviz>=1.11
 matplotlib==3.5.1
+ikpy
+scipy
+numpy

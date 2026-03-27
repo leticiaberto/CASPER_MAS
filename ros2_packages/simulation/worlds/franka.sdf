@@ -77,32 +77,32 @@
     <include>
       <uri>model://Threshold_Basket_Natural_Finish_Fabric_Liner_Small</uri>
       <name>basket_1</name>
-      <pose>0 -0.25 1.015 0 0 0</pose>
+      <pose>0 -0.25 1.01 0 0 0</pose>
     </include>
 
     <!-- Cubes: right side of table 1 (positive Y) -->
     <include>
       <uri>model://cube_red</uri>
       <name>table1_cube_red_1</name>
-      <pose>0.1 0.25 1.68 0 0 0</pose>
+      <pose>0.1 0.25 1.04 0 0 0</pose>
     </include>
 
     <include>
       <uri>model://cube_red</uri>
       <name>table1_cube_red_2</name>
-      <pose>-0.1 0.25 1.68 0 0 0</pose>
+      <pose>-0.1 0.25 1.04 0 0 0</pose>
     </include>
 
     <include>
       <uri>model://cube_blue</uri>
       <name>table1_cube_blue_1</name>
-      <pose>0.1 0.35 1.68 0 0 0</pose>
+      <pose>0.1 0.35 1.04 0 0 0</pose>
     </include>
 
     <include>
       <uri>model://cube_blue</uri>
       <name>table1_cube_blue_2</name>
-      <pose>-0.1 0.35 1.68 0 0 0</pose>
+      <pose>-0.1 0.35 1.04 0 0 0</pose>
     </include>
 
     <!-- ==================== TABLE 2 (y=2) ==================== -->
@@ -116,32 +116,32 @@
     <include>
       <uri>model://Threshold_Basket_Natural_Finish_Fabric_Liner_Small</uri>
       <name>basket_2</name>
-      <pose>0 2.25 1.015 0 0 0</pose>
+      <pose>0 2.25 1.01 0 0 0</pose>
     </include>
 
     <!-- Cubes: right side of table 2 (negative Y relative to table, so y=2-0.25) -->
     <include>
       <uri>model://cube_red</uri>
       <name>table2_cube_red_1</name>
-      <pose>0.1 1.75 1.68 0 0 0</pose>
+      <pose>0.1 1.75 1.04 0 0 0</pose>
     </include>
 
     <include>
       <uri>model://cube_red</uri>
       <name>table2_cube_red_2</name>
-      <pose>-0.1 1.75 1.68 0 0 0</pose>
+      <pose>-0.1 1.75 1.04 0 0 0</pose>
     </include>
 
     <include>
       <uri>model://cube_blue</uri>
       <name>table2_cube_blue_1</name>
-      <pose>0.1 1.65 1.68 0 0 0</pose>
+      <pose>0.1 1.65 1.04 0 0 0</pose>
     </include>
 
     <include>
       <uri>model://cube_blue</uri>
       <name>table2_cube_blue_2</name>
-      <pose>-0.1 1.65 1.68 0 0 0</pose>
+      <pose>-0.1 1.65 1.04 0 0 0</pose>
     </include>
 
   </world>

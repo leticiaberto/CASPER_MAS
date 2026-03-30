@@ -65,15 +65,24 @@ XYZ = Tuple[float, float, float]
 _APPROACH_HEIGHT = 0.12
 
 # Time allocated per waypoint (seconds).
-# Increase this to slow down movements. At real-time sim speed:
-#   3s = fast (may cause instability on large joint moves)
-#   5s = safe default for pick-and-place
-#   8s = very slow and stable
-_WAYPOINT_DURATION_SEC = 8
+_WAYPOINT_DURATION_SEC = 5
 
-# Top-down end-effector orientation as quaternion (pointing Z-down)
-# This is a 90° rotation around Y: end-effector faces downward
-_TOP_DOWN_QUAT = (0.0, 0.707, 0.0, 0.707)  # (x, y, z, w)
+# End-effector orientation for top-down grasping (x, y, z, w).
+#
+# FR3 hand TCP frame convention:
+#   - In the neutral/home pose the gripper points forward (+x world)
+#   - For top-down grasping we need the gripper Z-axis pointing DOWN (-z world)
+#
+# 180° rotation around X axis achieves this:
+#   (x=1, y=0, z=0, w=0)
+#
+# If the robot approaches from the side instead of top-down, try:
+#   (x=0.707, y=0, z=0, w=0.707)  →  90° around X
+#   (x=0,     y=1, z=0, w=0)      →  180° around Y
+#
+# Tip: verify in simulation by checking that the gripper fingers point
+# straight down when the robot is at the approach pose.
+_TOP_DOWN_QUAT = (1.0, 0.0, 0.0, 0.0)  # (x, y, z, w) — 180° around X
 
 # Default xacro path — override with env var FRANKA_URDF_PATH
 # Accepts both .urdf and .urdf.xacro — xacro files are processed at load time.
@@ -126,15 +135,20 @@ class PickPlacePlanner:
 
     def __init__(
         self,
-        robot_name:      str,
-        urdf_path:       Optional[str] = None,
-        approach_height: float         = _APPROACH_HEIGHT,
-        base_height:     float         = 0.0,
+        robot_name:       str,
+        urdf_path:        Optional[str]   = None,
+        approach_height:  float           = _APPROACH_HEIGHT,
+        base_height:      float           = 0.0,
+        eef_orientation:  Optional[tuple] = None,
     ) -> None:
         self._robot_name      = robot_name
         self._approach_height = approach_height
         self._base_height     = base_height
         self._urdf_path       = urdf_path or _DEFAULT_URDF
+        # End-effector orientation for IK — overridable per instance.
+        # Defaults to top-down (180° around X). Pass a (x,y,z,w) tuple
+        # to change the approach angle.
+        self._eef_orientation = eef_orientation or _TOP_DOWN_QUAT
 
         # Joint names with robot namespace prefix
         prefix = f"{robot_name}_" if robot_name else ""
@@ -162,7 +176,7 @@ class PickPlacePlanner:
         """
         Compute a full pick-and-place plan.
 
-        Returns a PickPlanResult with 9 steps:
+        Returns a PickPlanResult with 10 steps:
             1. open_gripper
             2. move  → pick approach
             3. move  → pick pose
@@ -172,6 +186,7 @@ class PickPlacePlanner:
             7. move  → place pose
             8. open_gripper
             9. move  → place approach (retreat)
+           10. move  → home position
 
         Each MOVE step contains both:
             - target_pose       (Cartesian, for Franky / future real-robot use)
@@ -238,6 +253,19 @@ class PickPlacePlanner:
             )
         steps.append(step)
 
+        # Step 10 — return to home position
+        # Uses home joint positions directly — no IK needed.
+        home_trajectory = self._make_trajectory(
+            _FR3_HOME_JOINTS[:],
+            current_positions=_FR3_HOME_JOINTS[:],  # seed from home itself
+        )
+        steps.append(PickPlaceStep(
+            kind             = StepKind.MOVE,
+            label            = "return_home",
+            target_pose      = None,   # Franky handles home natively
+            joint_trajectory = home_trajectory,
+        ))
+
         return PickPlanResult(
             steps   = steps,
             success = True,
@@ -256,7 +284,7 @@ class PickPlacePlanner:
         - target_pose       → for Franky (real robot, future)
         - joint_trajectory  → for simulation (ikpy IK → JointTrajectory)
         """
-        pose = _make_pose(xyz, _TOP_DOWN_QUAT)
+        pose = _make_pose(xyz, self._eef_orientation)
 
         # IK solve
         joint_positions = self._solve_ik(xyz)
@@ -297,7 +325,7 @@ class PickPlacePlanner:
         )
 
         # Build target transform in robot base frame
-        target_matrix = _xyz_to_matrix(xyz_base, _TOP_DOWN_QUAT)
+        target_matrix = _xyz_to_matrix(xyz_base, self._eef_orientation)
 
         # Seed must exactly match chain length
         n = len(self._chain.links)
@@ -348,53 +376,27 @@ class PickPlacePlanner:
 
     def _make_trajectory(
         self,
-        joint_positions: List[float],
-        current_positions: Optional[List[float]] = None,
+        joint_positions:   List[float],
+        current_positions: Optional[List[float]] = None,  # kept for API compatibility
     ) -> JointTrajectory:
         """
-        Build a JointTrajectory with two waypoints:
-          t = duration/2 : midpoint between current and target (smooth ramp-up)
-          t = duration   : target position (zero velocity at end)
+        Build a single-point JointTrajectory to the target joint positions.
 
-        Using a single point at t=3s gives the controller a step command —
-        it tries to reach the target as fast as possible which causes physics
-        instability in Gazebo. Two points with a midpoint forces a smoother
-        velocity profile.
+        The controller uses spline interpolation internally, so a single
+        target point with zero end velocity produces a smooth motion.
+        The previous two-point approach caused backtracking because the
+        midpoint was always biased toward home joints.
         """
         traj = JointTrajectory()
         traj.joint_names = self._joint_names
 
-        start = current_positions or _FR3_HOME_JOINTS
-        half_t = _WAYPOINT_DURATION_SEC // 2
+        pt = JointTrajectoryPoint()
+        pt.positions      = joint_positions
+        pt.velocities     = [0.0] * 7
+        pt.accelerations  = [0.0] * 7
+        pt.time_from_start = Duration(sec=_WAYPOINT_DURATION_SEC, nanosec=0)
 
-        # Midpoint — halfway between start and target
-        mid_positions = [
-            (s + g) / 2.0 for s, g in zip(start, joint_positions)
-        ]
-        mid_velocities = [
-            (g - s) / _WAYPOINT_DURATION_SEC
-            for s, g in zip(start, joint_positions)
-        ]
-        # Clamp mid velocities to safe limits (1.0 rad/s per joint)
-        mid_velocities = [
-            max(-1.0, min(1.0, v))
-            for v in mid_velocities
-        ]
-
-        pt_mid = JointTrajectoryPoint()
-        pt_mid.positions     = mid_positions
-        pt_mid.velocities    = mid_velocities
-        pt_mid.accelerations = [0.0] * 7
-        pt_mid.time_from_start = Duration(sec=half_t, nanosec=0)
-
-        # Target — zero velocity (fully stopped)
-        pt_end = JointTrajectoryPoint()
-        pt_end.positions     = joint_positions
-        pt_end.velocities    = [0.0] * 7
-        pt_end.accelerations = [0.0] * 7
-        pt_end.time_from_start = Duration(sec=_WAYPOINT_DURATION_SEC, nanosec=0)
-
-        traj.points = [pt_mid, pt_end]
+        traj.points = [pt]
         return traj
 
     # ------------------------------------------------------------------

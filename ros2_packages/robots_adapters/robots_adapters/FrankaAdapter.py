@@ -404,8 +404,10 @@ class FrankaAdapter(Node):
         )
 
         # Poll joint states until target is reached — works with sim time
-        max_wait_wall = 120.0   # hard wall-clock safety timeout
-        poll_interval = 0.1     # seconds
+        # Large wall-clock timeout because headless Gazebo without GPU
+        # acceleration can run at 1/50–1/100 real time.
+        max_wait_wall = 600.0   # 10 min wall clock — covers very slow sims
+        poll_interval = 0.5     # seconds
         elapsed = 0.0
 
         # Wait briefly for goal to be accepted before polling
@@ -450,19 +452,33 @@ class FrankaAdapter(Node):
         return False
 
     def _real_move(self, step: PickPlaceStep) -> bool:
-        """Physical robot: use Franky CartesianWaypointMotion."""
-        if step.target_pose is None:
-            self.get_logger().error(
-                f"[FrankaAdapter] Step '{step.label}' has no target pose."
-            )
-            return False
-
+        """Physical robot: use Franky for motion."""
         try:
             from franky import (  # type: ignore
                 CartesianWaypointMotion,
                 CartesianWaypoint,
+                JointWaypointMotion,
+                JointWaypoint,
                 Affine,
             )
+
+            # Home step — use JointWaypointMotion with known home angles.
+            # More reliable than Cartesian IK for returning to a known config.
+            if step.label == "return_home":
+                from pick_place_planner import _FR3_HOME_JOINTS  # type: ignore
+                motion = JointWaypointMotion([
+                    JointWaypoint(_FR3_HOME_JOINTS)
+                ])
+                self._franky_robot.move(motion)
+                return True
+
+            # All other steps — Cartesian motion to target pose.
+            if step.target_pose is None:
+                self.get_logger().error(
+                    f"[FrankaAdapter] Step '{step.label}' has no target pose."
+                )
+                return False
+
             pose = step.target_pose
             motion = CartesianWaypointMotion([
                 CartesianWaypoint(Affine([
@@ -585,8 +601,8 @@ def _parse_args() -> argparse.Namespace:
              "Set to 1.03 if the robot is spawned at z=1.03.",
     )
     parser.add_argument(
-        "--timeout", type=float, default=60.0,
-        help="Seconds to wait for task completion.",
+        "--timeout", type=float, default=600.0,
+        help="Seconds to wait for task completion (default: 600 — covers slow headless sim).",
     )
     return parser.parse_args()
 

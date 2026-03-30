@@ -1,13 +1,12 @@
 #!/bin/bash
 
 # ===========================
-# Launch ADIRL container with NVIDIA GPU Offload
+# Launch CASPER_MAS container with NVIDIA GPU
 # ===========================
 
 IMAGE_NAME="casper_mas"
 DEFAULT_CONTAINER_NAME="casper_mas-container"
 
-# If a command-line argument is provided, use it as container name
 CONTAINER_NAME="${1:-$DEFAULT_CONTAINER_NAME}"
 
 DOCKERFILE_PATH="Dockerfile"
@@ -15,7 +14,7 @@ REQUIREMENTS_PATH="requirements.txt"
 CHECKSUM_FILE=".dockerfile_checksum"
 
 # ---------------------------
-# Allow Docker (root) to access X server
+# Allow Docker to access X server
 # ---------------------------
 xhost +SI:localuser:$(whoami)
 
@@ -27,7 +26,7 @@ xauth nlist $DISPLAY | sed -e 's/^..../ffff/' | xauth -f $XAUTH_FILE nmerge -
 chmod 777 $XAUTH_FILE
 
 # ---------------------------
-# Check Dockerfile / requirements / ros2_packages changes and rebuild image if needed
+# Rebuild image if Dockerfile / requirements / ros2_packages changed
 # ---------------------------
 ROS2_DIR="ros2_packages"
 
@@ -45,7 +44,7 @@ if [[ -f $CHECKSUM_FILE ]]; then
 fi
 
 if [[ "$CURRENT_HASH" != "$OLD_HASH" ]] || [[ "$(docker images -q $IMAGE_NAME 2> /dev/null)" == "" ]]; then
-    echo "🔨 Dockerfile, requirements.txt, or ros2_packages changed, or image missing. Building $IMAGE_NAME..."
+    echo "🔨 Changes detected or image missing. Building $IMAGE_NAME..."
     docker build -t $IMAGE_NAME -f $DOCKERFILE_PATH .
     echo "$CURRENT_HASH" > $CHECKSUM_FILE
 else
@@ -53,7 +52,7 @@ else
 fi
 
 # ---------------------------
-# Stop and remove any existing container (if still running)
+# Stop and remove any existing container
 # ---------------------------
 if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
   echo "🛑 Stopping existing $CONTAINER_NAME..."
@@ -62,30 +61,28 @@ if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
 fi
 
 # ---------------------------
-# Enable NVIDIA GPU offload (in Docker or native)
-# Removed because it was freezing the screen and causing performance issues. It may be worth revisiting in the future if we can find a way to mitigate those issues.
-# ---------------------------
-#export __NV_PRIME_RENDER_OFFLOAD=1
-#export __GLX_VENDOR_LIBRARY_NAME=nvidia
-#export __VK_LAYER_NV_optimus=NVIDIA_only
-#export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
-
-# ---------------------------
-# Optional for better GL performance
+# GL performance
 # ---------------------------
 export LIBGL_ALWAYS_INDIRECT=0
 
 # ---------------------------
-# Launch container:
+# Launch container
 # ---------------------------
 docker run -it \
     --gpus all \
     --device=/dev/dri \
-    -e NVIDIA_DRIVER_CAPABILITIES=all \
+    -e NVIDIA_VISIBLE_DEVICES=all \
+    -e NVIDIA_DRIVER_CAPABILITIES=compute,graphics,utility,display \
     -e DISPLAY=$DISPLAY \
+    -e GAZEBO_DISPLAY=$DISPLAY \
+    -e IGN_RENDERING_ENGINE=ogre2 \
+    -e LIBGL_ALWAYS_SOFTWARE=0 \
     -e XAUTHORITY=$XAUTH_FILE \
     -e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
     -e QT_X11_NO_MITSHM=1 \
+    -e LIBGL_ALWAYS_INDIRECT=0 \
+    -e EGL_PLATFORM=device \
+    -e __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v $XAUTH_FILE:$XAUTH_FILE \
     --ipc=host \

@@ -1,7 +1,9 @@
 <?xml version='1.0'?>
 <sdf version='1.9'>
   <world name='empty'>
-    <physics name='1ms' type='ignored'>
+    <!-- DART is faster than Bullet for articulated robots in Ignition Fortress.
+         100Hz is sufficient for robot arm pick-and-place simulation. -->
+    <physics name='default_physics' type='dart'>
       <max_step_size>0.001</max_step_size>
       <real_time_factor>1</real_time_factor>
       <real_time_update_rate>1000</real_time_update_rate>
@@ -73,14 +75,12 @@
       <pose>0 0 0 0 0 0</pose>
     </include>
 
-    <!-- Basket: left side of table 1 (negative Y, not at corner) -->
-    <include>
+<!--     <include>
       <uri>model://Threshold_Basket_Natural_Finish_Fabric_Liner_Small</uri>
       <name>basket_1</name>
       <pose>0 -0.25 1.01 0 0 0</pose>
-    </include>
+    </include> -->
 
-    <!-- Cubes: right side of table 1 (positive Y) -->
     <include>
       <uri>model://cube_red</uri>
       <name>table1_cube_red_1</name>
@@ -112,14 +112,12 @@
       <pose>0 2 0 0 0 0</pose>
     </include>
 
-    <!-- Basket: left side of table 2 (positive Y relative to table, so y=2+0.25) -->
-    <include>
+<!--     <include>
       <uri>model://Threshold_Basket_Natural_Finish_Fabric_Liner_Small</uri>
       <name>basket_2</name>
       <pose>0 2.25 1.01 0 0 0</pose>
-    </include>
+    </include> -->
 
-    <!-- Cubes: right side of table 2 (negative Y relative to table, so y=2-0.25) -->
     <include>
       <uri>model://cube_red</uri>
       <name>table2_cube_red_1</name>

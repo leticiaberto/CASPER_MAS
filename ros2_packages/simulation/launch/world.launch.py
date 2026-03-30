@@ -28,7 +28,10 @@ def launch_setup(context, *args, **kwargs):
                 'launch', 'gz_sim.launch.py'
             )
         ),
-        launch_arguments={'gz_args': f'-r {world_path}'}.items()
+        # --headless-rendering: tells ogre2 to use EGL device mode (NVIDIA GPU)
+        # instead of GLX (Intel display GPU). The GUI window still opens normally.
+        # This is what fixes the ~1/70 real-time speed caused by software rendering.
+        launch_arguments={'gz_args': f'-r --headless-rendering {world_path}'}.items()
     )
 
     return [gz_sim]

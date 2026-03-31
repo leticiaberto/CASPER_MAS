@@ -1,6 +1,4 @@
 """
-FrankaAdapter
-=============
 ROS2 adapter for the Franka Research 3 arm.
 
 Supports two execution modes selected at instantiation:
@@ -46,6 +44,10 @@ Standalone usage
     python3 FrankaAdapter.py --mode real --robot fr3_robot1 \\
         --franky-ip 172.16.0.2 \\
         --pick 0.5 0.0 0.3 --place 0.5 0.4 0.3
+
+    python3 FrankaAdapter.py --mode sim --robot fr3_robot1 \\
+        --base-height 1.03 --pick  0.4  0.25  1.04 --place 0.3 -0.25  1.05
+
 """
 
 from __future__ import annotations
@@ -65,9 +67,9 @@ from rclpy.task import Future
 from control_msgs.action import FollowJointTrajectory
 from sensor_msgs.msg import JointState
 
-from gripper_adapter import GripperAdapter
-from pick_place_planner import PickPlacePlanner
-from pick_place_result import PickPlanResult, PickPlaceStep, StepKind
+from Franka_gripper_adapter import GripperAdapter
+from Franka_pick_place_planner import PickPlacePlanner
+from Franka_pick_place_result import PickPlanResult, PickPlaceStep, StepKind
 
 # ---------------------------------------------------------------------------
 # Types
@@ -88,8 +90,6 @@ class RobotMode(str, Enum):
 
 class FrankaAdapter(Node):
     """
-    ROS2 adapter for the Franka Research 3 arm.
-
     Parameters
     ----------
     robot_name : str
@@ -465,7 +465,7 @@ class FrankaAdapter(Node):
             # Home step — use JointWaypointMotion with known home angles.
             # More reliable than Cartesian IK for returning to a known config.
             if step.label == "return_home":
-                from pick_place_planner import _FR3_HOME_JOINTS  # type: ignore
+                from ros2_packages.robots_adapters.robots_adapters.Franka_pick_place_planner import _FR3_HOME_JOINTS  # type: ignore
                 motion = JointWaypointMotion([
                     JointWaypoint(_FR3_HOME_JOINTS)
                 ])

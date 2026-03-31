@@ -1,0 +1,106 @@
+<sdf version="1.7">
+  <model name="basket">
+    <static>true</static>
+
+    <link name="basket_link">
+
+      <!-- Bottom -->
+      <collision name="bottom_col">
+        <pose>0 0 0.0075 0 0 0</pose>
+        <geometry>
+          <box><size>0.38 0.28 0.015</size></box>
+        </geometry>
+      </collision>
+
+      <visual name="bottom_vis">
+        <pose>0 0 0.0075 0 0 0</pose>
+        <geometry>
+          <box><size>0.38 0.28 0.015</size></box>
+        </geometry>
+        <material>
+          <ambient>0.76 0.70 0.50 1</ambient>
+          <diffuse>0.76 0.70 0.50 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Wall Z = 0.065 -->
+
+      <!-- +X -->
+      <collision name="wall_x_pos_col">
+        <pose>0.1825 0 0.065 0 0 0</pose>
+        <geometry>
+          <box><size>0.015 0.25 0.1</size></box>
+        </geometry>
+      </collision>
+
+      <visual name="wall_x_pos_vis">
+        <pose>0.1825 0 0.065 0 0 0</pose>
+        <geometry>
+          <box><size>0.015 0.25 0.1</size></box>
+        </geometry>
+        <material>
+          <ambient>0.76 0.70 0.50 1</ambient>
+          <diffuse>0.76 0.70 0.50 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- -X -->
+      <collision name="wall_x_neg_col">
+        <pose>-0.1825 0 0.065 0 0 0</pose>
+        <geometry>
+          <box><size>0.015 0.25 0.1</size></box>
+        </geometry>
+      </collision>
+
+      <visual name="wall_x_neg_vis">
+        <pose>-0.1825 0 0.065 0 0 0</pose>
+        <geometry>
+          <box><size>0.015 0.25 0.1</size></box>
+        </geometry>
+        <material>
+          <ambient>0.76 0.70 0.50 1</ambient>
+          <diffuse>0.76 0.70 0.50 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- +Y -->
+      <collision name="wall_y_pos_col">
+        <pose>0 0.1325 0.065 0 0 0</pose>
+        <geometry>
+          <box><size>0.38 0.015 0.1</size></box>
+        </geometry>
+      </collision>
+
+      <visual name="wall_y_pos_vis">
+        <pose>0 0.1325 0.065 0 0 0</pose>
+        <geometry>
+          <box><size>0.38 0.015 0.1</size></box>
+        </geometry>
+        <material>
+          <ambient>0.76 0.70 0.50 1</ambient>
+          <diffuse>0.76 0.70 0.50 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- -Y -->
+      <collision name="wall_y_neg_col">
+        <pose>0 -0.1325 0.065 0 0 0</pose>
+        <geometry>
+          <box><size>0.38 0.015 0.1</size></box>
+        </geometry>
+      </collision>
+
+      <visual name="wall_y_neg_vis">
+        <pose>0 -0.1325 0.065 0 0 0</pose>
+        <geometry>
+          <box><size>0.38 0.015 0.1</size></box>
+        </geometry>
+        <material>
+          <ambient>0.76 0.70 0.50 1</ambient>
+          <diffuse>0.76 0.70 0.50 1</diffuse>
+        </material>
+      </visual>
+
+    </link>
+  </model>
+</sdf>

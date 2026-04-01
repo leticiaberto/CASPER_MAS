@@ -156,7 +156,7 @@ ENV ALSA_CARD=none
 ENV EGL_PLATFORM=device
 ENV __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
-# ------------------------------
+# ------------------------------ 
 # ROS workspace
 # ------------------------------
 WORKDIR /ros2_ws
@@ -183,26 +183,42 @@ RUN cd src && \
     UPDATED=0 && \
     if [ ! -d tiago_robot ]; then \
         git clone --branch humble-devel --single-branch \
-            https://github.com/pal-robotics/tiago_robot.git && UPDATED=1; \
+            https://github.com/pal-robotics/tiago_robot.git && \
+        cd tiago_robot && \
+        git checkout 8384f3adb21ee7b80ee665b0091c4c8eebe24f94 && \
+        cd .. && \
+        UPDATED=1; \
     fi && \
-    if [ ! -d tiago_simulation ]; then \
+    if [ ! -d pal_gripper ]; then \
         git clone --branch humble-devel --single-branch \
-            https://github.com/pal-robotics/tiago_simulation.git && UPDATED=1; \
+            https://github.com/pal-robotics/pal_gripper.git && \
+        cd pal_gripper && \
+        git checkout 0e41b4f3d7e15c16711846e510dcf2071275d759 && \
+        cd .. && \
+        UPDATED=1; \
+    fi && \
+    if [ ! -d pal_urdf_utils ]; then \
+        git clone --branch humble-devel --single-branch \
+            https://github.com/pal-robotics/pal_urdf_utils.git && \
+        cd pal_urdf_utils && \
+        git checkout 4320a981a75c2eef17b5615aadfde8c1c949e504 && \
+        cd .. && \
+        UPDATED=1; \
     fi && \
     if [ ! -d pmb2_robot ]; then \
         git clone --branch humble-devel --single-branch \
-            https://github.com/pal-robotics/pmb2_robot.git && UPDATED=1; \
-    fi && \
-    if [ ! -d pmb2_simulation ]; then \
-        git clone --branch humble-devel --single-branch \
-            https://github.com/pal-robotics/pmb2_simulation.git && UPDATED=1; \
+            https://github.com/pal-robotics/pmb2_robot.git && \
+        cd pmb2_robot && \
+        git checkout e7b8f1a0d1b88650364b56103f1f71dc80f9e9b4 && \
+        cd .. && \
+        UPDATED=1; \
     fi && \
     if [ "$UPDATED" = "1" ]; then \
         apt-get update; \
     fi && \
     apt-get update && rosdep install -i --from-path . --ignore-src \
         --rosdistro $ROS_DISTRO -y \
-        --skip-keys="diagnostic_aggregator urdf_test"
+        --skip-keys="diagnostic_aggregator urdf_test pal_gazebo_worlds"
 
 # ------------------------------
 # Python dependencies
@@ -217,11 +233,15 @@ RUN pip3 install --no-cache-dir \
 
 # ------------------------------
 # Build workspace
-# ------------------------------
+# ------------------------------ 
 RUN . /opt/ros/$ROS_DISTRO/setup.sh && \
     rm -rf build install log && \
     colcon build --symlink-install
 
+ENV IGN_GAZEBO_RESOURCE_PATH=/ros2_ws/install/tiago_description/share:\
+/ros2_ws/install/pmb2_description/share:\
+/ros2_ws/install/pal_gripper_description/share:\
+/ros2_ws/install/pal_urdf_utils/share
 # ------------------------------
 # Workspace
 # ------------------------------

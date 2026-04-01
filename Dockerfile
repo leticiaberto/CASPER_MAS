@@ -238,10 +238,6 @@ RUN . /opt/ros/$ROS_DISTRO/setup.sh && \
     rm -rf build install log && \
     colcon build --symlink-install
 
-ENV IGN_GAZEBO_RESOURCE_PATH=/ros2_ws/install/tiago_description/share:\
-/ros2_ws/install/pmb2_description/share:\
-/ros2_ws/install/pal_gripper_description/share:\
-/ros2_ws/install/pal_urdf_utils/share
 # ------------------------------
 # Workspace
 # ------------------------------

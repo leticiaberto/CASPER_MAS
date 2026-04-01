@@ -48,11 +48,16 @@ def generate_launch_description():
             description='Name of the world file (without .sdf extension) inside worlds/'
         ),
 
+        
         SetEnvironmentVariable(
             name='IGN_GAZEBO_RESOURCE_PATH',
             value=os.pathsep.join([
                 os.path.dirname(get_package_share_directory('franka_description')),
-                models_path
+                models_path,
+                os.path.dirname(get_package_share_directory('tiago_description')),
+                os.path.dirname(get_package_share_directory('pmb2_description')),
+                os.path.dirname(get_package_share_directory('pal_gripper_description')),
+                os.path.dirname(get_package_share_directory('pal_urdf_utils')),
             ])
         ),
 

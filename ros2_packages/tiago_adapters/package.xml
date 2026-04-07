@@ -7,21 +7,26 @@
   <maintainer email="leticia.berto@manchester.ac.uk">Leticia Berto</maintainer>
   <license>Apache-2.0</license>
 
-  <test_depend>ament_copyright</test_depend>
-  <test_depend>ament_flake8</test_depend>
-  <test_depend>ament_pep257</test_depend>
-  <test_depend>python3-pytest</test_depend>
-
   <export>
     <build_type>ament_python</build_type>
   </export>
 
-  <!--<depend>moveit_msgs</depend>--> <!-- Not used — we talk directly to the controller, not MoveIt --> 
+  <!-- Core ROS2 -->
+  <depend>rclpy</depend>
+  <depend>builtin_interfaces</depend>
 
-  <depend>rclpy</depend> <!-- Core ROS2 Python runtime -->
-  <depend>control_msgs</depend> <!-- FollowJointTrajectory action -->
-  <depend>trajectory_msgs</depend> <!-- JointTrajectory, JointTrajectoryPoint -->
-  <depend>builtin_interfaces</depend> <!-- Duration (used in trajectory points) -->
+  <!-- Messages used in the data contract and trajectories -->
+  <depend>control_msgs</depend>        <!-- FollowJointTrajectory action -->
+  <depend>trajectory_msgs</depend>     <!-- JointTrajectory, JointTrajectoryPoint -->
+  <depend>geometry_msgs</depend>       <!-- Pose, PoseStamped, Quaternion, Point -->
+  <depend>sensor_msgs</depend>         <!-- JointState (arm completion detection) -->
+  <depend>std_msgs</depend>            <!-- Header (Nav2 goal stamp) -->
+
+  <!-- Ignition Fortress scene awareness (bridged via ros_gz_bridge) -->
+  <depend>tf2_msgs</depend>            <!-- TFMessage from dynamic_pose bridge -->
+
+  <!-- URDF / package path lookup -->
+  <depend>ament_index_python</depend>  <!-- get_package_share_directory for URDF -->
 
   <exec_depend>ros2launch</exec_depend>
 

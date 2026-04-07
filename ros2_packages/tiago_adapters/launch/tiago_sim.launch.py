@@ -61,6 +61,11 @@ from launch.event_handlers import OnProcessExit
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+# Bridge yaml is installed (symlinked) by tiago_gazebo package.
+_BRIDGE_CONFIG = os.path.join(
+    get_package_share_directory('tiago_gazebo'), 'config', 'tiago_gz_bridge.yaml'
+)
+
 
 # ---------------------------------------------------------------------------
 # Minimal URDF patch — namespace injection only
@@ -98,18 +103,30 @@ def patch_urdf(urdf_str: str, robot_name: str) -> str:
         print(f'[tiago_sim.launch] WARNING: GazeboSimROS2ControlPlugin not found.')
         return patched
 
-    # NOTE: <parameters> tag injection is intentionally skipped.
-    #
-    # gz_ros2_control in Ignition Fortress has a bug: it prepends "--params-file"
-    # internally and then passes the whole string "--params-file /path/file.yaml"
-    # as a single token to rcl, which rejects it with:
-    #   "node name must not contain characters other than alphanumerics or '_'"
-    #
-    # The CM update_rate defaults to 100 Hz (harmless warning, not a failure).
-    # Controller types are set by the spawner's --param-file via the parameter
-    # service right before load_controller is called — no URDF tag needed.
+    # 2. Inject a <parameters> file for the CM so update_rate=100 is applied.
+    #    The gz_ros2_control plugin reads <parameters> tags and passes each file
+    #    via --params-file to rcl. Write a minimal YAML with only the CM section
+    #    under the namespaced node path so it doesn't collide with anything else.
+    cm_yaml_content = (
+        f'/{robot_name}/controller_manager:\n'
+        f'  ros__parameters:\n'
+        f'    update_rate: 100\n'
+        f'    use_sim_time: true\n'
+    )
+    cm_yaml_path = os.path.join(
+        tempfile.gettempdir(), f'{robot_name}_cm_update_rate.yaml'
+    )
+    with open(cm_yaml_path, 'w') as f:
+        f.write(cm_yaml_content)
 
-    print(f'[tiago_sim.launch] [{robot_name}] URDF patched (namespace injected)')
+    params_tag = f'\n      <parameters>{cm_yaml_path}</parameters>'
+    patched = patched.replace(
+        f'<ros>\n        <namespace>/{robot_name}</namespace>\n      </ros>',
+        f'<ros>\n        <namespace>/{robot_name}</namespace>\n      </ros>'
+        + params_tag,
+    )
+
+    print(f'[tiago_sim.launch] [{robot_name}] URDF patched (namespace + update_rate injected)')
     return patched
 
 
@@ -416,8 +433,25 @@ def launch_setup(context, *args, **kwargs):
     start_mobile_base = RegisterEventHandler(OnProcessExit(target_action=gripper,     on_exit=[mobile_base]))
     start_torso       = RegisterEventHandler(OnProcessExit(target_action=mobile_base, on_exit=[torso]))
 
+    # ------------------------------------------------------------------
+    # ros_gz_bridge — only one instance needed even for multiple robots.
+    # Bridges Ignition dynamic_pose topic → tf2_msgs/TFMessage so that
+    # TiagoAdapter can read world-frame poses without Nav2 or /gazebo/model_states.
+    # ------------------------------------------------------------------
+    bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        name=f'tiago_gz_bridge_{robot_name}',
+        parameters=[{
+            'config_file': _BRIDGE_CONFIG,
+            'use_sim_time': True,
+        }],
+        output='screen',
+    )
+
     return [
         rsp,
+        bridge,
         TimerAction(period=spawn_delay, actions=[spawn]),
         start_jsb,
         start_arm,

@@ -22,7 +22,7 @@ setup(
     license='Apache-2.0',
     entry_points={
         'console_scripts': [
-            'franka_adapter = tiago_adapters.TiagoAdapter:main',
+            'tiago_adapter = tiago_adapters.TiagoAdapter:main',
         ],
     },
 )

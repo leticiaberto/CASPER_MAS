@@ -25,7 +25,7 @@ setup(
     license='Apache-2.0',
     entry_points={
         'console_scripts': [
-            'franka_adapter = fr3_adapters.FrankaAdapter:main',
+            'fr3_adapter = fr3_adapters.FrankaAdapter:main',
         ],
     },
 )

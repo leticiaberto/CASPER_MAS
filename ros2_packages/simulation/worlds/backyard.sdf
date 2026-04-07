@@ -22,13 +22,11 @@
       <link name="link">
         <collision name="collision">
           <geometry>
-            <box><size>10 10 0.1</size></box>
+            <box><size>12 12 0.1</size></box>
           </geometry>
         </collision>
         <visual name="visual">
-          <geometry>
-            <box><size>10 10 0.1</size></box>
-          </geometry>
+          <geometry><box><size>12 12 0.1</size></box></geometry>
           <material>
             <ambient>0.2 0.6 0.2 1</ambient>
             <diffuse>0.2 0.6 0.2 1</diffuse>
@@ -37,64 +35,114 @@
       </link>
     </model>
 
-    <!-- Entrance Room -->
-    <model name="entrance_room">
+    <!-- Backyard fences -->
+    <model name="backyard_perimeter">
       <static>true</static>
-      <pose>0 -6 0 0 0 0</pose>
       <link name="link">
-        <collision name="collision">
-          <geometry>
-            <box><size>4 4 0.1</size></box>
-          </geometry>
+        <!-- Back Fence -->
+        <collision name="back_col">
+          <geometry><box><size>12 0.2 2</size></box></geometry>
+          <pose>0 6 1 0 0 0</pose>
         </collision>
-        <visual name="floor">
-          <geometry>
-            <box><size>4 4 0.1</size></box>
-          </geometry>
+        <visual name="back_vis">
+          <geometry><box><size>12 0.2 2</size></box></geometry>
+          <pose>0 6 1 0 0 0</pose>
           <material>
-            <ambient>0.6 0.6 0.6 1</ambient>
-            <diffuse>0.6 0.6 0.6 1</diffuse>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
           </material>
         </visual>
-      </link>
-    </model>
 
-    <!-- Gate -->
-    <model name="gate">
-      <static>true</static>
-      <pose>0 -4 1 0 0 0</pose>
-      <link name="link">
-
+        <!-- Left Fence -->
         <collision name="left_col">
-          <geometry><box><size>0.2 1 2</size></box></geometry>
-          <pose>-0.6 0 0 0 0 0</pose>
+          <geometry><box><size>0.2 12 2</size></box></geometry>
+          <pose>-6 0 1 0 0 0</pose>
         </collision>
+        <visual name="left_vis">
+          <geometry><box><size>0.2 12 2</size></box></geometry>
+          <pose>-6 0 1 0 0 0</pose>
+          <material>
+            <ambient>0.6 0.4 0.2 1</ambient>
+            <diffuse>0.6 0.4 0.2 1</diffuse>
+          </material>
+        </visual>
 
+        <!-- Right Fence -->
         <collision name="right_col">
-          <geometry><box><size>0.2 1 2</size></box></geometry>
-          <pose>0.6 0 0 0 0 0</pose>
+          <geometry><box><size>0.2 12 2</size></box></geometry>
+          <pose>6 0 1 0 0 0</pose>
         </collision>
-
-        <visual name="left">
-          <geometry><box><size>0.2 1 2</size></box></geometry>
-          <pose>-0.6 0 0 0 0 0</pose>
+        <visual name="right_vis">
+          <geometry><box><size>0.2 12 2</size></box></geometry>
+          <pose>6 0 1 0 0 0</pose>
           <material>
-            <ambient>0.3 0.3 0.3 1</ambient>
-            <diffuse>0.3 0.3 0.3 1</diffuse>
+            <ambient>0.6 0.4 0.2 1</ambient>
+            <diffuse>0.6 0.4 0.2 1</diffuse>
           </material>
         </visual>
-
-        <visual name="right">
-          <geometry><box><size>0.2 1 2</size></box></geometry>
-          <pose>0.6 0 0 0 0 0</pose>
-          <material>
-            <ambient>0.3 0.3 0.3 1</ambient>
-            <diffuse>0.3 0.3 0.3 1</diffuse>
-          </material>
-        </visual>
-
       </link>
     </model>
+
+    <!-- Small House -->
+    <model name="house">
+      <static>true</static>
+      <pose>0 -7.5 1.5 0 0 0</pose>
+      <link name="house_link">
+        <collision name="house_col">
+          <geometry>
+            <box><size>12 3 3</size></box>
+          </geometry>
+        </collision>
+        <visual name="house_vis">
+          <geometry>
+            <box><size>12 3 3</size></box>
+          </geometry>
+          <material>
+            <ambient>0.9 0.7 0.6 1</ambient>
+            <diffuse>0.9 0.7 0.6 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Glass Sliding Door (half open) -->
+    <!-- Left half = closed -->
+    <model name="glass_door_left">
+      <static>true</static>
+      <pose>-1  -6 1.25 0 0 0</pose>
+      <link name="door_link">
+        <collision name="door_col">
+          <geometry><box><size>2 0.1 2.5</size></box></geometry>
+        </collision>
+        <visual name="door_vis">
+          <geometry><box><size>2 0.1 2.5</size></box></geometry>
+          <material>
+            <ambient>0.7 0.9 1 0.5</ambient>
+            <diffuse>0.7 0.9 1 0.5</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Right half = open (slid to the side) -->
+    <model name="glass_door_right">
+      <static>true</static>
+      <pose>1  -6 1.25 0 0 0</pose>
+      <link name="door_link">
+        <collision name="door_col">
+          <geometry><box><size>2 0.1 2.5</size></box></geometry>
+        </collision>
+        <visual name="door_vis">
+          <geometry><box><size>2 0.1 2.5</size></box></geometry>
+          <material>
+            <ambient>0.7 0.9 1 0.5</ambient>
+            <diffuse>0.7 0.9 1 0.5</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Backyard Objects -->
 
     <!-- Grill -->
     <model name="grill">
@@ -123,12 +171,10 @@
       <static>true</static>
       <pose>-2 1 0 0 0 0</pose>
       <link name="link">
-
         <collision name="top_col">
           <geometry><box><size>1.5 0.8 0.1</size></box></geometry>
           <pose>0 0 0.8 0 0 0</pose>
         </collision>
-
         <visual name="top">
           <geometry><box><size>1.5 0.8 0.1</size></box></geometry>
           <pose>0 0 0.8 0 0 0</pose>
@@ -137,7 +183,6 @@
             <diffuse>0.7 0.5 0.3 1</diffuse>
           </material>
         </visual>
-
       </link>
     </model>
 
@@ -146,11 +191,9 @@
       <static>true</static>
       <pose>-2 2.5 0 0 0 0</pose>
       <link name="link">
-
         <collision name="base_col">
           <geometry><box><size>0.8 0.6 0.9</size></box></geometry>
         </collision>
-
         <visual name="base">
           <geometry><box><size>0.8 0.6 0.9</size></box></geometry>
           <material>
@@ -158,7 +201,6 @@
             <diffuse>0.7 0.7 0.7 1</diffuse>
           </material>
         </visual>
-
       </link>
     </model>
 
@@ -167,12 +209,10 @@
       <static>true</static>
       <pose>0 3 0 0 0 0</pose>
       <link name="link">
-
         <collision name="top_col">
           <geometry><box><size>2 1 0.1</size></box></geometry>
           <pose>0 0 0.8 0 0 0</pose>
         </collision>
-
         <visual name="top">
           <geometry><box><size>2 1 0.1</size></box></geometry>
           <pose>0 0 0.8 0 0 0</pose>
@@ -181,7 +221,6 @@
             <diffuse>0.6 0.4 0.2 1</diffuse>
           </material>
         </visual>
-
       </link>
     </model>
 

@@ -1,0 +1,89 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="bowl">
+    <static>false</static>
+    <link name="link">
+      <pose>0 0 0 0 0 0</pose>
+
+      <!-- Inertia (approx for full bowl structure) -->
+      <inertial>
+        <mass>0.5</mass>
+        <inertia>
+          <ixx>0.002</ixx>
+          <iyy>0.002</iyy>
+          <izz>0.002</izz>
+        </inertia>
+      </inertial>
+
+      <!-- BASE -->
+      <collision name="base_col">
+        <geometry>
+          <box>
+            <size>0.3 0.3 0.02</size>
+          </box>
+        </geometry>
+        <pose>0 0 0.01 0 0 0</pose>
+      </collision>
+
+      <visual name="base_vis">
+        <geometry>
+          <box>
+            <size>0.3 0.3 0.02</size>
+          </box>
+        </geometry>
+        <pose>0 0 0.01 0 0 0</pose>
+        <material>
+          <ambient>0.9 0.9 0.9 1</ambient>
+          <diffuse>0.95 0.95 0.95 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- WALLS -->
+
+      <!-- Front -->
+      <collision name="wall_front_col">
+        <geometry><box><size>0.3 0.02 0.08</size></box></geometry>
+        <pose>0 0.14 0.05 0 0 0</pose>
+      </collision>
+      <visual name="wall_front_vis">
+        <geometry><box><size>0.3 0.02 0.08</size></box></geometry>
+        <pose>0 0.14 0.05 0 0 0</pose>
+        <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material>
+      </visual>
+
+      <!-- Back -->
+      <collision name="wall_back_col">
+        <geometry><box><size>0.3 0.02 0.08</size></box></geometry>
+        <pose>0 -0.14 0.05 0 0 0</pose>
+      </collision>
+      <visual name="wall_back_vis">
+        <geometry><box><size>0.3 0.02 0.08</size></box></geometry>
+        <pose>0 -0.14 0.05 0 0 0</pose>
+        <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material>
+      </visual>
+
+      <!-- Left -->
+      <collision name="wall_left_col">
+        <geometry><box><size>0.02 0.3 0.08</size></box></geometry>
+        <pose>-0.14 0 0.05 0 0 0</pose>
+      </collision>
+      <visual name="wall_left_vis">
+        <geometry><box><size>0.02 0.3 0.08</size></box></geometry>
+        <pose>-0.14 0 0.05 0 0 0</pose>
+        <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material>
+      </visual>
+
+      <!-- Right -->
+      <collision name="wall_right_col">
+        <geometry><box><size>0.02 0.3 0.08</size></box></geometry>
+        <pose>0.14 0 0.05 0 0 0</pose>
+      </collision>
+      <visual name="wall_right_vis">
+        <geometry><box><size>0.02 0.3 0.08</size></box></geometry>
+        <pose>0.14 0 0.05 0 0 0</pose>
+        <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material>
+      </visual>
+
+    </link>
+  </model>
+</sdf>

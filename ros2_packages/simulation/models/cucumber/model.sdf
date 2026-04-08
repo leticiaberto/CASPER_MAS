@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="cucumber">
+    <link name="link">
+      <pose>0 0 0 0 1.57 0</pose>
+      <inertial>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>0.0002</ixx>
+          <iyy>0.000008</iyy>
+          <izz>0.0002</izz>
+        </inertia>
+      </inertial>
+
+      <collision name="col">
+        <geometry>
+          <box><size>0.25 0.04 0.04</size></box>
+        </geometry>
+      </collision>
+
+      <visual name="vis">
+        <geometry>
+          <box><size>0.25 0.04 0.04</size></box>
+        </geometry>
+        <material>
+          <ambient>0 1 0 1</ambient>
+          <diffuse>0 1 0 1</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

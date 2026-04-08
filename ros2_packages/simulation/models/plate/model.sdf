@@ -1,0 +1,61 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="plate">
+    <static>true</static>
+    <link name="link">
+
+      <!-- Base (main support surface) -->
+      <collision name="base_col">
+        <geometry>
+          <cylinder>
+            <radius>0.15</radius>
+            <length>0.02</length>
+          </cylinder>
+        </geometry>
+        <pose>0 0 0.01 0 0 0</pose>
+      </collision>
+
+      <!-- Rim (slightly raised edge to keep food in place) -->
+      <collision name="rim_col">
+        <geometry>
+          <cylinder>
+            <radius>0.17</radius>
+            <length>0.02</length>
+          </cylinder>
+        </geometry>
+        <pose>0 0 0.02 0 0 0</pose>
+      </collision>
+
+      <!-- Visual base -->
+      <visual name="base_vis">
+        <geometry>
+          <cylinder>
+            <radius>0.15</radius>
+            <length>0.02</length>
+          </cylinder>
+        </geometry>
+        <pose>0 0 0.01 0 0 0</pose>
+        <material>
+          <ambient>0.95 0.95 0.95 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Visual rim -->
+      <visual name="rim_vis">
+        <geometry>
+          <cylinder>
+            <radius>0.17</radius>
+            <length>0.02</length>
+          </cylinder>
+        </geometry>
+        <pose>0 0 0.02 0 0 0</pose>
+        <material>
+          <ambient>0.9 0.9 0.9 1</ambient>
+          <diffuse>0.95 0.95 0.95 1</diffuse>
+        </material>
+      </visual>
+
+    </link>
+  </model>
+</sdf>

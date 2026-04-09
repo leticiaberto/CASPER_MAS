@@ -127,6 +127,35 @@ def patch_urdf(urdf_str: str, robot_name: str) -> str:
     )
 
     print(f'[tiago_sim.launch] [{robot_name}] URDF patched (namespace + update_rate injected)')
+    
+    # 3. Disable self-collision on every link
+    # Tiago has 20+ links; without this the physics engine checks every
+    # link pair against each other every step, which is very expensive
+    # for a mobile robot with continuous motion.
+    patched = re.sub(
+        r'(<link\s+name="[^"]*">)',
+        r'\1\n      <self_collide>false</self_collide>',
+        patched,
+    )
+    print(f'[tiago_sim.launch] [{robot_name}] self_collide disabled on all links')
+
+    # 4.Remove sonar and microphone plugin blocks from generated URDF
+    # <xacro:base_sensors name="base" laser_model="${laser_model}" has_sonars="true" has_microphone="true"/>
+    # These aren't exposed as top-level <xacro:arg> entries, so can't toggle them from the command line. 
+    # If to disable them too, add this regex patch to strip those sensor plugin blocks from the generated URDF string after xacro runs
+    # This is safe since the regex only removes <gazebo> blocks — it won't touch any joints, links, or control definitions.
+    patched = re.sub(
+        r'<gazebo[^>]*>.*?sonar.*?</gazebo>',
+        '',
+        patched,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    patched = re.sub(
+        r'<gazebo[^>]*>.*?microphone.*?</gazebo>',
+        '',
+        patched,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
     return patched
 
 
@@ -323,9 +352,11 @@ def launch_setup(context, *args, **kwargs):
         'xacro', xacro_file,
         f'namespace:={robot_name}',
         'end_effector:=pal-gripper',
-        'gazebo_version:=gazebo',    # ← activates Ignition plugin in xacro
+        'gazebo_version:=gazebo',       # ← activates Ignition plugin in xacro
         'is_public_sim:=True',
         'use_sim_time:=True',
+        'laser_model:=no-laser',        # ← disables LIDAR
+        'camera_model:=no-camera',        # ← disables camera
     ], stderr=subprocess.PIPE).decode()
 
     # ------------------------------------------------------------------

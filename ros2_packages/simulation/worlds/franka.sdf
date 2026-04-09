@@ -140,6 +140,7 @@
       <name>table2_cube_blue_2</name>
       <pose>-0.1 4.65 1.04 0 0 0</pose>
     </include>
+    
 
   </world>
 </sdf>

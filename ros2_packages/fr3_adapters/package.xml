@@ -23,6 +23,9 @@
   <depend>trajectory_msgs</depend> <!-- JointTrajectory, JointTrajectoryPoint -->
   <depend>builtin_interfaces</depend> <!-- Duration (used in trajectory points) -->
 
+  <!-- Shared utilities for all robot adapters -->
+  <depend>robot_common</depend>
+
   <exec_depend>ros2launch</exec_depend>
 
 </package>

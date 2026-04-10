@@ -28,6 +28,9 @@
   <!-- URDF / package path lookup -->
   <depend>ament_index_python</depend>  <!-- get_package_share_directory for URDF -->
 
+  <!-- Shared utilities for all robot adapters -->
+  <depend>robot_common</depend>
+
   <exec_depend>ros2launch</exec_depend>
 
 </package>

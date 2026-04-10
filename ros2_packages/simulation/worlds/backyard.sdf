@@ -34,7 +34,7 @@
 -->
 
 <sdf version="1.7">
-  <world name="backyard_world">
+  <world name="backyard">
 
     <!-- ── Physics ─────────────────────────────────────────────────── -->
     <physics name="default_physics" type="dart">

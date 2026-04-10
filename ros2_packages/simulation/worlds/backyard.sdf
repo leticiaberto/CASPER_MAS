@@ -1,30 +1,64 @@
 <?xml version='1.0'?>
+<!--
+  Coordinate convention (ROS2 / SDFormat)
+      X  =  forward (into screen at yaw=0, robot facing +X)
+      Y  =  left
+      Z  =  up
+
+  Model pose convention
+  ─────────────────────
+  Every <model><pose> z places the model's GEOMETRIC CENTRE in world Z.
+  Child visual/collision poses are relative to the link origin.
+
+  Surface world-Z values
+  ──────────────────────
+  All table tops (0.10 m thick box, model-centre at z=0.80):
+      top surface = 0.80 + 0.05 = 0.85 m
+
+  Grill top slab (0.06 m thick, link-centre at z=0.83 above grill model origin):
+      top surface = 0.83 + 0.03 = 0.86 m
+
+  Object world-Z (= surface_z + half_height)
+  ──────────────────────────────────────────
+  Model        Origin      half-height   surface   world-z
+  ─────────────────────────────────────────────────────────
+  meat         centre       0.025         0.86      0.885
+  garlic_bread centre       0.040         0.86      0.900
+  plate        bottom       0.000         0.85      0.850
+  tomato       centre       0.025         0.85      0.875
+  purple_onion centre       0.025         0.85      0.875
+  carrot       centre*      0.020         0.85      0.870  (*pitch=π/2, lies flat)
+  cucumber     centre*      0.020         0.85      0.870
+  bowl         bottom       0.000         0.85      0.850
+  drink        centre       0.060         0.85      0.910
+-->
+
 <sdf version="1.7">
   <world name="backyard_world">
 
-    <!-- DART is faster than Bullet for articulated robots in Ignition Fortress -->
-    <physics name='default_physics' type='dart'>
+    <!-- ── Physics ─────────────────────────────────────────────────── -->
+    <physics name="default_physics" type="dart">
       <max_step_size>0.001</max_step_size>
       <real_time_factor>1</real_time_factor>
       <real_time_update_rate>1000</real_time_update_rate>
     </physics>
 
-    <plugin name="gz::sim::systems::Physics"         filename="ignition-gazebo-physics-system"/>
-    <plugin name="gz::sim::systems::UserCommands"    filename="ignition-gazebo-user-commands-system"/>
+    <plugin name="gz::sim::systems::Physics"          filename="ignition-gazebo-physics-system"/>
+    <plugin name="gz::sim::systems::UserCommands"     filename="ignition-gazebo-user-commands-system"/>
     <plugin name="gz::sim::systems::SceneBroadcaster" filename="ignition-gazebo-scene-broadcaster-system"/>
-    <plugin name="gz::sim::systems::Contact"         filename="ignition-gazebo-contact-system"/>
+    <plugin name="gz::sim::systems::Contact"          filename="ignition-gazebo-contact-system"/>
 
     <gravity>0 0 -9.8</gravity>
     <atmosphere type="adiabatic"/>
 
-    <!-- Scene -->
+    <!-- ── Scene ───────────────────────────────────────────────────── -->
     <scene>
       <ambient>0.6 0.6 0.6 1</ambient>
       <background>0.8 0.9 1 1</background>
       <shadows>true</shadows>
     </scene>
 
-    <!-- Sun -->
+    <!-- ── Sun ─────────────────────────────────────────────────────── -->
     <light name="sun" type="directional">
       <cast_shadows>true</cast_shadows>
       <pose>0 0 10 0 0 0</pose>
@@ -33,20 +67,15 @@
       <direction>-0.5 0.5 -1</direction>
     </light>
 
-    <!-- ================================================================
-         GROUND — plane geometry, not box.
-         DART resolves plane contacts with a single half-space constraint,
-         far cheaper than box face/edge contacts.
-    ================================================================ -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         GROUND PLANE — infinite half-space, zero thickness
+    ═══════════════════════════════════════════════════════════════════ -->
     <model name="ground">
       <static>true</static>
       <link name="link">
         <collision name="collision">
           <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
+            <plane><normal>0 0 1</normal><size>100 100</size></plane>
           </geometry>
           <surface>
             <friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction>
@@ -55,10 +84,7 @@
         </collision>
         <visual name="visual">
           <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>12 12</size>
-            </plane>
+            <plane><normal>0 0 1</normal><size>14 14</size></plane>
           </geometry>
           <material>
             <ambient>0.2 0.6 0.2 1</ambient>
@@ -68,153 +94,177 @@
       </link>
     </model>
 
-    <!-- ================================================================
-         FENCES — visual only, no collision.
-         Robot will never reach the perimeter.
-    ================================================================ -->
-    <model name="backyard_perimeter">
+    <!-- ═══════════════════════════════════════════════════════════════
+         PERIMETER FENCES  (visual only)
+         Pose z = half_height = 1.0 m  (2 m tall panels)
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="fence_back">
       <static>true</static>
+      <pose>0 6 1 0 0 0</pose>
       <link name="link">
-
-        <visual name="back_vis">
-          <pose>0 6 1 0 0 0</pose>
+        <visual name="visual">
           <geometry><box><size>12 0.2 2</size></box></geometry>
           <material><ambient>0.8 0.8 0.8 1</ambient><diffuse>0.8 0.8 0.8 1</diffuse></material>
         </visual>
-
-        <visual name="left_vis">
-          <pose>-6 0 1 0 0 0</pose>
-          <geometry><box><size>0.2 12 2</size></box></geometry>
-          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
-        </visual>
-
-        <visual name="right_vis">
-          <pose>6 0 1 0 0 0</pose>
-          <geometry><box><size>0.2 12 2</size></box></geometry>
-          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
-        </visual>
-
       </link>
     </model>
 
-    <!-- ================================================================
-         HOUSE — visual only, no collision.
-    ================================================================ -->
+    <model name="fence_left">
+      <static>true</static>
+      <pose>-6 0 1 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>0.2 12 2</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="fence_right">
+      <static>true</static>
+      <pose>6 0 1 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>0.2 12 2</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         HOUSE  (visual only)  — 3 m tall, centre z = 1.5
+    ═══════════════════════════════════════════════════════════════════ -->
     <model name="house">
       <static>true</static>
       <pose>0 -7.5 1.5 0 0 0</pose>
       <link name="link">
-        <visual name="vis">
+        <visual name="visual">
           <geometry><box><size>12 3 3</size></box></geometry>
           <material><ambient>0.9 0.7 0.6 1</ambient><diffuse>0.9 0.7 0.6 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <!-- Glass doors — visual only -->
-    <model name="door_left">
+    <!-- Glass doors  (visual only) — 2.5 m tall, centre z = 1.25 -->
+    <model name="door">
       <static>true</static>
-      <!-- <pose>-1 -6 1.25 0 0 0</pose> -->
       <pose>0 -6 1.25 0 0 0</pose>
       <link name="link">
-        <visual name="vis">
+        <visual name="visual">
           <geometry><box><size>4 0.1 2.5</size></box></geometry>
           <material><ambient>0.7 0.9 1 0.5</ambient><diffuse>0.7 0.9 1 0.5</diffuse></material>
         </visual>
       </link>
     </model>
 
-<!--     <model name="door_right">
-      <static>true</static>
-      <pose>1 -6 1.25 0 0 0</pose>
-      <link name="link">
-        <visual name="vis">
-          <geometry><box><size>2 0.1 2.5</size></box></geometry>
-          <material><ambient>0.7 0.9 1 0.5</ambient><diffuse>0.7 0.9 1 0.5</diffuse></material>
-        </visual>
-      </link>
-    </model> -->
-
-    <!-- ================================================================
-         GRILL — collision on top surface only, plus visual.
-    ================================================================ -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         GRILL
+         body  : cylinder r=0.4 h=0.80 — link centre at z=0.40 above model origin
+         top   : box 0.80×0.80×0.06  — link centre at z=0.83, top face at z=0.86
+         Model origin at grill world XY, z=0 (floor level).
+    ═══════════════════════════════════════════════════════════════════ -->
     <model name="grill">
       <static>true</static>
-      <pose>5 4.58 0 0 0 0</pose>
-      <link name="link">
-        <collision name="top">
-          <pose>0 0 0.85 0 0 0</pose>
-          <geometry><box><size>0.8 0.8 0.05</size></box></geometry>
-        </collision>
-        <visual name="vis">
-          <pose>0 0 0.45 0 0 0</pose>
-          <geometry><cylinder><radius>0.4</radius><length>0.8</length></cylinder></geometry>
+      <pose>5 4.43 0 0 0 0</pose>
+      <link name="body">
+        <pose>0 0 0.40 0 0 0</pose>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.4</radius><length>0.80</length></cylinder></geometry>
           <material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.4 0.4 0.4 1</diffuse></material>
         </visual>
       </link>
+      <link name="top">
+        <!-- centre z=0.83 → top face = 0.83+0.03 = 0.86 m world Z
+             Cylinder r=0.38 (just inside body r=0.4), h=0.06 -->
+        <pose>0 0 0.83 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.38</radius><length>0.06</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.38</radius><length>0.06</length></cylinder></geometry>
+          <material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.3 0.3 0.3 1</diffuse></material>
+        </visual>
+      </link>
     </model>
 
-    <!-- ================================================================
-         TABLES — top surface collision only, no leg/side collisions.
-         Static bodies against DART are cheap; only the top face matters
-         for supporting food items.
-         BENCHES — visual only, robot and food never interact with them.
-    ================================================================ -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         TABLES
+         All: box 0.10 m thick.
+         Model pose z = 0.80 (geometric centre of the slab).
+         Top surface world z = 0.80 + 0.05 = 0.85 m.
+         Visual and collision use the same geometry with no child offset.
+    ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Grill-prep table  2.0×1.1 m -->
     <model name="prep_grill">
       <static>true</static>
-      <pose>4.9 5.4 0 0 0 0</pose>
+      <pose>4.9 5.4 0.80 0 0 0</pose>
       <link name="link">
-        <collision name="top">
-          <pose>0 0 0.85 0 0 0</pose>
-          <geometry><box><size>1.8 0.8 0.05</size></box></geometry>
+        <collision name="collision">
+          <geometry><box><size>2.0 1.1 0.10</size></box></geometry>
         </collision>
-        <visual name="vis">
-          <pose>0 0 0.8 0 0 0</pose>
-          <geometry><box><size>1.8 0.8 0.1</size></box></geometry>
+        <visual name="visual">
+          <geometry><box><size>2.0 1.1 0.10</size></box></geometry>
           <material><ambient>0.7 0.5 0.3 1</ambient><diffuse>0.7 0.5 0.3 1</diffuse></material>
         </visual>
       </link>
     </model>
 
+    <!-- Main prep table  2.0×1.1 m -->
     <model name="prep">
       <static>true</static>
-      <pose>1 5.3 0 0 0 0</pose>
+      <pose>1.0 5.3 0.80 0 0 0</pose>
       <link name="link">
-        <collision name="top">
-          <pose>0 0 0.85 0 0 0</pose>
-          <geometry><box><size>2 1.1 0.05</size></box></geometry>
+        <collision name="collision">
+          <geometry><box><size>2.0 1.1 0.10</size></box></geometry>
         </collision>
-        <visual name="vis">
-          <pose>0 0 0.8 0 0 0</pose>
-          <geometry><box><size>2 1.1 0.1</size></box></geometry>
+        <visual name="visual">
+          <geometry><box><size>2.0 1.1 0.10</size></box></geometry>
           <material><ambient>0.7 0.5 0.3 1</ambient><diffuse>0.7 0.5 0.3 1</diffuse></material>
         </visual>
       </link>
     </model>
 
+    <!-- Dining table  4.0×1.0 m -->
     <model name="table_right">
       <static>true</static>
-      <pose>-3 -1.5 0 0 0 0</pose>
-      <link name="r">
-        <collision name="top">
-          <pose>0 0 0.85 0 0 0</pose>
-          <geometry><box><size>4 1 0.05</size></box></geometry>
+      <pose>-3.0 -1.5 0.80 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>4.0 1.0 0.10</size></box></geometry>
         </collision>
-        <visual name="v">
-          <pose>0 0 0.8 0 0 0</pose>
-          <geometry><box><size>4 1 0.1</size></box></geometry>
+        <visual name="visual">
+          <geometry><box><size>4.0 1.0 0.10</size></box></geometry>
           <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
         </visual>
       </link>
     </model>
 
+    <!-- Drinks table  0.5×0.5 m -->
+    <model name="drink_table">
+      <static>true</static>
+      <pose>-5.2 5.4 0.80 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.5 0.5 0.10</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.5 0.5 0.10</size></box></geometry>
+          <material><ambient>0.7 0.5 0.3 1</ambient><diffuse>0.7 0.5 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         BENCHES  (visual only)
+         Seat top at z=0.55 → box 0.10 m thick → centre z=0.50
+    ═══════════════════════════════════════════════════════════════════ -->
     <model name="bench_r1">
       <static>true</static>
-      <pose>-3 -2.3 0 0 0 0</pose>
-      <link name="r">
-        <visual name="v">
-          <pose>0 0 0.5 0 0 0</pose>
-          <geometry><box><size>4 0.4 0.1</size></box></geometry>
+      <pose>-3.0 -2.3 0.50 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>4.0 0.4 0.10</size></box></geometry>
           <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
         </visual>
       </link>
@@ -222,162 +272,140 @@
 
     <model name="bench_r2">
       <static>true</static>
-      <pose>-3 -0.7 0 0 0 0</pose>
-      <link name="r">
-        <visual name="v">
-          <pose>0 0 0.5 0 0 0</pose>
-          <geometry><box><size>4 0.4 0.1</size></box></geometry>
+      <pose>-3.0 -0.7 0.50 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>4.0 0.4 0.10</size></box></geometry>
           <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <!-- ================================================================
-         FOOD, PLATE, BOWL — dynamic, pickable.
+    <!-- ═══════════════════════════════════════════════════════════════
+         PICKABLE OBJECTS
+         z = surface_z + half_height  (see header table for derivation)
+    ═══════════════════════════════════════════════════════════════════ -->
 
-         Sleep thresholds let DART remove them from the active solver
-         once they settle. They wake automatically on gripper contact.
-
-         Z positions account for the ground plane (z=0) directly since
-         tables have no collision — set each item's z to its resting
-         height above the real ground (table height + half item height).
-         Grill top: ~0.86m. Prep table top: ~0.85m.
-    ================================================================ -->
-
-    <!-- Grill surface z=0.86 -->
+    <!-- Grill items  (surface z = 0.86) ─────────────────────────── -->
+    <!-- meat: box centre, half-height=0.025  → z=0.885 -->
     <include>
       <uri>model://meat</uri>
       <name>meat_1</name>
-      <pose>5 4.7 0.86 0 0 0</pose>
+      <pose>5.0 4.65 0.885 0 0 0</pose>
     </include>
     <include>
       <uri>model://meat</uri>
       <name>meat_2</name>
-      <pose>5.2 4.7 0.86 0 0 0</pose>
+      <pose>5.2 4.65 0.885 0 0 0</pose>
     </include>
     <include>
       <uri>model://meat</uri>
       <name>meat_3</name>
-      <pose>4.8 4.7 0.86 0 0 0</pose>
+      <pose>4.8 4.65 0.885 0 0 0</pose>
     </include>
 
+    <!-- garlic_bread: box centre, half-height=0.04  → z=0.900 -->
     <include>
       <uri>model://garlic_bread</uri>
       <name>garlic_bread_1</name>
-      <pose>5.1 4.5 0.86 0 0 0</pose>
+      <pose>5.1 4.40 0.900 0 0 0</pose>
     </include>
     <include>
       <uri>model://garlic_bread</uri>
       <name>garlic_bread_2</name>
-      <pose>4.9 4.5 0.86 0 0 0</pose>
+      <pose>4.9 4.40 0.900 0 0 0</pose>
     </include>
 
-    <!-- Grill prep table surface z=0.85 -->
+    <!-- Grill-prep table items  (surface z = 0.85) ───────────────── -->
+    <!-- plate: origin at bottom  → z=0.850 -->
     <include>
       <uri>model://plate</uri>
       <name>plate_1</name>
-      <pose>4.3 5.2 0.85 0 0 0</pose>
+      <pose>4.3 5.20 0.850 0 0 0</pose>
     </include>
 
-    <!-- Prep table surface z=0.85 -->
+    <!-- Main prep table items  (surface z = 0.85) ────────────────── -->
+    <!-- tomato: box centre, half-height=0.025  → z=0.875 -->
     <include>
       <uri>model://tomato</uri>
       <name>tomato_1</name>
-      <pose>1 5.2 0.95 0 0 0</pose>
+      <pose>1.0 5.20 0.875 0 0 0</pose>
     </include>
     <include>
       <uri>model://tomato</uri>
       <name>tomato_2</name>
-      <pose>1.2 5 0.95 0 0 0</pose>
+      <pose>1.2 5.00 0.875 0 0 0</pose>
     </include>
     <include>
       <uri>model://tomato</uri>
       <name>tomato_3</name>
-      <pose>1 5 0.95 0 0 0</pose>
+      <pose>1.0 5.00 0.875 0 0 0</pose>
     </include>
 
+    <!-- purple_onion: box centre, half-height=0.025  → z=0.875 -->
     <include>
       <uri>model://purple_onion</uri>
       <name>purple_onion_1</name>
-      <pose>1.2 5.2 0.95 0 0 0</pose>
+      <pose>1.2 5.20 0.875 0 0 0</pose>
     </include>
 
+    <!-- carrot: box centre, pitch=π/2 → lies flat, half world-Z=0.02  → z=0.870 -->
     <include>
       <uri>model://carrot</uri>
       <name>carrot_1</name>
-      <pose>1.7 5.3 0.95 0 0 0</pose>
+      <pose>1.7 5.30 0.870 0 0 0</pose>
     </include>
-
     <include>
       <uri>model://carrot</uri>
       <name>carrot_2</name>
-      <pose>0.7 5.25 0.95 0 0 0</pose>
+      <pose>0.7 5.25 0.870 0 0 0</pose>
     </include>
 
+    <!-- cucumber: same as carrot  → z=0.870 -->
     <include>
       <uri>model://cucumber</uri>
       <name>cucumber_1</name>
-      <pose>0.5 5.25 0.95 0 0 0</pose>
+      <pose>0.5 5.25 0.870 0 0 0</pose>
     </include>
-
     <include>
       <uri>model://cucumber</uri>
       <name>cucumber_2</name>
-      <pose>1.4 5.3 0.95 0 0 0</pose>
+      <pose>1.4 5.30 0.870 0 0 0</pose>
     </include>
 
+    <!-- bowl: origin at bottom  → z=0.850 -->
     <include>
       <uri>model://bowl</uri>
       <name>bowl_1</name>
-      <pose>0.6 4.9 0.93 0 0 0</pose>
+      <pose>0.6 4.90 0.850 0 0 0</pose>
     </include>
-
     <include>
       <uri>model://bowl</uri>
       <name>bowl_2</name>
-      <pose>1.5 4.9 0.93 0 0 0</pose>
+      <pose>1.5 4.90 0.850 0 0 0</pose>
     </include>
 
-
-    <!-- Table with drinks-->
-    <model name="drink_table">
-      <static>true</static>
-      <pose>-5.2 5.4 0 0 0 0</pose>
-      <link name="link">
-        <collision name="top">
-          <pose>0 0 0.85 0 0 0</pose>
-          <geometry><box><size>0.5 0.5 0.05</size></box></geometry>
-        </collision>
-        <visual name="vis">
-          <pose>0 0 0.8 0 0 0</pose>
-          <geometry><box><size>0.5 0.5 0.1</size></box></geometry>
-          <material><ambient>0.7 0.5 0.3 1</ambient><diffuse>0.7 0.5 0.3 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
+    <!-- Drinks table items  (surface z = 0.85) ───────────────────── -->
+    <!-- drink: cylinder centre, half-height=0.06  → z=0.910 -->
     <include>
       <uri>model://drink</uri>
       <name>drink_1</name>
-      <pose>-5 5.6 0.9 0 0 0</pose>
+      <pose>-5.0 5.60 0.910 0 0 0</pose>
     </include>
-
     <include>
       <uri>model://drink</uri>
       <name>drink_2</name>
-      <pose>-5.2 5.4 0.9 0 0 0</pose>
+      <pose>-5.2 5.40 0.910 0 0 0</pose>
     </include>
-
     <include>
       <uri>model://drink</uri>
       <name>drink_3</name>
-      <pose>-5 5.2 0.9 0 0 0</pose>
+      <pose>-5.0 5.20 0.910 0 0 0</pose>
     </include>
-
     <include>
       <uri>model://drink</uri>
       <name>drink_4</name>
-      <pose>-5.4 5.2 0.9 0 0 0</pose>
+      <pose>-5.4 5.20 0.910 0 0 0</pose>
     </include>
 
   </world>

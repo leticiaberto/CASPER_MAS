@@ -105,6 +105,7 @@ RUN apt-get update && apt-get upgrade -y \
         ros-${ROS_DISTRO}-ros-gz-bridge \
         ros-${ROS_DISTRO}-gz-ros2-control \
         ros-${ROS_DISTRO}-ign-ros2-control \
+        ros-${ROS_DISTRO}-tf2-geometry-msgs \
     && rm -rf /var/lib/apt/lists/*
 
 RUN rosdep init && rosdep update

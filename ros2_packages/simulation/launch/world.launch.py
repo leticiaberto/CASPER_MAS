@@ -44,7 +44,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'world_name',
-            default_value='franka',
+            default_value='backyard',
             description='Name of the world file (without .sdf extension) inside worlds/'
         ),
 

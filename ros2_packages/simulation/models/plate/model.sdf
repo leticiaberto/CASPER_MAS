@@ -1,57 +1,68 @@
 <?xml version="1.0" ?>
 <sdf version="1.7">
+  <!--
+    Composite model.  Link origin = bottom of the plate.
+
+    Part   Geometry               Child pose z   Bottom z   Top z
+    ──────────────────────────────────────────────────────────────
+    base   cylinder r=0.15 h=0.02  0.01           0.00       0.02
+    rim    cylinder r=0.17 h=0.02  0.02           0.01       0.03
+
+    Total height = 0.03 m  (rim top)
+
+    Placement : world pose z = table_surface_z + 0.00 = 0.85
+                (origin is the bottom — sits directly on the surface)
+    Top world z  = 0.85 + 0.03 = 0.88 m
+
+    Visual == Collision per part  ✓
+  -->
   <model name="plate">
-    <static>true</static>
+    <static>false</static>
     <link name="link">
 
-      <!-- Base (main support surface) -->
-      <collision name="base_col">
-        <geometry>
-          <cylinder>
-            <radius>0.15</radius>
-            <length>0.02</length>
-          </cylinder>
-        </geometry>
-        <pose>0 0 0.01 0 0 0</pose>
-      </collision>
+      <inertial>
+        <mass>0.30</mass>
+        <inertia>
+          <!-- Approximate as thin disk: ixx=iyy=(1/4)*m*r², izz=(1/2)*m*r² -->
+          <ixx>0.001913</ixx>
+          <iyy>0.001913</iyy>
+          <izz>0.003825</izz>
+        </inertia>
+      </inertial>
 
-      <!-- Rim (slightly raised edge to keep food in place) -->
-      <collision name="rim_col">
-        <geometry>
-          <cylinder>
-            <radius>0.17</radius>
-            <length>0.02</length>
-          </cylinder>
-        </geometry>
-        <pose>0 0 0.02 0 0 0</pose>
-      </collision>
-
-      <!-- Visual base -->
-      <visual name="base_vis">
-        <geometry>
-          <cylinder>
-            <radius>0.15</radius>
-            <length>0.02</length>
-          </cylinder>
-        </geometry>
+      <!-- Base disc ───────────────────────────────────── -->
+      <collision name="base_collision">
         <pose>0 0 0.01 0 0 0</pose>
+        <geometry>
+          <cylinder><radius>0.15</radius><length>0.02</length></cylinder>
+        </geometry>
+        <surface><friction><ode><mu>0.8</mu><mu2>0.8</mu2></ode></friction></surface>
+      </collision>
+      <visual name="base_visual">
+        <pose>0 0 0.01 0 0 0</pose>
+        <geometry>
+          <cylinder><radius>0.15</radius><length>0.02</length></cylinder>
+        </geometry>
         <material>
           <ambient>0.95 0.95 0.95 1</ambient>
-          <diffuse>1 1 1 1</diffuse>
+          <diffuse>1.00 1.00 1.00 1</diffuse>
         </material>
       </visual>
 
-      <!-- Visual rim -->
-      <visual name="rim_vis">
-        <geometry>
-          <cylinder>
-            <radius>0.17</radius>
-            <length>0.02</length>
-          </cylinder>
-        </geometry>
+      <!-- Rim ring ─────────────────────────────────────── -->
+      <collision name="rim_collision">
         <pose>0 0 0.02 0 0 0</pose>
+        <geometry>
+          <cylinder><radius>0.17</radius><length>0.02</length></cylinder>
+        </geometry>
+      </collision>
+      <visual name="rim_visual">
+        <pose>0 0 0.02 0 0 0</pose>
+        <geometry>
+          <cylinder><radius>0.17</radius><length>0.02</length></cylinder>
+        </geometry>
         <material>
-          <ambient>0.9 0.9 0.9 1</ambient>
+          <ambient>0.90 0.90 0.90 1</ambient>
           <diffuse>0.95 0.95 0.95 1</diffuse>
         </material>
       </visual>

@@ -1,39 +1,55 @@
 <?xml version="1.0" ?>
 <sdf version="1.7">
+  <!--
+    Geometry  : box 0.03 m (X) × 0.20 m (Y) × 0.08 m (Z)
+    Link origin: CENTRE of the box  (no rotation, no child offset)
+
+    Bottom = link-z - 0.04 m
+    Top    = link-z + 0.04 m
+
+    Placement : world pose z = grill_surface_z + 0.04
+                            = 0.86 + 0.04 = 0.900 m
+
+    Inertia for box (1/12)*m*(a^2+b^2):
+      ixx = (1/12)*0.2*(0.20^2+0.08^2) = 0.000773   (about X: y,z dims)
+      iyy = (1/12)*0.2*(0.03^2+0.08^2) = 0.000122   (about Y: x,z dims)
+      izz = (1/12)*0.2*(0.03^2+0.20^2) = 0.000682   (about Z: x,y dims)
+    Triangle inequality: all pass.
+
+    Visual == Collision.
+  -->
   <model name="garlic_bread">
     <link name="link">
-      <pose>0 0 0 0 0 0</pose>
 
       <inertial>
         <mass>0.2</mass>
         <inertia>
-          <!-- computed for box 0.15 x 0.08 x 0.08 -->
-          <ixx>0.000213</ixx>
-          <iyy>0.000523</iyy>
-          <izz>0.000523</izz>
+          <ixx>0.000773</ixx>
+          <iyy>0.000122</iyy>
+          <izz>0.000682</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
         </inertia>
       </inertial>
 
-      <collision name="col">
+      <collision name="collision">
         <geometry>
-          <box>
-            <size>0.03 0.2 0.08</size> <!-- wider than carrot/cucumber -->
-          </box>
+          <box><size>0.03 0.20 0.08</size></box>
         </geometry>
+        <surface>
+          <friction><ode><mu>0.6</mu><mu2>0.6</mu2></ode></friction>
+        </surface>
       </collision>
 
-      <visual name="vis">
+      <visual name="visual">
         <geometry>
-          <box>
-            <size>0.03 0.2 0.08</size>
-          </box>
+          <box><size>0.03 0.20 0.08</size></box>
         </geometry>
         <material>
-          <!-- garlic_bread yellow -->
-          <ambient>1 0.85 0.2 1</ambient>
-          <diffuse>1 0.9 0.3 1</diffuse>
+          <ambient>1.0 0.85 0.2 1</ambient>
+          <diffuse>1.0 0.90 0.3 1</diffuse>
         </material>
       </visual>
+
     </link>
   </model>
 </sdf>

@@ -1,32 +1,47 @@
 <?xml version="1.0" ?>
 <sdf version="1.7">
+  <!--
+    Geometry  : box 0.04 m (X) × 0.25 m (Y) × 0.04 m (Z)
+    Link pose : pitch = π/2  → box lies flat on the table
+                After rotation the world-Z extent = original X = 0.04 m
+                                                   half-height = 0.02 m
+    Placement : world pose z = table_surface_z + 0.02
+                            = 0.85 + 0.02 = 0.870 m
+    Visual == Collision  ✓  (identical geometry, no offset)
+  -->
   <model name="cucumber">
     <link name="link">
-      <pose>0 0 0 0 1.57 0</pose>
+      <!-- pitch = π/2 lays the cucumber on its side (long axis along world X) -->
+      <pose>0 0 0 0 1.5708 0</pose>
+
       <inertial>
-        <mass>0.1</mass>
+        <mass>0.10</mass>
         <inertia>
-          <ixx>0.0002</ixx>
-          <iyy>0.000008</iyy>
-          <izz>0.0002</izz>
+          <ixx>0.000541</ixx>   <!-- (1/12)*0.10*(0.25²+0.04²) -->
+          <iyy>0.000007</iyy>
+          <izz>0.000541</izz>
         </inertia>
       </inertial>
 
-      <collision name="col">
+      <collision name="collision">
         <geometry>
           <box><size>0.04 0.25 0.04</size></box>
         </geometry>
+        <surface>
+          <friction><ode><mu>0.8</mu><mu2>0.8</mu2></ode></friction>
+        </surface>
       </collision>
 
-      <visual name="vis">
+      <visual name="visual">
         <geometry>
           <box><size>0.04 0.25 0.04</size></box>
         </geometry>
         <material>
-          <ambient>0 1 0 1</ambient>
-          <diffuse>0 1 0 1</diffuse>
+          <ambient>0.0 0.7 0.0 1</ambient>
+          <diffuse>0.0 0.8 0.0 1</diffuse>
         </material>
       </visual>
+
     </link>
   </model>
 </sdf>

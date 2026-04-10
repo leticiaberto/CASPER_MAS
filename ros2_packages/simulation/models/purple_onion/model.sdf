@@ -1,34 +1,49 @@
 <?xml version="1.0" ?>
 <sdf version="1.7">
+  <!--
+    Geometry  : box 0.05 m (X) × 0.05 m (Y) × 0.05 m (Z)
+    Link origin: CENTRE of the box  (no rotation, no child offset)
+
+    Bottom = link-z − 0.025 m
+    Top    = link-z + 0.025 m
+
+    Placement : world pose z = table_surface_z + 0.025
+                            = 0.85 + 0.025 = 0.875 m
+    Visual == Collision  ✓
+  -->
   <model name="purple_onion">
     <link name="link">
-      <pose>0 0 0 0 0 0</pose>
+
       <inertial>
         <mass>0.05</mass>
         <inertia>
-          <ixx>0.000125</ixx>
-          <iyy>0.000125</iyy>
-          <izz>0.000125</izz>
+          <!-- (1/6)*m*a² for cube side a=0.05 -->
+          <ixx>0.000021</ixx>
+          <iyy>0.000021</iyy>
+          <izz>0.000021</izz>
         </inertia>
       </inertial>
 
-      <collision name="col">
+      <collision name="collision">
         <geometry>
           <box><size>0.05 0.05 0.05</size></box>
         </geometry>
+        <surface>
+          <friction><ode><mu>0.7</mu><mu2>0.7</mu2></ode></friction>
+        </surface>
       </collision>
 
-      <visual name="vis">
+      <visual name="visual">
         <geometry>
           <box><size>0.05 0.05 0.05</size></box>
         </geometry>
         <material>
-          <ambient>0.5 0.0 0.5 1.0</ambient>
-          <diffuse>0.5 0.0 0.5 1.0</diffuse>
-          <specular>0.1 0.0 0.1 1.0</specular>
-          <emissive>0.0 0.0 0.0 1.0</emissive>
+          <ambient>0.5 0.0 0.5 1</ambient>
+          <diffuse>0.5 0.0 0.5 1</diffuse>
+          <specular>0.1 0.0 0.1 1</specular>
         </material>
       </visual>
+
     </link>
   </model>
 </sdf>

@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-object_to_robot.py
 ------------------
 A reusable ROS2 library class that any robot node can instantiate to get
 Gazebo Fortress object poses expressed in that robot's own coordinate frame.
 
 Typical usage inside a robot node
 ----------------------------------
-    from object_to_robot import ObjectToRobot
+    from object_world_to_robot import ObjectToRobot
 
     class MyRobotNode(Node):
         def __init__(self):
@@ -324,7 +323,7 @@ class ObjectToRobot:
         self._log_info(f"Waiting for pose/info from '{self._pose_topic}' …")
         deadline = time.time() + self._pose_timeout
         while time.time() < deadline:
-            rclpy.spin_once(self._node, timeout_sec=0.1)
+            time.sleep(0.1)  # executor already spinning — callbacks fire automatically
             # First wait for the topic to arrive at all (any message).
             # Checking only for requested objects can time out prematurely when
             # the objects arrive slightly later than the first message burst.
@@ -361,7 +360,7 @@ class ObjectToRobot:
         while time.time() < deadline:
             if self._tf_buffer.all_frames_as_string():
                 break
-            rclpy.spin_once(self._node, timeout_sec=0.2)
+            time.sleep(0.2)  # executor already spinning — callbacks fire automatically
 
         all_frames = self._tf_buffer.all_frames_as_string()
         self._log_info(f"Available TF frames:\n{all_frames}")

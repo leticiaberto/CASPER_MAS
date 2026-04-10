@@ -1,0 +1,51 @@
+<?xml version="1.0" ?>
+<sdf version="1.8">
+  <model name="soda_can_blue">
+    <static>false</static>
+    <link name="can_link">
+
+      <inertial>
+        <mass>0.35</mass>
+        <inertia>
+          <!-- Approximate inertia for a cylinder -->
+          <ixx>0.00058</ixx>
+          <iyy>0.00058</iyy>
+          <izz>0.00012</izz>
+        </inertia>
+      </inertial>
+
+      <collision name="collision">
+        <geometry>
+          <cylinder>
+            <radius>0.033</radius> <!-- ~66mm diameter -->
+            <length>0.12</length>  <!-- ~120mm height -->
+          </cylinder>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.6</mu>
+              <mu2>0.6</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <cylinder>
+            <radius>0.033</radius>
+            <length>0.12</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <!-- Blue soda can -->
+          <ambient>0 0 0.8 1</ambient>
+          <diffuse>0 0 1 1</diffuse>
+          <specular>0.2 0.2 0.2 1</specular>
+        </material>
+      </visual>
+
+    </link>
+  </model>
+</sdf>

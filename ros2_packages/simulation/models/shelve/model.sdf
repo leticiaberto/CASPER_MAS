@@ -1,0 +1,124 @@
+<?xml version="1.0" ?>
+<sdf version="1.8">
+  <model name="shelve">
+    <static>true</static>
+
+    <link name="shelve_link">
+
+      <!-- BACK WALL -->
+      <visual name="back_wall_visual">
+        <pose>0 -0.37 0 0 0 0</pose>
+        <geometry>
+          <box><size>0.8 0.02 1.8</size></box>
+        </geometry>
+        <material>
+          <ambient>0.75 0.75 0.75 1</ambient>
+          <diffuse>0.75 0.75 0.75 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- LEFT WALL -->
+      <visual name="left_wall_visual">
+        <pose>-0.39 0 0 0 0 0</pose>
+        <geometry>
+          <box><size>0.02 0.75 1.8</size></box>
+        </geometry>
+        <material>
+          <ambient>0.75 0.75 0.75 1</ambient>
+          <diffuse>0.75 0.75 0.75 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- RIGHT WALL -->
+      <visual name="right_wall_visual">
+        <pose>0.39 0 0 0 0 0</pose>
+        <geometry>
+          <box><size>0.02 0.75 1.8</size></box>
+        </geometry>
+        <material>
+          <ambient>0.75 0.75 0.75 1</ambient>
+          <diffuse>0.75 0.75 0.75 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- TOP CEILING -->
+      <visual name="top_visual">
+        <pose>0 0 0.9 0 0 0</pose>
+        <geometry>
+          <box><size>0.8 0.75 0.02</size></box>
+        </geometry>
+        <material>
+          <ambient>0.75 0.75 0.75 1</ambient>
+          <diffuse>0.75 0.75 0.75 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- FLOOR -->
+      <visual name="floor_visual">
+        <pose>0 0 -0.9 0 0 0</pose>
+        <geometry>
+          <box><size>0.8 0.75 0.02</size></box>
+        </geometry>
+        <material>
+          <ambient>0.75 0.75 0.75 1</ambient>
+          <diffuse>0.75 0.75 0.75 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- SHELF 1 (lighter grey) -->
+      <collision name="shelf1_collision">
+        <pose>0 0 0.35 0 0 0</pose>
+        <geometry>
+          <box><size>0.7 0.65 0.02</size></box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.4</mu>
+              <mu2>0.4</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+
+      <visual name="shelf1_visual">
+        <pose>0 0 0.35 0 0 0</pose>
+        <geometry>
+          <box><size>0.7 0.65 0.02</size></box>
+        </geometry>
+        <material>
+          <ambient>0.92 0.92 0.92 1</ambient>
+          <diffuse>0.92 0.92 0.92 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- SHELF 2 (lighter grey) -->
+      <collision name="shelf2_collision">
+        <pose>0 0 -0.35 0 0 0</pose>
+        <geometry>
+          <box><size>0.7 0.65 0.02</size></box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.4</mu>
+              <mu2>0.4</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+
+      <visual name="shelf2_visual">
+        <pose>0 0 -0.35 0 0 0</pose>
+        <geometry>
+          <box><size>0.7 0.65 0.02</size></box>
+        </geometry>
+        <material>
+          <ambient>0.92 0.92 0.92 1</ambient>
+          <diffuse>0.92 0.92 0.92 1</diffuse>
+        </material>
+      </visual>
+
+    </link>
+  </model>
+</sdf>

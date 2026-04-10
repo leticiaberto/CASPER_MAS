@@ -17,7 +17,7 @@
       <collision name="col">
         <geometry>
           <box>
-            <size>0.15 0.08 0.08</size> <!-- wider than carrot/cucumber -->
+            <size>0.03 0.2 0.08</size> <!-- wider than carrot/cucumber -->
           </box>
         </geometry>
       </collision>
@@ -25,7 +25,7 @@
       <visual name="vis">
         <geometry>
           <box>
-            <size>0.15 0.08 0.08</size>
+            <size>0.03 0.2 0.08</size>
           </box>
         </geometry>
         <material>

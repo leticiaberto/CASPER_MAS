@@ -14,13 +14,13 @@
 
       <collision name="col">
         <geometry>
-          <box><size>0.25 0.04 0.04</size></box>
+          <box><size>0.04 0.25 0.04</size></box>
         </geometry>
       </collision>
 
       <visual name="vis">
         <geometry>
-          <box><size>0.25 0.04 0.04</size></box>
+          <box><size>0.04 0.25 0.04</size></box>
         </geometry>
         <material>
           <ambient>1 0.333 0 1</ambient>

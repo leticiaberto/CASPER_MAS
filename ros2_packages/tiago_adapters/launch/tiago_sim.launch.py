@@ -375,6 +375,7 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{
             'robot_description': urdf_str,
             'use_sim_time': True,
+            'frame_prefix': f'{robot_name}/',
         }],
         output='screen',
     )

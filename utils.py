@@ -1,6 +1,8 @@
 import colorsys
 import hashlib
 from enum import Enum
+import os
+from typing import Optional
 
 # -----------------------------
 # Palette classes
@@ -48,3 +50,29 @@ class DistinctPalette:
 class Roles(Enum):
     SUPERVISOR = "supervisor"
     MEMBER = "member"
+
+
+class ROSUtils:
+    def _get_sdf_path(world_name) -> str:
+        if world_name is None:
+            world_name = "backyard"   # default world name for GT subscription
+        candidates = [
+            f"/ros2_ws/install/simulation/share/simulation/worlds/{world_name}.sdf",
+            os.path.join(os.path.dirname(__file__), "worlds", f"{world_name}.sdf"),
+        ]
+        for p in candidates:
+            if os.path.exists(p):
+                return p
+        raise FileNotFoundError(f"{world_name}.sdf not found. Searched:\n" + "\n".join(candidates))
+
+
+    def _get_models_dir() -> Optional[str]:
+        candidates = [
+            "/ros2_ws/install/simulation/share/simulation/models",
+            "/ros2_ws/src/simulation/models",
+            os.path.join(os.path.dirname(__file__), "..", "simulation", "models"),
+        ]
+        for p in candidates:
+            if os.path.isdir(p):
+                return p
+        return None

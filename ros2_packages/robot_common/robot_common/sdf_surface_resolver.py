@@ -192,7 +192,13 @@ class SdfSurfaceResolver:
 
         # ── <include> elements  (external model URIs) ─────────────────
         for include_el in world.findall("include"):
+            # Gazebo SDF spec uses <name>, but some world files use the
+            # shorthand <n> tag — check both.
+            # ET elements are falsy when childless — must use 'is not None',
+            # never bare 'or', to check existence.
             name_el = include_el.find("name")
+            if name_el is None:
+                name_el = include_el.find("n")
             uri_el  = include_el.find("uri")
             if name_el is None or uri_el is None:
                 continue

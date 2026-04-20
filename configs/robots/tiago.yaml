@@ -1,0 +1,19 @@
+debug: False
+robot_model: Tiago
+robot_id: tiago_robot1
+
+x_pos: 0.3
+y_pos: 0.0
+z_pos: 1.03
+yaw: -3.14
+
+skill_weights:  #[skill weight, preference weight]
+  delivery:
+    navigation: [0.6, 0.1]
+    manipulation: [0.2, 0.6]
+    planning: [0.2, 0.3]
+
+  assembly:
+    navigation: [0.1, 0.8]
+    manipulation: [1.0, 0.2]
+    planning: [0.3, 0.5]

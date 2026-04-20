@@ -1,4 +1,5 @@
 import time
+import ros2_path_setup  # noqa: F401 — registers all ROS2 adapter packages
 from src.entities.ContextualSkill import Context
 from robots.Pepper import Pepper
 from robots.FrankaResearch3 import FrankaResearch3

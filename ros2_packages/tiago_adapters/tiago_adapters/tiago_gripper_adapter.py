@@ -219,14 +219,19 @@ class TiagoGripperAdapter(Node):
 
         success = result.error_code == FollowJointTrajectory.Result.SUCCESSFUL
         message = result.error_string if result.error_string else (
-            "Gripper move succeeded." if success
+            "Goal successfully reached!" if success
             else f"Gripper move failed (error_code={result.error_code})."
         )
-        log_fn = self.get_logger().info if success else self.get_logger().error
-        log_fn(
-            f"[TiagoGripperAdapter:{self._robot_name}] Result: "
-            f"success={success}, msg='{message}'"
-        )
+        if success:
+            self.get_logger().info(
+                f"[TiagoGripperAdapter:{self._robot_name}] Result: "
+                f"success={success}, msg='{message}'"
+            )
+        else:
+            self.get_logger().warn(
+                f"[TiagoGripperAdapter:{self._robot_name}] Result: "
+                f"success={success}, msg='{message}'"
+            )
         self._result_callback(success, message)
 
     def _time_based_completion(self) -> None:

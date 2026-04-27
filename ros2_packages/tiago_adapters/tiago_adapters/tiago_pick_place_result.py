@@ -54,6 +54,10 @@ class PickPlaceStep:
     -- NAVIGATE steps --
     nav_goal : Optional[NavGoal]
         (x, y, theta) in the world/map frame to send to Nav2.
+    nav_target_xy : Optional[Tuple[float, float]]
+        World-frame (x, y) of the object the robot must face on arrival.
+        Used by the adapter to recompute goal_theta from the robot's actual
+        arrived position, avoiding angular error caused by XY stopping tolerance.
     """
     kind:              StepKind
     label:             str
@@ -61,6 +65,7 @@ class PickPlaceStep:
     joint_trajectory:  Optional[JointTrajectory] = None
     gripper_width:     Optional[float]           = None
     nav_goal:          Optional[NavGoal]         = None
+    nav_target_xy:     Optional[Tuple[float, float]] = None
 
 
 @dataclass

@@ -7,40 +7,45 @@ Accepts a list of (pick_object, place_object) name pairs and executes them
 sequentially.  Each object name is a Gazebo model name; world-frame positions
 are resolved automatically via ObjectToRobot (gz-ros2-bridge).
 
+Pose source
+-----------
+The robot's pose is read live from Gazebo Fortress via the gz-ros2 bridge topic
+``/world/<world_name>/pose/info`` — this is the ground-truth world pose, not
+wheel odometry.  No spawn-pose parameter is required regardless of where the
+robot is placed in the world.  The nav loop compares world-frame goals directly
+against the live world pose, so there is no odometry drift.
+
+Prerequisite: the gz-ros2 bridge must be running::
+
+    ros2 run ros_gz_bridge parameter_bridge \\
+      /world/<world_name>/pose/info@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V \\
+      /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock
+
 Architecture
 ------------
                     ┌─────────────────────────────────────┐
                     │  Tiago (Agent subclass)              │
                     │                                     │
                     │  ObjectToRobot ──► world_pose XYZ   │
-                    │       │                             │
+                    │       │  (same /pose/info topic)    │
                     │       ▼                             │
-                    │  TiagoAdapter  (world-frame mode)   │
+                    │  TiagoAdapter  (world-frame + GT)   │
                     │    ├─ TiagoPickPlacePlanner          │
                     │    │    └─ nav pose computation      │
                     │    ├─ P-controller navigation        │
+                    │    │    └─ ground-truth feedback     │
                     │    └─ TiagoGripperAdapter            │
                     └─────────────────────────────────────┘
 
-TiagoAdapter runs in world-frame mode (robot_frame=False), meaning it
-receives world-frame XYZ and handles navigation internally — no separate
-TiagoNavigator or TiagoMissionController is needed here.
-
 ObjectToRobot shares the adapter's ROS2 node so all subscriptions live on
 the same node and are served by the same MultiThreadedExecutor.
-
-Dependency note
----------------
-object_to_robot.py must have rclpy.spin_once() replaced with time.sleep()
-in _wait_for_poses() and _resolve_base_frame() — the executor already spins
-the node so spin_once() is a no-op when called from a separate thread.
 
 Usage
 -----
     tiago = Tiago(
         id          = "tiago1",
         robot_name  = "tiago_robot1",
-        world_name  = "backyard",          # matches gz-ros2-bridge world name
+        world_name  = "backyard",
         skill_weights = ...,
         contexts    = ...,
         role        = ...,
@@ -50,15 +55,12 @@ Usage
         ("tomato_1", "bowl_1"),
         ("meat_1",   "plate_1"),
     ])
-
-Place on a static surface (e.g. a table whose model centre ≠ surface):
-    tiago.pick_and_place_objects(
-        [("tomato_1", "prep")],
-        place_z_offset = 0.05,   # table model centre is 0.05 m below surface
-    )
 """
 from __future__ import annotations
 
+import math
+import os
+import sys
 import threading
 import time
 from typing import Dict, List, Optional, Tuple, Union
@@ -67,9 +69,11 @@ import rclpy
 import rclpy.parameter
 from rclpy.executors import MultiThreadedExecutor
 
+import tf2_ros
+
 from src.entities.Agent import Agent
 from tiago_adapters.TiagoAdapter import TiagoAdapter, RobotMode
-from robot_common.object_to_robot import ObjectToRobot
+from robot_common.object_world_to_robot import ObjectToRobot
 from robot_common.sdf_surface_resolver import SdfSurfaceResolver
 
 # ---------------------------------------------------------------------------
@@ -81,8 +85,68 @@ ObjectPair = Tuple[str, str]   # (pick_model_name, place_model_name)
 
 
 # ---------------------------------------------------------------------------
-# Tiago agent
+# TF-based arm height lookup
 # ---------------------------------------------------------------------------
+
+_ARM_BASE_Z_FALLBACK = 0.83   # metres — used only if TF lookup fails
+
+def _lookup_arm_base_z(robot_name: str, timeout: float = 10.0) -> float:
+    """
+    Look up the actual height of arm_1_link above the floor by reading the
+    TF tree.  This is always more accurate than a hardcoded constant because
+    it reflects the torso lift joint position at the time of the call.
+
+    Creates a temporary ROS2 node, waits for the TF tree to populate, reads
+    the transform, then destroys the node.  Falls back to
+    _ARM_BASE_Z_FALLBACK (0.83 m) if the transform is unavailable.
+    """
+    import time as _time
+
+    arm_link  = f"{robot_name}/arm_1_link"
+    base_link = f"{robot_name}/base_footprint"
+
+    try:
+        tmp_node   = rclpy.create_node(f"_arm_z_probe_{robot_name}")
+        tf_buffer  = tf2_ros.Buffer()
+        tf2_ros.TransformListener(tf_buffer, tmp_node)
+
+        executor = rclpy.executors.SingleThreadedExecutor()
+        executor.add_node(tmp_node)
+
+        deadline = _time.time() + timeout
+        z = None
+        while _time.time() < deadline:
+            executor.spin_once(timeout_sec=0.1)
+            try:
+                tf = tf_buffer.lookup_transform(
+                    base_link, arm_link,
+                    rclpy.time.Time(),
+                    timeout=rclpy.duration.Duration(seconds=0.5),
+                )
+                z = tf.transform.translation.z
+                break
+            except Exception:
+                pass
+
+        executor.shutdown()
+        tmp_node.destroy_node()
+
+        if z is not None:
+            print(f"[Tiago] arm_1_link height from TF: {z:.4f} m")
+            return float(z)
+
+    except Exception as exc:
+        print(f"[Tiago] TF arm_base_z lookup failed: {exc}")
+
+    print(f"[Tiago] WARNING: using fallback arm_base_z = {_ARM_BASE_Z_FALLBACK} m")
+    return _ARM_BASE_Z_FALLBACK
+
+
+_GRIPPER_Z_OFFSET_FALLBACK = 0.143  # metres — standard PAL Tiago grasping_frame offset
+
+# NOTE: gripper_z_offset is handled internally by TiagoPickPlacePlanner._load_chain.
+# It reads the arm-only URDF to detect whether gripper_grasping_frame is in the chain.
+# No external TF lookup is needed.
 
 class Tiago(Agent):
     """
@@ -98,12 +162,33 @@ class Tiago(Agent):
         /world/<world_name>/pose/info.
     skill_weights, contexts, role, teamsize :
         Passed through to the Agent base class.
-    arm_base_z : float
-        Height of arm_1_link above the floor (m). Default 0.83.
+    arm_base_z : float or None
+        Height of arm_1_link above the floor (m).
+        When None (default), the value is read live from the TF tree at
+        startup — this is always more accurate than a hardcoded constant
+        because it reflects the actual torso lift position.
+        Only pass an explicit float if TF is unavailable.
     sdf_path : str, optional
-        Absolute path to the world .sdf file.  When provided, top-surface z
-        offsets are computed automatically from the model geometry — no manual
-        place_z_offset needed.  If omitted, raw model origin z is used.
+        Absolute path to the world .sdf file.  When provided:
+          - Top-surface z offsets are computed automatically from the SDF
+            geometry (no manual place_z_offset needed).
+          - Navigation uses table-aware standoff poses: the robot stops at
+            ``preferred_reach`` from the object, projected perpendicular to
+            the nearest table face, with a minimum of ``table_standoff`` metres
+            clearance from the face edge.
+        If omitted, raw model origin z is used and the old preferred_reach
+        nav behaviour applies.
+    models_base_dir : str, optional
+        Root directory that contains ``<model_name>/model.sdf`` files
+        (e.g. ``/ros2_ws/src/my_pkg/simulation/models``).
+        Used by the table resolver to parse external model footprints
+        referenced by ``<include>`` tags in the world SDF.
+        Falls back to GAZEBO_MODEL_PATH if omitted.
+    table_standoff : float
+        Minimum metres of clearance between the robot base and the table
+        face edge (default 0.10). The prep table has no side-wall collision
+        geometry, so the base can safely approach within 0.10 m of the slab
+        edge. The actual arm reach is auto-computed to reach_pref=0.55 m.
     pose_timeout : float
         Seconds to wait for the first pose/info message on startup. Default 15.
     """
@@ -117,9 +202,11 @@ class Tiago(Agent):
         contexts,
         role,
         teamsize:     int,
-        sdf_path:     Optional[str] = None,
-        arm_base_z:   float         = 0.83,
-        pose_timeout: float         = 15.0,
+        sdf_path:     Optional[str]   = None,
+        arm_base_z:   Optional[float] = None,
+        pose_timeout: float           = 15.0,
+        models_base_dir: Optional[str] = None,
+        table_standoff  = 0.10,
     ) -> None:
         constraints = {
             "can_move":               True,
@@ -145,16 +232,32 @@ class Tiago(Agent):
 
         # TiagoAdapter in world-frame mode:
         # receives world-frame XYZ, computes nav poses internally, drives base.
+        # arm_base_z is looked up from TF if not provided explicitly.
+        resolved_arm_base_z = arm_base_z if arm_base_z is not None \
+            else _lookup_arm_base_z(robot_name)
+
+        # TiagoAdapter in world-frame mode with Gazebo ground-truth pose feedback.
+        # Passing world_name activates the /world/<world_name>/pose/info subscription
+        # inside the adapter: the nav loop reads the robot's actual Gazebo world pose
+        # every cycle instead of integrating wheel odometry.  This eliminates the
+        # odom drift that accumulates over longer navigation distances and means
+        # spawn_world_pose is never needed — no manual coordinate is required.
         self._adapter = TiagoAdapter(
             robot_name      = robot_name,
             mode            = RobotMode.SIMULATION,
             result_callback = self._on_result,
-            robot_frame     = False,   # world-frame mode: adapter handles navigation
-            arm_base_z      = arm_base_z,
+            robot_frame     = False,
+            arm_base_z      = resolved_arm_base_z,
+            world_sdf_path  = sdf_path,
+            models_base_dir = models_base_dir,
+            table_standoff  = table_standoff,
+            world_name      = world_name,   # activates ground-truth pose; no spawn param needed
         )
 
-        # ObjectToRobot shares the adapter node so both live on the same executor.
-        # It subscribes to /world/<world_name>/pose/info via the gz-ros2-bridge.
+        # ObjectToRobot shares the adapter node so all subscriptions live on
+        # the same executor.  Both OTR and the adapter subscribe to
+        # /world/<world_name>/pose/info; ROS2 delivers the messages to each
+        # callback independently — no conflict.
         self._otr = ObjectToRobot(
             node         = self._adapter,
             robot_name   = robot_name,
@@ -173,6 +276,29 @@ class Tiago(Agent):
             name   = f"tiago_{robot_name}_spin",
         )
         self._spin_thread.start()
+
+        # ── Ground-truth pose confirmation ────────────────────────────
+        # Wait for the first GT message so we know the bridge is live before
+        # attempting navigation.  The adapter's _pose_ready event fires on
+        # the first /world/<world_name>/pose/info message (or first odom if
+        # the bridge is slow — the nav loop handles both gracefully).
+        print(f"[Tiago] Waiting for ground-truth pose from "
+              f"/world/{world_name}/pose/info ...")
+        if self._adapter._pose_ready.wait(timeout=pose_timeout):
+            if self._adapter._use_ground_truth:
+                wx, wy, wth = self._adapter._get_robot_pose()
+                print(
+                    f"[Tiago] Ground-truth pose active: "
+                    f"({wx:.3f}, {wy:.3f}, {math.degrees(wth):.1f}°) "
+                    f"[no spawn parameter needed]"
+                )
+            else:
+                print("[Tiago] WARNING: GT not yet received — odometry active. "
+                      "Check the gz-ros2 bridge is running for "
+                      f"world '{world_name}'.")
+        else:
+            print("[Tiago] WARNING: No pose received within "
+                  f"{pose_timeout:.0f} s. Navigation may fail.")
 
         # SdfSurfaceResolver: parse SDF once to get top-surface z offsets automatically.
         self._surface = SdfSurfaceResolver(sdf_path, verbose=True) if sdf_path else None
@@ -323,7 +449,17 @@ class Tiago(Agent):
         model_name: str,
         z_offset:   float = 0.0,
     ) -> Optional[XYZ]:
-        """Return world-frame (x, y, z) of a Gazebo model, or None on error."""
+        """
+        Return world-frame (x, y, z) of a Gazebo model for pick targeting.
+
+        Uses OTR world_pose.z directly — the object's geometric centre height.
+        This is the correct pick target: the gripper descends to centre height
+        so the fingers close around the widest part of the object.
+
+        Do NOT subtract top_offset here. The bottom of the object is at the
+        table surface (z=0.850 for the prep table) — the gripper cannot
+        physically reach that z without hitting the table.
+        """
         result = self._otr.get_pose(model_name)
         if "error" in result:
             return None

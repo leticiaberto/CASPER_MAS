@@ -18,6 +18,9 @@ Usage
     python3 robots/Tests/tiago_pick_and_place.py tomato_2 bench_r2 \\
         --robot tiago_robot1 --world backyard
 
+    # Use lateral pre-grasp sequence (arm_1 right → arm_2 up → arm_3 half-max)
+    python3 robots/Tests/tiago_pick_and_place.py tomato_2 bench_r2 --lateral-pregrasp
+
     # Disable Gazebo ground-truth (fall back to wheel odometry — not recommended)
     python3 robots/Tests/tiago_pick_and_place.py tomato_2 bench_r2 --world ''
 
@@ -53,19 +56,20 @@ from object_world_to_robot import ObjectToRobot
 from sdf_surface_resolver import SdfSurfaceResolver
 
 # ---------------------------------------------------------------------------
-# Pick z calibration
+# Pick target z convention
 # ---------------------------------------------------------------------------
-# In Gazebo the world_pose.z of a model is its SDF frame origin.  Many
-# object models (bottles, cups, boxes) define that origin at their *base*
-# rather than their geometric centre.  If we target that z directly the
-# gripper descends to the object's bottom face.
+# For the PICK target we pass the object's Gazebo world_pose.z directly.
+# TiagoAdapter/TiagoPickPlacePlanner then adds a per-object grasp clearance
+# of (object_sz / 2 + _GRASP_MARGIN) by looking up the object's SDF under
+# models_base_dir -- which is resolved via ROSUtils._get_models_dir() and
+# forwarded to the adapter below -- so the gripper hovers just above the
+# object's top surface rather than at its centre.  Passing pick_object_name
+# to adapter.pick_and_place() is how that lookup is triggered.
 #
-# _PICK_Z_LIFT shifts the grasp target upward so the gripper centres on the
-# object body.  Tune this value for your specific object set:
-#   • Small spheres / tomatoes (r ≈ 4 cm)  →  0.04 m
-#   • Cylinders / cups (h ≈ 12 cm)         →  0.06 m  (default)
-#   • Tall bottles   (h ≈ 20 cm)           →  0.10 m
-_PICK_Z_LIFT: float = 0.06
+# If the model's SDF origin is at the base (not centre) the computed
+# clearance may need a small per-object tweak; we log the resolved size at
+# plan time so any mismatch is visible in the output.
+
 
 def _resolve_xyz(
     otr:        ObjectToRobot,
@@ -79,10 +83,10 @@ def _resolve_xyz(
     Parameters
     ----------
     use_center : bool
-        True  → return the object's Gazebo world_pose z, i.e. its geometric
-                 centre.  Use this for the **pick** target so the gripper
-                 grasps the object at mid-height with a top-down approach.
-        False → return the top-of-surface z from SdfSurfaceResolver, i.e.
+        True  -> return the object's Gazebo world_pose z as-is.  The planner
+                 will add a per-object grasp clearance on top of this for
+                 the pick approach.
+        False -> return the top-of-surface z from SdfSurfaceResolver, i.e.
                  the height at which a placed object would rest on the
                  destination surface.  Use this for the **place** target.
     """
@@ -93,12 +97,12 @@ def _resolve_xyz(
         return None
 
     if use_center:
-        # Object centre directly from Gazebo — the natural grasp point for a
-        # top-down approach.  Add _PICK_Z_LIFT to compensate for models whose
-        # SDF origin is at the base rather than the geometric centre.
+        # Object centre directly from Gazebo.  The planner handles the
+        # vertical clearance based on the object's SDF-extracted dimensions,
+        # so we do NOT add any manual lift here.
         pos = result["world_pose"].position
-        xyz = (pos.x, pos.y, pos.z + _PICK_Z_LIFT)
-        print(f"[pick_and_place]   '{name}' world XYZ (centre+lift): "
+        xyz = (pos.x, pos.y, pos.z)
+        print(f"[pick_and_place]   '{name}' world XYZ (centre, raw): "
               f"({xyz[0]:.3f}, {xyz[1]:.3f}, {xyz[2]:.3f})")
         return xyz
 
@@ -143,6 +147,16 @@ def main() -> None:
     )
     parser.add_argument("--timeout", type=float, default=600.0,
                         help="Per-task timeout in seconds (default: 600)")
+    parser.add_argument(
+        "--lateral-pregrasp", action="store_true", dest="lateral_pregrasp",
+        help=(
+            "Use the lateral pre-grasp arm sequence: "
+            "L1 pan arm_1 to 90° right, "
+            "L2 raise arm_2 to near-max height, "
+            "L3 roll arm_3 to ≈ half-max toward workspace. "
+            "Useful when the standard forward shoulder sweep would clip a table corner."
+        ),
+    )
     args = parser.parse_args()
 
     # Validate pairs
@@ -172,6 +186,7 @@ def main() -> None:
     print(f"  Robot    : {args.robot}")
     print(f"  World    : {world_name or '(odometry mode)'}")
     print(f"  Pose src : {'Gazebo ground truth (auto)' if world_name else 'wheel odometry'}")
+    print(f"  Pre-grasp: {'lateral (L1→L2→L3)' if args.lateral_pregrasp else 'standard'}")
     print(f"  SDF      : {sdf_path or 'not found'}")
     print(f"  Tasks    : {len(pairs)}")
     for i, (pick, place) in enumerate(pairs):
@@ -210,13 +225,13 @@ def main() -> None:
         done_event.set()
 
     adapter = TiagoAdapter(
-        robot_name      = args.robot,
-        mode            = RobotMode.SIMULATION,
-        result_callback = on_result,
-        world_sdf_path  = sdf_path,
-        models_base_dir = models_dir,
-        table_standoff  = 0.10,
-        world_name      = world_name,   # activates GT pose — no spawn param needed
+        robot_name       = args.robot,
+        mode             = RobotMode.SIMULATION,
+        result_callback  = on_result,
+        world_sdf_path   = sdf_path,
+        models_base_dir  = models_dir,
+        table_standoff   = 0.10,
+        world_name       = world_name,   # activates GT pose — no spawn param needed
     )
 
     executor = MultiThreadedExecutor()
@@ -271,7 +286,11 @@ def main() -> None:
         result_box.clear()
 
         t0       = time.perf_counter()
-        accepted = adapter.pick_and_place(pick_xyz=pick_xyz, place_xyz=place_xyz)
+        accepted = adapter.pick_and_place(
+            pick_xyz         = pick_xyz,
+            place_xyz        = place_xyz,
+            pick_object_name = pick_name,   # enables SDF-based grasp clearance
+        )
 
         if not accepted:
             print(f"[pick_and_place] FAIL: Adapter rejected task {task_idx+1} "

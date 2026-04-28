@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<sdf version="1.8">
+  <actor name="human_actor">
+    <skin>
+      <filename>model://WalkingActor/meshes/walk.dae</filename>
+      <scale>1.0</scale>
+    </skin>
+    <animation name="walk">
+      <filename>model://WalkingActor/meshes/walk.dae</filename>
+      <interpolate_x>true</interpolate_x>
+    </animation>
+    <plugin filename="libActorControlPlugin.so" name="ActorControlPlugin">
+      <topic>/human_1/cmd_pose</topic>
+    </plugin>
+  </actor>
+</sdf>

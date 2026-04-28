@@ -1,6 +1,6 @@
 # ===============================
 # Dockerfile for CASPER_MAS Experiments
-# CUDA + ROS 2 Humble + Gazebo + Python + CASPER Adapters
+# CUDA + ROS 2 Humble + Gazebo Fortress + Python + CASPER Adapters
 # FR3 (simulation + physical via Franky) + Tiago (simulation only)
 # No MoveIt — uses ikpy for lightweight IK in simulation
 # ===============================
@@ -85,7 +85,17 @@ ENV CFLAGS="-I/usr/include/graphviz"
 ENV LDFLAGS="-L/usr/lib/x86_64-linux-gnu"
 
 # ------------------------------
-# ROS 2 Humble + Gazebo
+# OSRF apt source — must come before ROS apt source so OSRF packages
+# take priority over Ubuntu universe ignition variants. Both ros-humble-
+# ros-gz and the Fortress dev headers come from this repo.
+# ------------------------------
+RUN curl -sSL https://packages.osrfoundation.org/gazebo.gpg \
+        -o /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] https://packages.osrfoundation.org/gazebo/ubuntu-stable $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+        > /etc/apt/sources.list.d/gazebo-stable.list
+
+# ------------------------------
+# ROS 2 Humble apt source
 # ------------------------------
 RUN ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest \
         | grep -F "tag_name" | awk -F\" '{print $4}') \
@@ -94,21 +104,31 @@ RUN ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastruc
     && dpkg -i /tmp/ros2-apt-source.deb \
     && rm /tmp/ros2-apt-source.deb
 
-RUN apt-get update && apt-get upgrade -y \
+# Install ROS + Gazebo runtime + Fortress dev headers in one layer.
+# With the OSRF repo present first, all ignition packages resolve from
+# the same source and there are no Ubuntu universe conflicts.
+# Dev package names use the gz- prefix (OSRF renamed ignition- to gz-
+# for Fortress onward on jammy): libignition-gazebo6-dev, libignition-transport11-dev,
+# libignition-msgs8-dev, libignition-math6-dev.
+RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ros-${ROS_DISTRO}-desktop \
         ros-${ROS_DISTRO}-ros-gz \
         ros-dev-tools \
-        ros-${ROS_DISTRO}-ros-ign-bridge \
         ros-${ROS_DISTRO}-xacro \
         ros-${ROS_DISTRO}-ros-gz-sim \
         ros-${ROS_DISTRO}-ros-gz-bridge \
         ros-${ROS_DISTRO}-gz-ros2-control \
         ros-${ROS_DISTRO}-ign-ros2-control \
         ros-${ROS_DISTRO}-tf2-geometry-msgs \
+        libignition-gazebo6-dev \
+        libignition-transport11-dev \
+        libignition-msgs8-dev \
+        libignition-math6-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN rosdep init && rosdep update
+# rosdep init is not idempotent — guard against repeated calls in cached layers
+RUN rosdep init 2>/dev/null || true && rosdep update
 
 ENV GZ_VERSION=fortress
 ENV IGN_VERSION=fortress
@@ -143,7 +163,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ------------------------------
 # Do NOT set PYOPENGL_PLATFORM=egl — it interferes with Gazebo's own EGL
 # initialisation. Gazebo handles EGL device selection internally.
-ENV DISPLAY=:0
+#
+# DISPLAY is intentionally omitted: EGL_PLATFORM=device makes Gazebo use
+# NVIDIA's EGL device path directly, bypassing X11 entirely. Setting
+# DISPLAY=:0 with no running X server can cause Gazebo to attempt an X11
+# fallback and fail. Start Xvfb in your entrypoint/run script only if a
+# specific tool in your stack requires an X display.
 ENV SDL_AUDIODRIVER=dummy
 ENV ALSA_CARD=none
 
@@ -157,7 +182,7 @@ ENV ALSA_CARD=none
 ENV EGL_PLATFORM=device
 ENV __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
-# ------------------------------ 
+# ------------------------------
 # ROS workspace
 # ------------------------------
 WORKDIR /ros2_ws
@@ -230,14 +255,15 @@ RUN pip3 install --no-cache-dir -r requirements.txt && rm requirements.txt
 RUN pip3 install --no-cache-dir \
         ikpy \
         scipy \
-        numpy
+        numpy \
+        colcon-common-extensions
 
 # ------------------------------
 # Build workspace
-# ------------------------------ 
+# ------------------------------
 RUN . /opt/ros/$ROS_DISTRO/setup.sh && \
     rm -rf build install log && \
-    colcon build --symlink-install
+    colcon build --symlink-install --event-handlers console_direct+
 
 # ------------------------------
 # Workspace
@@ -249,6 +275,8 @@ WORKDIR /app
 # ------------------------------
 RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> /etc/bash.bashrc && \
     echo "source /ros2_ws/install/setup.bash" >> /etc/bash.bashrc
+
+ENV IGN_GAZEBO_SYSTEM_PLUGIN_PATH=/ros2_ws/install/actor_control_plugin/lib/actor_control_plugin:$IGN_GAZEBO_SYSTEM_PLUGIN_PATH
 
 # ------------------------------
 # Default command

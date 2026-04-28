@@ -12,7 +12,7 @@ _PACKAGES = [
     "tiago_adapters",
     "fr3_adapters",
     "robot_common",
-    "human_control",
+    "human_adapters",
 ]
 
 for _pkg in _PACKAGES:

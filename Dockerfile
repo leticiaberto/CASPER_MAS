@@ -276,8 +276,6 @@ WORKDIR /app
 RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> /etc/bash.bashrc && \
     echo "source /ros2_ws/install/setup.bash" >> /etc/bash.bashrc
 
-ENV IGN_GAZEBO_SYSTEM_PLUGIN_PATH=/ros2_ws/install/actor_control_plugin/lib/actor_control_plugin:$IGN_GAZEBO_SYSTEM_PLUGIN_PATH
-
 # ------------------------------
 # Default command
 # ------------------------------

@@ -28,6 +28,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'),
             glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'scripts'), glob('scripts/*')),
         # Recursively install all files under models/ preserving subdirectory
         # structure — needed for 'Walking Actor/model.sdf' and any meshes/textures.
         *get_data_files_recursive('models', os.path.join('share', package_name)),

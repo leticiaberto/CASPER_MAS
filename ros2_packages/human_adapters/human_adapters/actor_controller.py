@@ -9,18 +9,31 @@ class ActorController(Node):
     def __init__(self):
         super().__init__('actor_controller')
 
-        self.declare_parameter('actor_name', 'human_1')
-        self.declare_parameter('world_name', 'backyard')
+        self.declare_parameter('actor_name',   'human_1')
+        self.declare_parameter('world_name',   'backyard')
+        self.declare_parameter('initial_x',    0.0)
+        self.declare_parameter('initial_y',    0.0)
+        self.declare_parameter('initial_yaw',  0.0)
 
         self.actor_name = self.get_parameter('actor_name').get_parameter_value().string_value
         self.world_name = self.get_parameter('world_name').get_parameter_value().string_value
 
-        self.current_x = 0.0
-        self.current_y = 0.0
+        self.current_x = self.get_parameter('initial_x').get_parameter_value().double_value
+        self.current_y = self.get_parameter('initial_y').get_parameter_value().double_value
         self.z = 0.0
-        self.current_yaw = 0.0  # track current yaw for smooth turning
 
-        self.get_logger().info(f'Actor: {self.actor_name}, World: {self.world_name}')
+        # Model faces -Y when SDF yaw=0.
+        self.MODEL_FORWARD_OFFSET = math.pi / 2 
+
+        initial_yaw = self.get_parameter('initial_yaw').get_parameter_value().double_value
+        self.current_yaw = initial_yaw
+
+        self.get_logger().info(
+            f'Actor: {self.actor_name}, World: {self.world_name}, '
+            f'initial pose=({self.current_x}, {self.current_y}, '
+            f'sdf_yaw={math.degrees(initial_yaw):.1f}deg, '
+            f'math_yaw={math.degrees(self.current_yaw):.1f}deg)'
+        )
 
     def yaw_to_quaternion(self, yaw):
         """Convert yaw (radians) to quaternion (x, y, z, w)."""
@@ -29,7 +42,10 @@ class ActorController(Node):
         return 0.0, 0.0, z, w
 
     def set_pose(self, x, y, yaw):
-        qx, qy, qz, qw = self.yaw_to_quaternion(yaw)
+        sdf_yaw = yaw + self.MODEL_FORWARD_OFFSET
+
+        qx, qy, qz, qw = self.yaw_to_quaternion(sdf_yaw)
+
         req = (
             f'name: "{self.actor_name}", '
             f'position: {{x: {float(x)}, y: {float(y)}, z: {self.z}}}, '
@@ -61,13 +77,12 @@ class ActorController(Node):
         if distance < 0.01:
             return
 
-        # Target yaw: atan2 gives angle from x-axis
         target_yaw = math.atan2(dy, dx)
 
         self.get_logger().info(
             f'Moving to ({target_x}, {target_y}), '
             f'distance={distance:.2f}m, '
-            f'yaw={math.degrees(target_yaw):.1f}deg'
+            f'target_yaw={math.degrees(target_yaw):.1f}deg'
         )
 
         # --- Phase 1: Turn to face target ---
@@ -112,5 +127,6 @@ class ActorController(Node):
 def main():
     rclpy.init()
     node = ActorController()
+    #node.move_to(node.current_x + 2, node.current_y)
     node.run_trajectory()
     rclpy.shutdown()

@@ -408,5 +408,34 @@
       <pose>-5.4 5.20 0.410 0 0 0</pose>
     </include>
 
+  <!-- ═══════════════════════════════════════════════════════════════
+         Humans sit at the dining table (table_right) and interact with the grill and prep tables.
+    ═══════════════════════════════════════════════════════════════════ -->
+    <include>
+      <uri>model://FemaleVisitorSit</uri>
+      <name>h1</name>
+      <pose>-2.34 -0.62 -0.18 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://MaleVisitorSit_white</uri>
+      <name>h4</name>
+      <pose>-1.82 -0.62 -0.15 0 0 0</pose>
+    </include>
+
+
+    <include>
+        <uri>model://MaleVisitorSit</uri>
+        <name>h2</name>
+        <pose>-1.82 -2.39 -0.15 0 0 3.14</pose>
+      </include>
+
+    <include>
+      <uri>model://FemaleVisitorSit_pink</uri>
+      <name>h3</name>
+      <pose>-2.34 -2.39 -0.18 0 0 3.14</pose>
+    </include>
+
+
   </world>
 </sdf>

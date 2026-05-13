@@ -43,7 +43,6 @@ the same node and are served by the same MultiThreadedExecutor.
 Usage
 -----
     tiago = Tiago(
-        id          = "tiago1",
         robot_name  = "tiago_robot1",
         world_name  = "backyard",
         skill_weights = ...,
@@ -152,9 +151,8 @@ class Tiago(Agent):
     """
     Parameters
     ----------
-    id : str
-        Agent identifier (e.g. "tiago1").
     robot_name : str
+        Agent identifier (e.g. "tiago_robot1").
         Gazebo / ROS2 namespace for this robot (e.g. "tiago_robot1").
     world_name : str
         Gazebo world name that matches the gz-ros2-bridge command, e.g. "backyard".
@@ -195,13 +193,13 @@ class Tiago(Agent):
 
     def __init__(
         self,
-        id:           str,
         robot_name:   str,
         world_name:   str,
         skill_weights,
         contexts,
         role,
         teamsize:     int,
+        use_sim: bool,
         sdf_path:     Optional[str]   = None,
         arm_base_z:   Optional[float] = None,
         pose_timeout: float           = 15.0,
@@ -215,9 +213,14 @@ class Tiago(Agent):
             "max_payload_kg":         3,
             "max_reach_cm":           85,
             "can_transport_objects":  True,
-            "workspace":              "mobile",
+            "workspace":              "global",
         }
-        super().__init__(id, constraints, skill_weights, contexts, role, teamsize)
+        super().__init__(robot_name, constraints, skill_weights, contexts, role, teamsize)
+
+        if use_sim:
+            mode = RobotMode.SIMULATION
+        else:
+            mode = RobotMode.REAL_WORLD
 
         self._robot_name = robot_name
         self._world_name = world_name
@@ -244,7 +247,7 @@ class Tiago(Agent):
         # spawn_world_pose is never needed — no manual coordinate is required.
         self._adapter = TiagoAdapter(
             robot_name      = robot_name,
-            mode            = RobotMode.SIMULATION,
+            mode            = mode,
             result_callback = self._on_result,
             robot_frame     = False,
             arm_base_z      = resolved_arm_base_z,
@@ -304,7 +307,7 @@ class Tiago(Agent):
         self._surface = SdfSurfaceResolver(sdf_path, verbose=True) if sdf_path else None
 
         self._adapter.get_logger().info(
-            f"[Tiago] Agent '{id}' ready. "
+            f"[Tiago] Agent '{robot_name}' ready. "
             f"robot='{robot_name}'  world='{world_name}'"
         )
 

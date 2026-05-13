@@ -8,6 +8,8 @@ z_pos: 1.03
 yaw: 0.0
 spawn_delay: 3.0
 
+USE_SIM: true
+
 skill_weights:  #[skill weight, preference weight]
   delivery:
     navigation: [0.6, 0.1]

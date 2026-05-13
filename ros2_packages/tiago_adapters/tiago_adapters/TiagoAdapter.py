@@ -88,6 +88,7 @@ ResultCallback = Callable[[bool, str], None]
 
 class RobotMode(str, Enum):
     SIMULATION = "sim"
+    REAL_WORLD = "real"
 
 
 # ---------------------------------------------------------------------------

@@ -1,8 +1,23 @@
 """
-Ex:
+Spawn a human actor and its controller. The controller waits for commands
+via a ROS 2 topic pub --once — it does NOT run any trajectory automatically.
+
+Available topic commands  (send via ros2 topic pub):
+  goto   – move to (x, y) then face final_yaw
+  stop   – freeze in place
+  test   – run the built-in square-loop trajectory (original behaviour)
+  finish – execute the current action then shut the node down cleanly
+
+Examples
+--------
+# Spawn
 ros2 launch human_adapters actor.launch.py actor_type:=WalkingActor color:=red  actor_name:=w1
+
 ros2 launch human_adapters actor.launch.py actor_type:=CasualFemale  color:=orange actor_name:=c1
+
 ros2 launch human_adapters actor.launch.py actor_type:=FemaleVisitor color:=yellow actor_name:=v1
+
+
 """
 import os
 from launch import LaunchDescription
@@ -81,7 +96,7 @@ def generate_launch_description():
                               description='Optional colour variant (leave empty to use default model)'),
         DeclareLaunchArgument('x',           default_value='0.0'),
         DeclareLaunchArgument('y',           default_value='0.0'),
-        DeclareLaunchArgument('yaw',           default_value='0.0'),
+        DeclareLaunchArgument('yaw',         default_value='0.0'),
 
         OpaqueFunction(function=spawn_actor),
     ])

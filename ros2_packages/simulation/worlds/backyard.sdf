@@ -413,26 +413,26 @@
     ═══════════════════════════════════════════════════════════════════ -->
     <include>
       <uri>model://FemaleVisitorSit</uri>
-      <name>h1</name>
+      <name>WomanSit_1</name>
       <pose>-2.34 -0.62 -0.18 0 0 0</pose>
     </include>
 
     <include>
       <uri>model://MaleVisitorSit_white</uri>
-      <name>h4</name>
+      <name>ManSit_1</name>
       <pose>-1.82 -0.62 -0.15 0 0 0</pose>
     </include>
 
 
     <include>
         <uri>model://MaleVisitorSit</uri>
-        <name>h2</name>
+        <name>ManSit_2</name>
         <pose>-1.82 -2.39 -0.15 0 0 3.14</pose>
       </include>
 
     <include>
       <uri>model://FemaleVisitorSit_pink</uri>
-      <name>h3</name>
+      <name>WomanSit_2</name>
       <pose>-2.34 -2.39 -0.18 0 0 3.14</pose>
     </include>
 

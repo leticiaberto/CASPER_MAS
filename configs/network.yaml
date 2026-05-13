@@ -1,3 +1,3 @@
 pub_port: 5555
 sub_port: 5556
-hub_ip: 10.206.31.215
+hub_ip: 172.17.0.2

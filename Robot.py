@@ -275,7 +275,7 @@ def main():
     skill_weights = robot_config["skill_weights"]
     contexts      = list(skill_weights.keys())
 
-    result_timeout = float(robot_config.get("result_timeout", 120.0)),
+    result_timeout = float(robot_config.get("result_timeout", 120.0))
 
     # ── Exp config ───────────────────────────────────────────────────────────
     task_file    = exp_config["task"]
@@ -341,7 +341,8 @@ def main():
         #agent.pick_and_place(pick_name="tomato_1", place_xyz=(0.5, 0.4, 0.3))
     elif (robot_model == "Human"):
         #ok, msg = agent.goto(x=0, y=0, final_yaw=3.14)
-        ok, msg = agent.goto(location = "DiningTable")
+        #ok, msg = agent.goto(location = "DiningTable")
+        pass
     elif (robot_model == "Tiago"):
         ok, msg = agent.pick_and_place_objects([("drink_3",   "bench_r2"),])
 

@@ -145,7 +145,7 @@ class Human(Agent):
         self._adapter = HumanAdapter(
             actor_name      = actor_name,
             result_callback = self._on_result,
-            result_timeout  = result_timeout,
+            result_timeout  = float(result_timeout),
             node_name       = node_name,
         )
 

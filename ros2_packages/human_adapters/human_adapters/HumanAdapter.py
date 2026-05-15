@@ -95,7 +95,12 @@ class HumanAdapter(Node):
 
         self._actor_name      = actor_name
         self._result_callback = result_callback
-        self._result_timeout  = result_timeout
+        if not isinstance(result_timeout, (int, float)):
+            raise TypeError(
+                f"HumanAdapter: result_timeout must be a number, "
+                f"got {type(result_timeout).__name__!r}: {result_timeout!r}"
+            )
+        self._result_timeout = float(result_timeout)
 
         # Task state
         self._busy      = False

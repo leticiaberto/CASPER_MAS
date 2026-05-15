@@ -3,7 +3,7 @@
 Unified entry point for all robot agents (Pepper, FrankaResearch3, Tiago, Human).
 
 Every robot model follows the same launch pattern:
-  1. If USE_SIM=True → spawn the robot in Gazebo (non-blocking Popen)
+  1. If use_sim=True → spawn the robot in Gazebo (non-blocking Popen)
   2. Wait spawn_delay seconds for the simulator to settle
   3. Instantiate the agent class (connects ROS2 adapter)
   4. Run the task-graph loop
@@ -32,6 +32,7 @@ import subprocess
 import time
 import yaml
 from pathlib import Path
+import fcntl
 
 import ros2_path_setup  # noqa: F401 — registers all ROS2 adapter packages
 
@@ -134,7 +135,7 @@ def _launch_human(robot_id, world_name, actor_type, color, x_pos, y_pos, yaw):
 
 def _make_agent(robot_model, AgentClass, robot_id, world_name,
                 skill_weights, contexts, agent_role, teamsize,
-                use_sim, mock, result_timeout):
+                use_sim, result_timeout):
     """Instantiate the correct agent class with its specific parameters."""
 
     if robot_model == "Pepper":
@@ -145,18 +146,17 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             role          = agent_role,
             teamsize      = teamsize,
             use_sim       = use_sim,
-            mock          = mock,
         )
 
     if robot_model == "FrankaResearch3":
         return AgentClass(
             robot_name    = robot_id,
+            world_name    = world_name,
             skill_weights = skill_weights,
             contexts      = contexts,
             role          = agent_role,
             teamsize      = teamsize,
             use_sim       = use_sim,
-            mock          = mock,
         )
 
     if robot_model == "Tiago":
@@ -183,6 +183,55 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
 
     raise ValueError(f"Unknown robot_model: '{robot_model}'")
 
+
+# ---------------------------------------------------------------------------
+# Gazebo ↔ ROS2 bridge (shared, world-level topics)
+# ---------------------------------------------------------------------------
+
+_BRIDGE_NODE_NAME = "/gz_ros2_bridge"   # the node name we give the bridge
+
+def _bridge_already_running() -> bool:
+    """Return True if a gz-ros2 bridge node is already up."""
+    try:
+        result = subprocess.run(
+            ["ros2", "node", "list"],
+            capture_output=True, text=True, timeout=5
+        )
+        return _BRIDGE_NODE_NAME in result.stdout.splitlines()
+    except Exception:
+        return False
+
+
+def _launch_gz_ros2_bridge(world_name: str):
+    """
+    Start the shared gz-ros2 bridge if not already running.
+
+    Returns the Popen handle if THIS call started the bridge,
+    or None if it was already running (owned by another process).
+
+    IMPORTANT: callers must NOT terminate this process on shutdown
+    unless they are certain no other robot is still using it.
+    The bridge is shared across all robots in the same world.
+    """
+    lock_path = "/tmp/gz_ros2_bridge.lock"
+    lock_file = open(lock_path, "w")
+    fcntl.flock(lock_file, fcntl.LOCK_EX)   # blocks until safe to proceed
+    try:
+        if _bridge_already_running():
+            print("[Robot] gz-ros2 bridge already running — skipping launch.")
+            return None
+
+        cmd = [
+            "ros2", "run", "ros_gz_bridge", "parameter_bridge",
+            f"/world/{world_name}/pose/info@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
+            "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
+            "--ros-args", "-r", f"__node:={_BRIDGE_NODE_NAME.lstrip('/')}",
+        ]
+        print(f"[Robot] Launching gz-ros2 bridge: {' '.join(cmd)}")
+        return subprocess.Popen(cmd)
+    finally:
+        fcntl.flock(lock_file, fcntl.LOCK_UN)
+        lock_file.close()
 
 # ---------------------------------------------------------------------------
 # Main
@@ -233,25 +282,26 @@ def main():
     teamsize     = exp_config["team_size"]
     top_k        = exp_config["top_k"]
     optimizeMode = exp_config["optimizeMode"]
-    USE_SIM      = exp_config["USE_SIM"]
-    mock         = exp_config.get("mock", False)
+    use_sim      = exp_config["use_sim"]
     world_name   = exp_config.get("world_name", "backyard")
     
     agent_role   = args.role
 
     print(f"[Robot] model={robot_model}  id={robot_id}  role={agent_role}  "
-          f"USE_SIM={USE_SIM}  world={world_name}")
+          f"use_sim={use_sim}  world={world_name}")
 
     # ── 1. Spawn in Gazebo (non-blocking) ────────────────────────────────────
     launch_process = None
-    if USE_SIM:
+    if use_sim:
         if robot_model == "FrankaResearch3":
             launch_process = _launch_fr3(
                 robot_id, x_pos, y_pos, z_pos, yaw, spawn_delay)
+            bridge_process = _launch_gz_ros2_bridge(world_name)
 
         elif robot_model == "Tiago":
             launch_process = _launch_tiago(
                 robot_id, world_name, x_pos, y_pos, z_pos, yaw, spawn_delay)
+            bridge_process = _launch_gz_ros2_bridge(world_name)
 
         elif robot_model == "Pepper":
             launch_process = _launch_pepper(
@@ -278,12 +328,22 @@ def main():
         contexts      = contexts,
         agent_role    = agent_role,
         teamsize      = teamsize,
-        use_sim       = USE_SIM,
-        mock          = mock,
+        use_sim       = use_sim,
         result_timeout = result_timeout,
     )
 
     print(f"[Robot] Agent '{robot_id}' instantiated.")
+
+    # Blocking msgs to test connection and debug
+    if (robot_model == "FrankaResearch3"):
+        ok, msg = agent.pick_and_place((0.56, 0.0004, 0.0350), (0.0094, -0.7, 0.0))
+        #ok, msg = agent.pick_and_place(pick_name="meat_1", place_name="plate_1")
+        #agent.pick_and_place(pick_name="tomato_1", place_xyz=(0.5, 0.4, 0.3))
+    elif (robot_model == "Human"):
+        #ok, msg = agent.goto(x=0, y=0, final_yaw=3.14)
+        ok, msg = agent.goto(location = "DiningTable")
+    elif (robot_model == "Tiago"):
+        ok, msg = agent.pick_and_place_objects([("drink_3",   "bench_r2"),])
 
     # ── 3. Debug info ─────────────────────────────────────────────────────────
     if debug:
@@ -327,6 +387,13 @@ def main():
         if launch_process is not None:
             print("[Robot] Terminating Gazebo launch process.")
             launch_process.terminate()
+            # NOTE: the gz-ros2 bridge is intentionally NOT terminated here.
+            # It is a shared process that may be used by other robots still
+            # running in parallel (e.g. Tiago + FR3).  It will be cleaned up
+            # automatically when the container / shell session ends.
+
+            # restart it manually:
+            # pkill -f "parameter_bridge"
 
     #agent.closeComm()
     #agent.shutdown_adapter()

@@ -248,7 +248,7 @@ RUN cd src && \
 
 # ------------------------------
 # Python dependencies
-# ------------------------------
+# ------------------------------ 
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt && rm requirements.txt
 

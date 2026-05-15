@@ -49,6 +49,37 @@ from rclpy.executors import MultiThreadedExecutor
 from human_adapters.HumanAdapter import HumanAdapter
 from src.entities.Agent import Agent
 
+locations = {
+    "DiningTable": {
+        "x": -0.77,
+        "y": -1.54,
+        "yaw": 3.14
+    },
+
+    "House": {
+        "x": -0.19,
+        "y": -6.76,
+        "yaw": 1.57
+    },
+
+    "GroupOfGuests": {
+        "x": 3.25,
+        "y": -2.82,
+        "yaw": 0.0
+    },
+
+    "MainPrepTable": {
+        "x": 0.95,
+        "y": 4.30,
+        "yaw": 1.57
+    },
+
+    "GrillPrepTable": {
+        "x": 4.14,
+        "y": 4.24,
+        "yaw": 0.8
+    }
+}
 
 # ---------------------------------------------------------------------------
 # Types
@@ -85,6 +116,7 @@ class Human(Agent):
         role,
         teamsize:     int,
         result_timeout: float         = 120.0,
+        node_name:     Optional[str] = None,
         use_sim       = True,
     ) -> None:
         constraints = {
@@ -114,6 +146,7 @@ class Human(Agent):
             actor_name      = actor_name,
             result_callback = self._on_result,
             result_timeout  = result_timeout,
+            node_name       = node_name,
         )
 
         # ── Executor + spin thread ────────────────────────────────────
@@ -138,12 +171,32 @@ class Human(Agent):
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+    def get_destionation_coordinates(self, location_name: str) -> Tuple[float, float, float]:
+        """
+        Get the coordinates of a named location.
+
+        Parameters
+        ----------
+        location_name : str
+            Name of the location, e.g. "DiningTable", "House", etc.
+
+        Returns
+        -------
+        (x, y, yaw) : Tuple[float, float, float]
+            Coordinates of the location in the world frame.
+            Raises KeyError if the location name is not found.
+        """
+        if location_name not in locations:
+            raise KeyError(f"Location '{location_name}' not found.")
+        loc = locations[location_name]
+        return loc["x"], loc["y"], loc["yaw"]
 
     def goto(
         self,
-        x:         float,
-        y:         float,
-        final_yaw: float                  = 0.0,
+        location   = None,
+        x               = None,
+        y               = None,
+        final_yaw       = None,
         callback:  Optional[ResultCallback] = None,
     ) -> Tuple[bool, str]:
         """
@@ -165,6 +218,18 @@ class Human(Agent):
         -------
         (success, message) when blocking; (True, "accepted") when non-blocking.
         """
+         # Option 1: location key
+        if location is not None:
+            x, y, final_yaw = self.get_destionation_coordinates(location)
+        
+        # Option 2: direct coordinates
+        else:
+            if x is None or y is None or final_yaw is None:
+                raise ValueError(
+                    "You must provide either a valid location "
+                    "or x, y, yaw coordinates."
+                )
+
         return self._send("goto", callback, x=x, y=y, final_yaw=final_yaw)
 
     def stop(

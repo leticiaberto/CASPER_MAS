@@ -15,10 +15,11 @@ use_sim: true
 result_timeout: 120.0
 
 skill_weights:  #[skill weight, preference weight]
-  delivery:
-    navigation: [0.6, 0.1]
-    manipulation: [0.2, 0.6]
-    planning: [0.2, 0.3]
+  HouseParty:
+    transport: [0.6, 0.1]
+    manipulation: [1.0, 0.6]
+    communication: [1.0, 0.8]
+    openDoor: [1.0, 0.1]
 
   assembly:
     navigation: [0.1, 0.8]

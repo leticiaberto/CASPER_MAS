@@ -2,13 +2,13 @@ debug: False
 robot_model: FrankaResearch3
 robot_id: fr3_arm_1
 
-x_pos: -0.3
-y_pos: 0.0
-z_pos: 1.03
-yaw: 0.0
+x_pos: 5
+y_pos: 5.21 #5.45
+z_pos: 0.85
+yaw: -1.57
 spawn_delay: 3.0
 
-USE_SIM: true
+use_sim: true
 
 skill_weights:  #[skill weight, preference weight]
   delivery:

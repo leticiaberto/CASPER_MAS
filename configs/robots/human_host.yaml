@@ -10,7 +10,7 @@ actor_type: WalkingActor
 color: red
 spawn_delay: 15.0
 
-USE_SIM: true
+use_sim: true
 
 result_timeout: 120.0
 

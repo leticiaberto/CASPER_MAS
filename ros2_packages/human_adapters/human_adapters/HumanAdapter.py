@@ -53,7 +53,6 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from std_msgs.msg import String
 
-
 # ---------------------------------------------------------------------------
 # Types
 # ---------------------------------------------------------------------------
@@ -89,8 +88,10 @@ class HumanAdapter(Node):
         actor_name:      str,
         result_callback: ResultCallback,
         result_timeout:  float         = 60.0,
+        node_name:       Optional[str] = None,
     ) -> None:
-        super().__init__(actor_name)
+        node_name = node_name or f"human_adapter_{actor_name}"
+        super().__init__(node_name)
 
         self._actor_name      = actor_name
         self._result_callback = result_callback

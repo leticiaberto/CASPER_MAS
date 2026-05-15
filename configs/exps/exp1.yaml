@@ -7,4 +7,4 @@ optimizeMode: skill
 world_name: backyard
 
 mock: False  # True = ROS-agnostic test, False = use ROS/MoveIt
-USE_SIM: True          # True = simulation mode, False = real robot
+use_sim: True          # True = simulation mode, False = real robot

@@ -74,6 +74,7 @@ from src.entities.Agent import Agent
 from tiago_adapters.TiagoAdapter import TiagoAdapter, RobotMode
 from robot_common.object_world_to_robot import ObjectToRobot
 from robot_common.sdf_surface_resolver import SdfSurfaceResolver
+from utils import ROSUtils
 
 # ---------------------------------------------------------------------------
 # Types
@@ -200,10 +201,8 @@ class Tiago(Agent):
         role,
         teamsize:     int,
         use_sim: bool,
-        sdf_path:     Optional[str]   = None,
         arm_base_z:   Optional[float] = None,
         pose_timeout: float           = 15.0,
-        models_base_dir: Optional[str] = None,
         table_standoff  = 0.10,
     ) -> None:
         constraints = {
@@ -224,6 +223,22 @@ class Tiago(Agent):
 
         self._robot_name = robot_name
         self._world_name = world_name
+
+        # ── Auto-resolve SDF path and models dir ──────────────────────
+        # Mirror the test script (tiago_pick_and_place.py): use ROSUtils to
+        # find the world SDF and models directory automatically when not
+        # supplied by the caller — this is what makes SdfSurfaceResolver work.
+        try:
+            sdf_path = ROSUtils._get_sdf_path(world_name)
+            print(f"[Tiago] Auto-resolved SDF path: {sdf_path}")
+        except FileNotFoundError as exc:
+            print(f"[Tiago] WARNING: SDF not found ({exc}) — surface offsets unavailable.")
+        
+        try:
+            models_base_dir = ROSUtils._get_models_dir()
+            print(f"[Tiago] Auto-resolved models dir: {models_base_dir}")
+        except FileNotFoundError as exc:
+            print(f"[Tiago] WARNING: models dir not found ({exc}).")
 
         # Event + storage for adapter completion signal
         self._goal_done_event = threading.Event()
@@ -319,7 +334,7 @@ class Tiago(Agent):
         self,
         object_pairs:   List[ObjectPair],
         place_z_offset: float = 0.0,
-    ) -> None:
+    ) -> Tuple[bool, str]:
         """
         Execute a sequence of pick-and-place operations sequentially.
 
@@ -339,6 +354,8 @@ class Tiago(Agent):
         Returns when all pairs have been attempted.  Per-pair success/failure
         is logged; the method does not raise on individual failures.
         """
+        results = []
+
         for idx, (pick_name, place_name) in enumerate(object_pairs):
             self._adapter.get_logger().info(
                 f"[Tiago] Pair {idx+1}/{len(object_pairs)}: "
@@ -358,9 +375,24 @@ class Tiago(Agent):
                 continue
 
             # ── Resolve place world pose ─────────────────────────────
-            # Automatic surface offset from SDF geometry (if sdf_path provided),
-            # otherwise fall back to manual place_z_offset.
-            place_xyz = self._resolve_surface_xyz(place_name, place_z_offset)
+            # Use SdfSurfaceResolver.place_xyz() directly — same as the test
+            # script.  This returns (x, y, world_pose.z + top_surface_offset),
+            # i.e. the z at which a placed object rests on the destination surface.
+            # Fall back to manual place_z_offset when the resolver is absent.
+            if self._surface is not None:
+                result = self._otr.get_pose(place_name)
+                if "error" in result:
+                    self._adapter.get_logger().error(
+                        f"[Tiago] Skipping pair {idx+1}: "
+                        f"cannot find '{place_name}' in Gazebo."
+                    )
+                    continue
+                place_xyz = self._surface.place_xyz(result, place_name)
+                if place_xyz is None:
+                    pos = result["world_pose"].position
+                    place_xyz = (pos.x, pos.y, pos.z + place_z_offset)
+            else:
+                place_xyz = self._resolve_surface_xyz(place_name, place_z_offset)
             if place_xyz is None:
                 self._adapter.get_logger().error(
                     f"[Tiago] Skipping pair {idx+1}: "
@@ -376,8 +408,9 @@ class Tiago(Agent):
             self._goal_done_event.clear()
 
             accepted = self._adapter.pick_and_place(
-                pick_xyz  = pick_xyz,
-                place_xyz = place_xyz,
+                pick_xyz         = pick_xyz,
+                place_xyz        = place_xyz,
+                pick_object_name = pick_name,
             )
 
             if not accepted:
@@ -391,6 +424,7 @@ class Tiago(Agent):
             # Block until adapter signals completion
             self._goal_done_event.wait()
             success, message = self._last_result
+            results.append((success, message))
 
             if success:
                 self._adapter.get_logger().info(
@@ -401,6 +435,11 @@ class Tiago(Agent):
                     f"[Tiago] ✗ Pair {idx+1} failed: {message}"
                 )
 
+        # Return overall success (True only if all pairs succeeded)
+        all_ok = all(r[0] for r in results)
+        summary = "; ".join(r[1] for r in results)
+        
+        return all_ok, summary  
     # ------------------------------------------------------------------
     # Agent interface (called by base class task dispatch)
     # ------------------------------------------------------------------
@@ -430,7 +469,7 @@ class Tiago(Agent):
         """No-op — adapter starts automatically in __init__."""
         pass
 
-    def shutdown_adapter(self) -> None:
+    def shutdown(self) -> None:
         """Cleanly shut down ROS2 executor and nodes."""
         self._adapter.get_logger().info("[Tiago] Shutting down ...")
         self._executor.shutdown(timeout_sec=3.0)

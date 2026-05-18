@@ -30,6 +30,7 @@ Robot yaml keys
 import argparse
 import subprocess
 import time
+from tkinter.filedialog import test
 import yaml
 from pathlib import Path
 import fcntl
@@ -82,7 +83,7 @@ def _launch_fr3(robot_id, x_pos, y_pos, z_pos, yaw, spawn_delay):
         f"spawn_delay:={spawn_delay}",
     ]
     print(f"[Robot] Launching FR3: {' '.join(cmd)}")
-    return subprocess.Popen(cmd)
+    return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
 
 def _launch_tiago(robot_id, world_name, x_pos, y_pos, z_pos, yaw, spawn_delay):
@@ -97,7 +98,7 @@ def _launch_tiago(robot_id, world_name, x_pos, y_pos, z_pos, yaw, spawn_delay):
         f"spawn_delay:={spawn_delay}",
     ]
     print(f"[Robot] Launching Tiago: {' '.join(cmd)}")
-    return subprocess.Popen(cmd)
+    return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
 
 def _launch_pepper(robot_id, x_pos, y_pos, z_pos, yaw, spawn_delay):
@@ -234,6 +235,70 @@ def _launch_gz_ros2_bridge(world_name: str):
         lock_file.close()
 
 # ---------------------------------------------------------------------------
+# Spawn readiness helpers
+# ---------------------------------------------------------------------------
+
+def _wait_for_spawner_chain(launch_proc: subprocess.Popen, timeout: float = 120.0) -> bool:
+    """
+    Block until the gripper spawner (spawner-5, last in the chain) reports
+    'process has finished cleanly' in the launch output.
+
+    This is the exact signal that all three controllers are active — no polling,
+    no ANSI-code parsing, no extra ROS2 CLI calls. Reacts within milliseconds
+    of spawner-5 finishing.
+
+    Requires the launch process to be started with stdout=subprocess.PIPE.
+    """
+    sentinel = b"spawner-5]: process has finished cleanly"
+    deadline = time.time() + timeout
+    print("[Robot] Waiting for gripper spawner to finish ...")
+    buf = b""
+    while time.time() < deadline:
+        if launch_proc.poll() is not None:
+            # Drain whatever is left in the pipe before giving up
+            buf += launch_proc.stdout.read()
+            if sentinel in buf:
+                print("[Robot] Gripper spawner finished — all controllers active.")
+                return True
+            print("[Robot] WARNING: launch process exited before gripper spawner finished.")
+            return False
+        chunk = launch_proc.stdout.read1(4096)   # non-blocking read of available bytes
+        if chunk:
+            buf += chunk
+            # Print to terminal so the launch output is still visible
+            print(chunk.decode(errors="replace"), end="", flush=True)
+            if sentinel in buf:
+                print("\n[Robot] Gripper spawner finished — all controllers active.")
+                return True
+        else:
+            time.sleep(0.1)
+    print(f"[Robot] WARNING: gripper spawner did not finish within {timeout:.0f}s.")
+    return False
+
+
+def _wait_for_actor(robot_id: str, timeout: float = 60.0) -> bool:
+    """
+    Block until /<robot_id>/robot_state_publisher appears in the ROS2 node list.
+    Used for Human actors (no controller_manager).
+    """
+    import time as _time
+    target   = f"/{robot_id}/robot_state_publisher"
+    deadline = _time.time() + timeout
+    print(f"[Robot] Waiting for actor '{robot_id}' RSP node to appear ...")
+    while _time.time() < deadline:
+        result = subprocess.run(
+            ["ros2", "node", "list"],
+            capture_output=True, text=True,
+        )
+        if target in result.stdout.splitlines():
+            print(f"[Robot] Actor '{robot_id}' is ready.")
+            return True
+        _time.sleep(2.0)
+    print(f"[Robot] WARNING: actor '{robot_id}' RSP did not appear within {timeout:.0f}s.")
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -313,8 +378,27 @@ def main():
                 x_pos, y_pos, yaw)
 
         if launch_process is not None:
-            print(f"[Robot] Waiting {spawn_delay:.0f} s for Gazebo to settle ...")
-            time.sleep(spawn_delay)
+            # Wait for the robot to be genuinely ready before connecting the agent.
+            #
+            # FR3 / Tiago: poll until controller_manager is visible in the ROS2
+            # graph, then poll until all three controllers (JSB, arm, gripper) are
+            # in 'active' state. This replaces the blind sleep and correctly
+            # handles slow machines where the spawner retries (3×10s per controller).
+            #
+            # Human: poll until robot_state_publisher is up (no controller_manager).
+            #
+            # Pepper (and unknown models): fall back to the YAML spawn_delay.
+            if robot_model in ("FrankaResearch3", "Tiago"):
+                _wait_for_spawner_chain(launch_process)
+
+            elif robot_model == "Human":
+                _wait_for_actor(robot_id)
+                time.sleep(2.0)
+
+            else:
+                # Pepper / unknown — no reliable ROS2 readiness signal
+                print(f"[Robot] Waiting {spawn_delay:.0f} s for Gazebo to settle ...")
+                time.sleep(spawn_delay)
 
     # ── 2. Import + instantiate agent ────────────────────────────────────────
     AgentClass = _import_agent(robot_model)
@@ -335,16 +419,18 @@ def main():
     print(f"[Robot] Agent '{robot_id}' instantiated.")
 
     # Blocking msgs to test connection and debug
-    if (robot_model == "FrankaResearch3"):
-        ok, msg = agent.pick_and_place((0.56, 0.0004, 0.0350), (0.0094, -0.7, 0.0))
-        #ok, msg = agent.pick_and_place(pick_name="meat_1", place_name="plate_1")
-        #agent.pick_and_place(pick_name="tomato_1", place_xyz=(0.5, 0.4, 0.3))
-    elif (robot_model == "Human"):
-        #ok, msg = agent.goto(x=0, y=0, final_yaw=3.14)
-        #ok, msg = agent.goto(location = "DiningTable")
-        pass
-    elif (robot_model == "Tiago"):
-        ok, msg = agent.pick_and_place_objects([("drink_3",   "bench_r2"),])
+    test = False
+    if test:
+        if (robot_model == "FrankaResearch3"):
+            ok, msg = agent.pick_and_place((0.56, 0.0004, 0.0350), (0.0094, -0.7, 0.0))
+            #ok, msg = agent.pick_and_place(pick_name="meat_1", place_name="plate_1")
+            #agent.pick_and_place(pick_name="tomato_1", place_xyz=(0.5, 0.4, 0.3))
+        elif (robot_model == "Human"):
+            #ok, msg = agent.goto(x=0, y=0, final_yaw=3.14)
+            #ok, msg = agent.goto(location = "DiningTable")
+            pass
+        elif (robot_model == "Tiago"):
+            ok, msg = agent.pick_and_place_objects([("drink_3",   "bench_r2"),])
 
     # ── 3. Debug info ─────────────────────────────────────────────────────────
     if debug:

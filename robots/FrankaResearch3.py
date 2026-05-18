@@ -176,7 +176,7 @@ class FrankaResearch3(Agent):
         # SdfSurfaceResolver: top-surface z offsets from SDF geometry.
         self._surface: Optional[SdfSurfaceResolver] = None
         if sdf_path:
-            self._surface = SdfSurfaceResolver(sdf_path, verbose=True)
+            self._surface = SdfSurfaceResolver(sdf_path, verbose=False)
 
         self.adapter.get_logger().info(
             f"[FrankaResearch3] Agent '{robot_name}' ready ({mode.value.upper()}). "

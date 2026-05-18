@@ -319,7 +319,7 @@ class Tiago(Agent):
                   f"{pose_timeout:.0f} s. Navigation may fail.")
 
         # SdfSurfaceResolver: parse SDF once to get top-surface z offsets automatically.
-        self._surface = SdfSurfaceResolver(sdf_path, verbose=True) if sdf_path else None
+        self._surface = SdfSurfaceResolver(sdf_path, verbose=False) if sdf_path else None
 
         self._adapter.get_logger().info(
             f"[Tiago] Agent '{robot_name}' ready. "

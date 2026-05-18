@@ -6,7 +6,7 @@ x_pos: 0.3
 y_pos: 0.0
 z_pos: 1.03
 yaw: -3.14
-spawn_delay: 10.0
+spawn_delay: 15.0
 
 use_sim: true
 

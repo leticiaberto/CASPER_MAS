@@ -16,7 +16,7 @@ result_timeout: 120.0
 
 skill_weights:  #[skill weight, preference weight]
   HouseParty:
-    transport: [0.6, 0.1]
+    transport: [1.0, 0.1]
     manipulation: [1.0, 0.6]
     communication: [1.0, 0.8]
     openDoor: [1.0, 0.1]

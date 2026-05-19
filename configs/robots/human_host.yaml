@@ -11,7 +11,7 @@ actor_type: WalkingActor
 color: red
 spawn_delay: 15.0
 
-workspace: ["Prep_Table", "Garden"]
+workspace: ["Prep_Table", "Garden", "Kitchen_Table", "Kitchen_Stove", "Grill_Table", "House", "Kitchen_sink", "Kitchen_shelves"]
 
 result_timeout: 120.0
 

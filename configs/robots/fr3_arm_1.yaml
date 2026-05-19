@@ -10,7 +10,7 @@ z_pos: 0.85
 yaw: -1.57
 spawn_delay: 15.0
 
-workspace: ["prep_grill"]
+workspace: ["Grill_Table"]
 
 skill_weights:  #[skill weight, preference weight]
   HouseParty:

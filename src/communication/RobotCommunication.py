@@ -30,9 +30,11 @@ class RobotComm:
 
         self.ctx = zmq.Context()
         self.pub = self.ctx.socket(zmq.PUB)
+        self.pub.setsockopt(zmq.LINGER, 0)
         self.pub.connect(f"tcp://{hub_ip}:{pub_port}")
 
         self.sub = self.ctx.socket(zmq.SUB)
+        self.sub.setsockopt(zmq.LINGER, 0)
         self.sub.connect(f"tcp://{hub_ip}:{sub_port}")
         self.sub.setsockopt_string(zmq.SUBSCRIBE, "")
 
@@ -169,7 +171,9 @@ class RobotComm:
     # CLEANUP
     # ----------------------------------------------------
     def close(self):
-        self.pub.close()
-        self.sub.close()
-        self.ctx.term()
+        try:
+            self.pub.close(0)
+            self.sub.close(0)
+        finally:
+            self.ctx.term()
         print(f"[{self.robot_id}] Communication closed.")

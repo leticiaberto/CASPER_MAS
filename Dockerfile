@@ -51,6 +51,7 @@ RUN add-apt-repository universe && \
         gnupg2 \
         lsb-release \
         git \
+        ufw \
         # ── GPU / EGL rendering stack ──────────────────────────────────
         # Required for Ignition Fortress to use the NVIDIA GPU.
         # Without these, Gazebo falls back to llvmpipe (CPU software

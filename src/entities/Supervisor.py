@@ -20,55 +20,58 @@ class Supervisor:
     def score_agents_for_task(self, G, agents, mode="combined"):
         """
         Returns a dict {task_id: [(agent_id, score), ...]} sorted by score descending.
-
+ 
         Parameters:
         - G: networkx DiGraph with tasks as nodes.
         - agents: dict {agent_id: ContextualSkillModel OR PartnerAgent}
         - mode: str, one of ["skill", "preference", "combined"]
         """
-
+ 
         assert mode in {"skill", "preference", "combined"}, f"Invalid mode: {mode}"
-
+ 
         task_rankings = {}
-
+ 
         for node_id in G.nodes:
             task = G.nodes[node_id]
-
+ 
             context = task.get("context")
             required_skills = task.get("required_skills", {})
             required_constraints = task.get("required_constraints", {})
-
+ 
             scored_agents = []
-
+ 
             # Iterate over dictionary
             for agent_id, agent_obj in agents.items():
-
+ 
                 # --- Extract skill model ---
-                if hasattr(agent_obj, "skills"):  
+                if hasattr(agent_obj, "skills"):
                     # PartnerAgent case
                     skill_model = agent_obj.skills
                     constraints = getattr(agent_obj, "constraints", {})
                 else:
-                    # ContextualSkillModel case
+                    # ContextualSkillModel case (supervisor's own entry)
                     skill_model = self.skill_model
                     constraints = self.constraints
-
+ 
+                # workspace lives inside the constraints dict (loaded from YAML)
+                agent_workspaces = constraints.get("workspace")
+ 
                 # --- 1. Context check ---
                 agent_contexts = set()
                 for s in skill_model.skill_level:
                     agent_contexts.update(skill_model.skill_level[s].keys())
-
+ 
                 if context not in agent_contexts:
                     continue
-
+ 
                 # --- 1.5. Workspace check ---
-                # Both task and agent workspaces are treated as sets.
-                # The agent must cover at least one of the task's required workspaces.
+                # The agent must be able to access ALL workspaces required by the task.
+                # If the task declares workspaces but the agent declares none → reject.
                 task_workspaces = task.get("required_constraints", {}).get("workspace")
-                agent_workspaces = getattr(agent_obj, "workspaces", None)
-
-                if task_workspaces is not None and agent_workspaces is not None:
-                    # Normalise to sets of lowercase strings for robust matching
+ 
+                if task_workspaces is not None:
+                    if agent_workspaces is None:
+                        continue  # task requires specific workspaces; agent declares none → skip
                     task_ws_set = (
                         {w.lower() for w in task_workspaces}
                         if isinstance(task_workspaces, list)
@@ -79,40 +82,43 @@ class Supervisor:
                         if isinstance(agent_workspaces, list)
                         else {agent_workspaces.lower()}
                     )
-                    if task_ws_set.isdisjoint(agent_ws_set):
-                        continue  # no workspace overlap → agent cannot do this task
-
+                    if not task_ws_set.issubset(agent_ws_set):
+                        continue  # agent missing at least one required workspace → skip
+ 
                 # --- 2. Skill & preference scoring ---
                 skill_ok = True
                 score = 0.0
-
+ 
                 for skill, min_level in required_skills.items():
                     level = skill_model.skill_level.get(skill, {}).get(context, 0.0)
                     pref = skill_model.skill_preference.get(skill, {}).get(context, 0.0)
-
+ 
                     if level < min_level:
                         skill_ok = False
                         break
-
+ 
                     if mode == "skill":
                         score += level
                     elif mode == "preference":
                         score += pref
                     elif mode == "combined":
                         score += level * (1 + pref)
-
+ 
                 if not skill_ok:
                     continue
-
+ 
                 # --- 3. Constraint check ---
                 constraint_ok = True
                 for key, value in required_constraints.items():
-
+ 
+                    if key == "workspace":
+                        continue  # already enforced by step 1.5 — skip here
+ 
                     if key not in constraints:
                         continue  # unknown ≠ forbidden
-
+ 
                     agent_value = constraints[key]
-
+ 
                     if isinstance(value, (int, float)):
                         if agent_value < value:
                             constraint_ok = False
@@ -121,16 +127,16 @@ class Supervisor:
                         if agent_value != value:
                             constraint_ok = False
                             break
-
+ 
                 if not constraint_ok:
                     continue
-
+ 
                 scored_agents.append((agent_id, score))
-
+ 
             # --- 4. Sort descending ---
             scored_agents.sort(key=lambda x: x[1], reverse=True)
             task_rankings[node_id] = scored_agents
-
+ 
         return task_rankings
 
     def get_top_candidates(self, task, scored, selected_agent_id, top_k=3):

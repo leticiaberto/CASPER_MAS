@@ -13,7 +13,7 @@
         "can_manipulate": true,
         "can_transport_objects": false,
         "max_payload_kg": 5,
-        "workspace": "global"
+        "workspace": ["global"]
       },
       "duration": 15,
       "priority": 1
@@ -30,7 +30,7 @@
         "can_manipulate": true,
         "can_transport_objects": false,
         "max_payload_kg": 1,
-        "workspace": "Prep_Table"
+        "workspace": ["Prep_Table"]
       },
       "duration": 15,
       "priority": 1
@@ -46,7 +46,7 @@
         "can_manipulate": true,
         "can_transport_objects": false,
         "max_payload_kg": 1,
-        "workspace": "Prep_Table"
+        "workspace": ["Prep_Table"]
       },
       "duration": 50,
       "priority": 1
@@ -81,7 +81,7 @@
         "can_manipulate": true,
         "can_transport_objects": true,
         "max_payload_kg": 2,
-        "workspace": "Kitchen_Table"
+        "workspace": ["Kitchen_Table"]
       },
       "duration": 40,
       "priority": 1
@@ -97,7 +97,7 @@
         "can_manipulate": true,
         "can_transport_objects": false,
         "max_payload_kg": 2,
-        "workspace": "Kitchen_Stove"
+        "workspace": ["Kitchen_Stove"]
       },
       "duration": 40,
       "priority": 1
@@ -294,7 +294,7 @@
     ["WelcomeGuests", "BarbecueParty"],
     ["ServeMainDish", "BarbecueParty"],
     ["ServeMeat", "BarbecueParty"],
-    ["PickandPlaceDrinks", "BarbecueParty"],
+    ["PickPlaceDrinks", "BarbecueParty"],
     ["PutTheDishesAway", "BarbecueParty"]
   ]
 }

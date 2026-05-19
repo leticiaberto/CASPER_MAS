@@ -53,7 +53,7 @@ class GraphVisualizer:
 
         return width, height
 
-    def _build_node_label_global(self, name, duration, status_text, context, selected_agent, selected_score, top_candidates):
+    def _build_node_label_global(self, name, duration, status_text, context, workspace, selected_agent, selected_score, top_candidates):
         selected_text = (
             f"{selected_agent} ({selected_score:.2f})"
             if selected_agent else "None"
@@ -64,35 +64,52 @@ class GraphVisualizer:
         else:
             top_text = "None"
 
+        # Normalise workspace to a compact string
+        if isinstance(workspace, list):
+            ws_text = ", ".join(str(w) for w in workspace)
+        elif workspace:
+            ws_text = str(workspace)
+        else:
+            ws_text = "—"
+
         return (
             f"{name}\\n"
             f"Duration: {duration}s\\n"
             f"Context: {context}\\n"
+            f"Workspace: {ws_text}\\n"
             f"Status: {status_text}\\n"
             f"Selected: {selected_text}\\n"
             f"Top candidates:\\n"
             f"{top_text}"
         )
 
-    def _build_node_label_local(self, name, duration, status_text, selected_agent):
+    def _build_node_label_local(self, name, duration, status_text, workspace, selected_agent):
+        if isinstance(workspace, list):
+            ws_text = ", ".join(str(w) for w in workspace)
+        elif workspace:
+            ws_text = str(workspace)
+        else:
+            ws_text = "—"
+
         return (
             f"{name}\\n"
             f"{duration}s\\n"
             f"{status_text}\\n"
+            f"WS: {ws_text}\\n"
             f"{selected_agent}"
         )
     
-    def _render_node(self, dot_node, palette, name, duration, status_text, context, selected_agent, selected_score, top_candidates, fillType, graphType = "global"):
-        if(graphType == "global"):
-            label = self._build_node_label_global(name, duration, status_text, context, selected_agent, selected_score, top_candidates )
+    def _render_node(self, dot_node, palette, name, duration, status_text, context, workspace, selected_agent, selected_score, top_candidates, fillType, graphType="global"):
+        if graphType == "global":
+            label = self._build_node_label_global(name, duration, status_text, context, workspace, selected_agent, selected_score, top_candidates)
             if fillType == "context":
                 fillcolor = palette.get_color(context)
             else:
                 key = selected_agent if selected_agent else None
                 fillcolor = palette.get_color(key)
         else:
-            label = self._build_node_label_local(name, duration, status_text, selected_agent)
-            fillcolor = TaskStatus._status_color(TaskStatus(status_text.lower())) # Use status text to determine color
+            label = self._build_node_label_local(name, duration, status_text, workspace, selected_agent)
+            fillcolor = TaskStatus._status_color(TaskStatus(status_text.lower()))  # Use status text to determine color
 
 
         width, height = self.duration_to_size(duration, mode="duration")
@@ -130,6 +147,7 @@ class GraphVisualizer:
             name = task.get("original_name", node_id)
             context = task.get("context", "none")
             duration = float(task.get("duration", 1))
+            workspace = task.get("required_constraints", {}).get("workspace")
     
             assignment = task.get("assignment")
             if assignment:
@@ -144,7 +162,7 @@ class GraphVisualizer:
                 status_text = TaskStatus.NOTASSIGNED
 
             # --- Rendering ---
-            self._render_node(node, palette, name, duration, status_text, context, selected_agent, selected_score, top_candidates, fillType, graphType)
+            self._render_node(node, palette, name, duration, status_text, context, workspace, selected_agent, selected_score, top_candidates, fillType, graphType)
 
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         dot.write_png(f"data/{output_name}{timestamp}.png")
@@ -155,8 +173,8 @@ class GraphVisualizer:
 #######################################################################
     def build_plot_graph(self, graph):
         """
-        Build a visualization-only graph.
-        Uses ONLY self.graph (local graph).
+        Build a visualization-only graph from the local task graph.
+        Workspace is already stored on local nodes by LocalGraph.build_local_graph.
         """
         Gp = nx.DiGraph()
 
@@ -191,11 +209,12 @@ class GraphVisualizer:
     def plot_task_graph(self, graph, filename="task_graph"):
         """
         Render the local task graph with:
-        - solid rectangles for local tasks
+        - solid rectangles for local tasks (with workspace shown)
         - dashed rectangles for external tasks
         - solid edges for local deps
         - dashed edges for external deps
         Outputs both PDF and PNG.
+        Workspace is read directly from local graph nodes (set during LocalGraph.build_local_graph).
         """
         Gp = self.build_plot_graph(graph)
 
@@ -205,9 +224,19 @@ class GraphVisualizer:
         # --- Nodes ---
         for node, data in Gp.nodes(data=True):
             if data["node_type"] == "local":
+                # workspace is stored directly on local graph nodes by LocalGraph
+                workspace = graph.nodes[node].get("workspace")
+                if isinstance(workspace, list):
+                    ws_text = ", ".join(str(w) for w in workspace)
+                elif workspace:
+                    ws_text = str(workspace)
+                else:
+                    ws_text = "—"
+
+                label = f"{node}\\n{data['status'].value}\\nWS: {ws_text}"
                 dot.node(
                     str(node),
-                    label=str(node)+f"\\n {data['status'].value}",
+                    label=label,
                     shape="box",
                     style="filled",
                     fillcolor=TaskStatus._status_color(data["status"]),

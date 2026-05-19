@@ -61,6 +61,27 @@ class Supervisor:
                 if context not in agent_contexts:
                     continue
 
+                # --- 1.5. Workspace check ---
+                # Both task and agent workspaces are treated as sets.
+                # The agent must cover at least one of the task's required workspaces.
+                task_workspaces = task.get("required_constraints", {}).get("workspace")
+                agent_workspaces = getattr(agent_obj, "workspaces", None)
+
+                if task_workspaces is not None and agent_workspaces is not None:
+                    # Normalise to sets of lowercase strings for robust matching
+                    task_ws_set = (
+                        {w.lower() for w in task_workspaces}
+                        if isinstance(task_workspaces, list)
+                        else {task_workspaces.lower()}
+                    )
+                    agent_ws_set = (
+                        {w.lower() for w in agent_workspaces}
+                        if isinstance(agent_workspaces, list)
+                        else {agent_workspaces.lower()}
+                    )
+                    if task_ws_set.isdisjoint(agent_ws_set):
+                        continue  # no workspace overlap → agent cannot do this task
+
                 # --- 2. Skill & preference scoring ---
                 skill_ok = True
                 score = 0.0

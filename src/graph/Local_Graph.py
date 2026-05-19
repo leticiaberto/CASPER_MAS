@@ -26,6 +26,8 @@ class LocalGraph:
         # --- Add my tasks ---
         for node, agent in self.task_to_agent.items():
             if agent == self.agent_id:
+                global_data = self.global_graph.nodes[node]
+                required_constraints = global_data.get("required_constraints", {})
                 self.graph.add_node(
                     node,
                     status=TaskStatus.PENDING,
@@ -33,6 +35,8 @@ class LocalGraph:
                     external_predecessors=set(),
                     local_successors=set(),
                     external_successors=set(),
+                    required_constraints=required_constraints,
+                    workspace=required_constraints.get("workspace"),
                 )
 
         # --- Classify dependencies ---

@@ -74,7 +74,7 @@ class Agent:
             self.comm_handler.publish("SUPERVISOR", {"supervisor_id": self.id})
             self.supervisor_id = self.id
             self.supervisor.assign_agents_to_tasks(self.global_graph.G, agents, mode, top_k, debug)
-            self.graph_visualizer.export_multiagent_graph(self.global_graph.G, output_name=f"["+self.id+"] Global", palette_mode="pastel")
+            self.graph_visualizer.export_multiagent_graph(self.global_graph.G, output_name=f"["+self.id+"] Global_Supervisor_Allocation", palette_mode="pastel")
             self.vis_queue = queue.Queue()
             visualizer = RealTimeGraphVisualizer(
                 self.global_graph.G,
@@ -188,7 +188,7 @@ class Agent:
 
     def get_task_assignment_batch(self, msg):
             self.update_global_graph(msg)
-            self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="["+self.id+"] Global_", palette_mode="pastel")
+            self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="["+self.id+"] Global_Member_Allocation", palette_mode="pastel")
             self.get_assigned_tasks()       
 
     def set_supervisor(self, supervisor_id):
@@ -213,7 +213,7 @@ class Agent:
     def update_task_status_received_supervisor(self, task_id, task_status):
             self.vis_queue.put(("refresh",))
             self.global_graph.update_status(task_id, task_status)
-            self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="["+self.id+"] Global_", palette_mode="pastel", graphType="updated")
+            self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="["+self.id+"] Global_Supervisor_StatusUpdated", palette_mode="pastel", graphType="updated")
 
     # ----------------------------
     # Startup Procedure

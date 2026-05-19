@@ -69,13 +69,26 @@ class RealTimeGraphVisualizer:
             for n in self.G.nodes
         ]
 
-        labels = {
-            n:  f"{self.G.nodes[n]['assignment'].task_id}\n"
-                f"{self.G.nodes[n]['duration']:.1f}s\n"
-                f"{self.G.nodes[n]['assignment'].status.value}\n"
-                f"{self.G.nodes[n]['assignment'].selected_agent}"
-            for n in self.G.nodes
-        }
+        labels = {}
+        for n in self.G.nodes:
+            node_data = self.G.nodes[n]
+            assignment = node_data["assignment"]
+            workspace = node_data.get("required_constraints", {}).get("workspace")
+
+            if isinstance(workspace, list):
+                ws_text = ", ".join(str(w) for w in workspace)
+            elif workspace:
+                ws_text = str(workspace)
+            else:
+                ws_text = "—"
+
+            labels[n] = (
+                f"{assignment.task_id}\n"
+                f"{node_data['duration']:.1f}s\n"
+                f"WS: {ws_text}\n"
+                f"{assignment.status.value}\n"
+                f"{assignment.selected_agent}"
+            )
 
         node_sizes = []
         for n in self.G.nodes:

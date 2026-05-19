@@ -136,7 +136,7 @@ def _launch_human(robot_id, world_name, actor_type, color, x_pos, y_pos, yaw):
 
 def _make_agent(robot_model, AgentClass, robot_id, world_name,
                 skill_weights, contexts, agent_role, teamsize,
-                use_sim, result_timeout):
+                use_sim, result_timeout, workspace):
     """Instantiate the correct agent class with its specific parameters."""
 
     if robot_model == "Pepper":
@@ -147,6 +147,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             role          = agent_role,
             teamsize      = teamsize,
             use_sim       = use_sim,
+            workspace     = workspace,
         )
 
     if robot_model == "FrankaResearch3":
@@ -158,6 +159,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             role          = agent_role,
             teamsize      = teamsize,
             use_sim       = use_sim,
+            workspace     = workspace,
         )
 
     if robot_model == "Tiago":
@@ -169,6 +171,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             role          = agent_role,
             teamsize      = teamsize,
             use_sim       = use_sim,
+            workspace     = workspace,
         )
 
     if robot_model == "Human":
@@ -180,6 +183,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             teamsize      = teamsize,
             result_timeout= result_timeout,
             use_sim       = use_sim,
+            workspace     = workspace,
         )
 
     raise ValueError(f"Unknown robot_model: '{robot_model}'")
@@ -333,6 +337,8 @@ def main():
     yaw          = str(robot_config.get("yaw",         "0.0"))
     spawn_delay  = float(robot_config.get("spawn_delay", 12.0))
 
+    workspace    = robot_config.get("workspace", None)
+
     # Human-specific (ignored by other models)
     actor_type   = robot_config.get("actor_type", "WalkingActor")
     actor_color  = robot_config.get("color",      "")
@@ -414,6 +420,7 @@ def main():
         teamsize      = teamsize,
         use_sim       = use_sim,
         result_timeout = result_timeout,
+        workspace      = workspace,
     )
 
     print(f"[Robot] Agent '{robot_id}' instantiated.")

@@ -15,8 +15,8 @@
         "max_payload_kg": 5,
         "workspace": ["global"]
       },
-      "duration": 15,
-      "priority": 1
+      "duration": 14400,
+      "priority": 5
     },
 
     {
@@ -32,7 +32,7 @@
         "max_payload_kg": 1,
         "workspace": ["Prep_Table"]
       },
-      "duration": 15,
+      "duration": 180,
       "priority": 1
     },
     {
@@ -48,7 +48,23 @@
         "max_payload_kg": 1,
         "workspace": ["Prep_Table"]
       },
-      "duration": 50,
+      "duration": 300,
+      "priority": 1
+    },
+    {
+      "id": "PickChoppedVegetables",
+      "context": "HouseParty",
+      "required_skills": {
+        "manipulation": 0.6
+      },
+      "required_constraints": {
+        "can_move": false,
+        "can_manipulate": true,
+        "can_transport_objects": false,
+        "max_payload_kg": 1,
+        "workspace": ["Prep_Table"]
+      },
+      "duration": 60,
       "priority": 1
     },
 
@@ -63,11 +79,11 @@
         "can_move": true,
         "can_manipulate": true,
         "can_transport_objects": true,
-        "max_payload_kg": 5,
+        "max_payload_kg": 2,
         "workspace": ["Prep_Table", "Garden"]
       },
-      "duration": 10,
-      "priority": 5
+      "duration": 30,
+      "priority": 2
     },
     
     {
@@ -81,7 +97,7 @@
         "can_manipulate": true,
         "can_transport_objects": true,
         "max_payload_kg": 2,
-        "workspace": ["Kitchen_Table"]
+        "workspace": ["Kitchen_Table", "Kitchen_Stove"]
       },
       "duration": 40,
       "priority": 1
@@ -97,9 +113,9 @@
         "can_manipulate": true,
         "can_transport_objects": false,
         "max_payload_kg": 2,
-        "workspace": ["Kitchen_Stove"]
+        "workspace": ["Kitchen_Table", "Kitchen_Stove"]
       },
-      "duration": 40,
+      "duration": 900,
       "priority": 1
     },
     {
@@ -113,11 +129,11 @@
         "can_move": true,
         "can_manipulate": true,
         "can_transport_objects": true,
-        "max_payload_kg": 4,
-        "workspace": ["Kitchen", "Garden"]
+        "max_payload_kg": 3,
+        "workspace": ["Kitchen_Stove", "Garden"]
       },
-      "duration": 40,
-      "priority": 1
+      "duration": 60,
+      "priority": 2
     },
 
     {
@@ -133,7 +149,7 @@
         "max_payload_kg": 1,
         "workspace": ["Grill_Table"]
       },
-      "duration": 20,
+      "duration": 300,
       "priority": 1
     },
     {
@@ -149,7 +165,7 @@
         "max_payload_kg": 1,
         "workspace": ["Grill_Table"]
       },
-      "duration": 100,
+      "duration": 7200,
       "priority": 1
     },
     {
@@ -165,7 +181,7 @@
         "max_payload_kg": 1,
         "workspace": ["Grill_Table"]
       },
-      "duration": 40,
+      "duration": 180,
       "priority": 1
     },
     {
@@ -183,25 +199,7 @@
         "workspace": ["Grill_Table", "Garden"]
       },
       "duration": 40,
-      "priority": 1
-    },
-
-    {
-      "id": "PickPlaceDrinks",
-      "context": "HouseParty",
-      "required_skills": {
-        "manipulation": 1.0,
-        "transport": 1.0
-      },
-      "required_constraints": {
-        "can_move": true,
-        "can_manipulate": true,
-        "can_transport_objects": true,
-        "max_payload_kg": 1,
-        "workspace": ["Drinks_Table"]
-      },
-      "duration": 80,
-      "priority": 1
+      "priority": 2
     },
 
     {
@@ -219,7 +217,25 @@
         "max_payload_kg": 3,
         "workspace": ["House", "Garden"]
       },
-      "duration": 80,
+      "duration": 600,
+      "priority": 1
+    },
+
+    {
+      "id": "PickPlaceDrinks",
+      "context": "HouseParty",
+      "required_skills": {
+        "manipulation": 0.8,
+        "transport": 0.6
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": true,
+        "can_transport_objects": true,
+        "max_payload_kg": 1,
+        "workspace": ["Drinks_Table"]
+      },
+      "duration": 10000,
       "priority": 1
     },
 
@@ -235,10 +251,10 @@
         "can_manipulate": true,
         "can_transport_objects": true,
         "max_payload_kg": 3,
-        "workspace": ["House", "Garden"]
+        "workspace": ["Kitchen_sink", "Garden"]
       },
-      "duration": 80,
-      "priority": 1
+      "duration": 300,
+      "priority": 5
     },
 
     {
@@ -252,10 +268,10 @@
         "can_manipulate": true,
         "can_transport_objects": false,
         "max_payload_kg": 1,
-        "workspace": ["House"]
+        "workspace": ["Kitchen_sink"]
       },
-      "duration": 80,
-      "priority": 1
+      "duration": 1200,
+      "priority": 5
     },
     {
       "id": "PutTheDishesAway",
@@ -269,17 +285,17 @@
         "can_manipulate": true,
         "can_transport_objects": true,
         "max_payload_kg": 1,
-        "workspace": ["House"]
+        "workspace": ["Kitchen_sink", "Kitchen_shelves"]
       },
-      "duration": 80,
-      "priority": 1
+      "duration": 600,
+      "priority": 5
     }
     
   ],
   "dependencies": [
     ["PickVegetables", "ChopVegetables"],
-    ["ChopVegetables", "PickVegetables"],
-    ["PickVegetables", "ServeSides"],
+    ["ChopVegetables", "PickChoppedVegetables"],
+    ["PickChoppedVegetables", "ServeSides"],
 
     ["PickRice", "CookRice"],
     ["CookRice", "ServeMainDish"],
@@ -295,6 +311,7 @@
     ["ServeMainDish", "BarbecueParty"],
     ["ServeMeat", "BarbecueParty"],
     ["PickPlaceDrinks", "BarbecueParty"],
-    ["PutTheDishesAway", "BarbecueParty"]
+    ["PutTheDishesAway", "BarbecueParty"],
+    ["ServeSides", "BarbecueParty"]
   ]
 }

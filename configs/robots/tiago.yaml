@@ -1,4 +1,6 @@
 debug: False
+use_sim: true
+
 robot_model: Tiago
 robot_id: tiago_robot1
 
@@ -8,7 +10,7 @@ z_pos: 1.03
 yaw: -3.14
 spawn_delay: 15.0
 
-use_sim: true
+workspace: ["Drinks_Table"]
 
 skill_weights:  #[skill weight, preference weight]
   HouseParty:

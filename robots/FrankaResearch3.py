@@ -82,6 +82,7 @@ class FrankaResearch3(Agent):
         role:                 str           = "member",
         teamsize:             int           = 1,
         use_sim:              bool          = True,
+        workspace:            str           = None,
         franky_ip:            Optional[str] = None,
         franky_gripper_speed: float         = 0.05,
         franky_gripper_force: float         = 10.0,
@@ -99,7 +100,7 @@ class FrankaResearch3(Agent):
             "max_payload_kg":        3,
             "max_reach_cm":          85,
             "can_transport_objects": False,
-            "workspace":             "station_A",
+            "workspace":             workspace,
         }
         super().__init__(
             robot_name,

@@ -201,6 +201,7 @@ class Tiago(Agent):
         role,
         teamsize:     int,
         use_sim: bool,
+        workspace:    str           = None,
         arm_base_z:   Optional[float] = None,
         pose_timeout: float           = 15.0,
         table_standoff  = 0.10,
@@ -212,7 +213,7 @@ class Tiago(Agent):
             "max_payload_kg":         3,
             "max_reach_cm":           85,
             "can_transport_objects":  True,
-            "workspace":              "global",
+            "workspace":              workspace,
         }
         super().__init__(robot_name, constraints, skill_weights, contexts, role, teamsize)
 

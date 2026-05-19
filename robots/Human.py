@@ -118,6 +118,7 @@ class Human(Agent):
         result_timeout: float         = 120.0,
         node_name:     Optional[str] = None,
         use_sim       = True,
+        workspace:    str           = None,
     ) -> None:
         constraints = {
             "can_move":               True,
@@ -126,7 +127,7 @@ class Human(Agent):
             "max_payload_kg":         3,
             "max_reach_cm":           85,
             "can_transport_objects":  True,
-            "workspace":              "global",
+            "workspace":              workspace,
         }
 
         super().__init__(actor_name, constraints, skill_weights, contexts, role, teamsize)

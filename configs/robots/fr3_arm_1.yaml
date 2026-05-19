@@ -1,4 +1,6 @@
 debug: False
+use_sim: true
+
 robot_model: FrankaResearch3
 robot_id: fr3_arm_1
 
@@ -9,8 +11,6 @@ yaw: -1.57
 spawn_delay: 15.0
 
 workspace: ["prep_grill"]
-
-use_sim: true
 
 skill_weights:  #[skill weight, preference weight]
   HouseParty:

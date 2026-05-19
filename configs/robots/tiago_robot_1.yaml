@@ -2,7 +2,7 @@ debug: False
 use_sim: true
 
 robot_model: Tiago
-robot_id: tiago_robot1
+robot_id: tiago_robot_1
 
 x_pos: 0.3
 y_pos: 0.0
@@ -10,12 +10,12 @@ z_pos: 1.03
 yaw: -3.14
 spawn_delay: 15.0
 
-workspace: ["Drinks_Table"]
+workspace: ["Drinks_Table", "House", "Garden", "Kitchen_sink"]
 
 skill_weights:  #[skill weight, preference weight]
   HouseParty:
-    transport: [0.7, 0.1]
-    manipulation: [0.5, 0.6]
+    transport: [1.0, 0.1]
+    manipulation: [1.0, 0.6]
     communication: [0.2, 0.3]
 
   assembly:

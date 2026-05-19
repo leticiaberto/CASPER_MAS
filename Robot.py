@@ -489,7 +489,7 @@ def main():
             # restart it manually:
             # pkill -f "parameter_bridge"
 
-    #agent.closeComm()
+    agent.closeComm()
     #agent.shutdown_adapter()
 
 main()

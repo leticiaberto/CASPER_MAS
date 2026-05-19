@@ -7,7 +7,45 @@ from typing import Optional
 # -----------------------------
 # Palette classes
 # -----------------------------
+# These are deliberately chosen to not clash with:
+# lightcoral (red), palegoldenrod (yellow), lightskyblue (blue),
+# palegreen (green), lightgray, snow (white)
+AGENT_COLORS = [
+    "#c8a8e9",  # pastel purple
+    "#f4a9d0",  # pastel pink
+    "#a8d8d8",  # pastel teal
+    "#f4c9a0",  # pastel orange
+    "#b8c9f0",  # pastel periwinkle  
+    "#e8d5a8",  # pastel tan/khaki
+    "#d0e8a8",  # pastel lime (lighter/yellower than palegreen)
+    "#f0b8b8",  # pastel salmon (lighter/more pink than lightcoral)
+    "#a8c8e8",  # pastel steel blue (more muted than lightskyblue)
+    "#e8b8d8",  # pastel mauve
+    "#b8e8c8",  # pastel mint
+    "#e8c8a8",  # pastel peach
+]
+
 class PastelPalette:
+    """
+    Assigns a fixed pastel color to each agent, in registration order.
+    Colors are chosen to be visually distinct from task status colors.
+    Falls back to cycling if more agents than palette entries.
+    """
+
+    def __init__(self, colors: list[str] = AGENT_COLORS):
+        self.colors = colors
+        self.map: dict[str, str] = {}
+        self._counter = 0
+
+    def get_color(self, agent_name: str | None) -> str:
+        if agent_name is None:
+            return "white"
+        if agent_name not in self.map:
+            self.map[agent_name] = self.colors[self._counter % len(self.colors)]
+            self._counter += 1
+        return self.map[agent_name]
+    
+class PastelPaletteHash:
     """
     Deterministic pastel palette with better hue separation
     """

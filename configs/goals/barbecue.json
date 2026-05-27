@@ -1,25 +1,6 @@
 {
   "tasks": [
     {
-      "id": "BarbecueParty",
-      "context": "HouseParty",
-      "required_skills": {
-        "manipulation": 0.4,
-        "transport": 0.4,
-        "communication": 0.2
-      },
-      "required_constraints": {
-        "can_move": true,
-        "can_manipulate": true,
-        "can_transport_objects": false,
-        "max_payload_kg": 5,
-        "workspace": ["global"]
-      },
-      "duration": 14400,
-      "priority": 5
-    },
-
-    {
       "id": "PickVegetables",
       "context": "HouseParty",
       "required_skills": {
@@ -289,6 +270,26 @@
       },
       "duration": 600,
       "priority": 5
+    },
+
+    {
+      "id": "BarbecueParty",
+      "context": "HouseParty",
+      "required_skills": {
+        "manipulation": 0.4,
+        "transport": 0.4,
+        "communication": 0.2
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": true,
+        "can_transport_objects": false,
+        "max_payload_kg": 5,
+        "workspace": ["global"]
+      },
+      "duration": 14400,
+      "priority": 5,
+      "is_end_goal": true
     }
     
   ],

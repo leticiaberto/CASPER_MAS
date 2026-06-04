@@ -1,7 +1,7 @@
 {
   "tasks": [
     {
-      "id": "PickVegetables",
+      "id": "PickSaladIngredients",
       "context": "HouseParty",
       "required_skills": {
         "manipulation": 0.6
@@ -17,6 +17,91 @@
       "priority": 1
     },
     {
+      "id": "ChopSaladIngredients",
+      "context": "HouseParty",
+      "required_skills": {
+        "manipulation": 0.8
+      },
+      "required_constraints": {
+        "can_move": false,
+        "can_manipulate": true,
+        "can_transport_objects": false,
+        "max_payload_kg": 1,
+        "workspace": ["Prep_Table"]
+      },
+      "duration": 300,
+      "priority": 2
+    },
+    {
+      "id": "PickChoppedSaladIngredients",
+      "context": "HouseParty",
+      "required_skills": {
+        "manipulation": 0.6
+      },
+      "required_constraints": {
+        "can_move": false,
+        "can_manipulate": true,
+        "can_transport_objects": false,
+        "max_payload_kg": 1,
+        "workspace": ["Prep_Table"]
+      },
+      "duration": 60,
+      "priority": 3
+    },
+
+    {
+      "id": "ServeSalad",
+      "context": "HouseParty",
+      "required_skills": {
+        "manipulation": 0.5,
+        "transport": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": true,
+        "can_transport_objects": true,
+        "max_payload_kg": 2,
+        "workspace": ["Prep_Table", "Garden"]
+      },
+      "duration": 30,
+      "priority": 4
+    },
+
+    {
+      "id": "ServeDrinks",
+      "context": "HouseParty",
+      "required_skills": {
+        "manipulation": 0.8,
+        "transport": 0.6
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": true,
+        "can_transport_objects": true,
+        "max_payload_kg": 1,
+        "workspace": ["Drinks_Table", "Garden"]
+      },
+      "duration": 10000,
+      "priority": 1
+    },
+
+    {
+      "id": "PickVegetables",
+      "context": "HouseParty",
+      "required_skills": {
+        "manipulation": 0.6
+      },
+      "required_constraints": {
+        "can_move": false,
+        "can_manipulate": true,
+        "can_transport_objects": false,
+        "max_payload_kg": 1,
+        "workspace": ["Prep_Table"]
+      },
+      "duration": 180,
+      "priority": 4
+    },
+    {
       "id": "ChopVegetables",
       "context": "HouseParty",
       "required_skills": {
@@ -30,7 +115,7 @@
         "workspace": ["Prep_Table"]
       },
       "duration": 300,
-      "priority": 1
+      "priority": 5
     },
     {
       "id": "PickChoppedVegetables",
@@ -46,7 +131,7 @@
         "workspace": ["Prep_Table"]
       },
       "duration": 60,
-      "priority": 1
+      "priority": 6
     },
 
     {
@@ -64,7 +149,7 @@
         "workspace": ["Prep_Table", "Garden"]
       },
       "duration": 30,
-      "priority": 2
+      "priority": 4
     },
     
     {
@@ -81,7 +166,7 @@
         "workspace": ["Kitchen_Table", "Kitchen_Stove"]
       },
       "duration": 40,
-      "priority": 1
+      "priority": 2
     },
     {
       "id": "CookRice",
@@ -97,7 +182,7 @@
         "workspace": ["Kitchen_Table", "Kitchen_Stove"]
       },
       "duration": 900,
-      "priority": 1
+      "priority": 3
     },
     {
       "id": "ServeMainDish",
@@ -114,11 +199,11 @@
         "workspace": ["Kitchen_Stove", "Garden"]
       },
       "duration": 60,
-      "priority": 2
+      "priority": 4
     },
 
     {
-      "id": "PickMeat",
+      "id": "PickFoodIngredientsGrill",
       "context": "HouseParty",
       "required_skills": {
         "manipulation": 1.0
@@ -134,7 +219,7 @@
       "priority": 1
     },
     {
-      "id": "GrillMeat",
+      "id": "GrillFood",
       "context": "HouseParty",
       "required_skills": {
         "manipulation": 1.0
@@ -147,10 +232,10 @@
         "workspace": ["Grill_Table"]
       },
       "duration": 7200,
-      "priority": 1
+      "priority": 2
     },
     {
-      "id": "PickGrilledMeat",
+      "id": "PickGrilledFood",
       "context": "HouseParty",
       "required_skills": {
         "manipulation": 1.0
@@ -163,10 +248,10 @@
         "workspace": ["Grill_Table"]
       },
       "duration": 180,
-      "priority": 1
+      "priority": 3
     },
     {
-      "id": "ServeMeat",
+      "id": "ServeGrilledFood",
       "context": "HouseParty",
       "required_skills": {
         "manipulation": 0.5,
@@ -180,7 +265,7 @@
         "workspace": ["Grill_Table", "Garden"]
       },
       "duration": 40,
-      "priority": 2
+      "priority": 1
     },
 
     {
@@ -203,24 +288,6 @@
     },
 
     {
-      "id": "PickPlaceDrinks",
-      "context": "HouseParty",
-      "required_skills": {
-        "manipulation": 0.8,
-        "transport": 0.6
-      },
-      "required_constraints": {
-        "can_move": true,
-        "can_manipulate": true,
-        "can_transport_objects": true,
-        "max_payload_kg": 1,
-        "workspace": ["Drinks_Table"]
-      },
-      "duration": 10000,
-      "priority": 1
-    },
-
-    {
       "id": "PickDishes",
       "context": "HouseParty",
       "required_skills": {
@@ -235,7 +302,8 @@
         "workspace": ["Kitchen_sink", "Garden"]
       },
       "duration": 300,
-      "priority": 5
+      "priority": 5,
+      "time_to_clean": false
     },
 
     {
@@ -252,7 +320,7 @@
         "workspace": ["Kitchen_sink"]
       },
       "duration": 1200,
-      "priority": 5
+      "priority": 6
     },
     {
       "id": "PutTheDishesAway",
@@ -269,7 +337,7 @@
         "workspace": ["Kitchen_sink", "Kitchen_shelves"]
       },
       "duration": 600,
-      "priority": 5
+      "priority": 7
     },
 
     {
@@ -288,12 +356,16 @@
         "workspace": ["global"]
       },
       "duration": 14400,
-      "priority": 5,
+      "priority": 10,
       "is_end_goal": true
     }
     
   ],
   "dependencies": [
+    ["PickSaladIngredients", "ChopSaladIngredients"],
+    ["ChopSaladIngredients", "PickChoppedSaladIngredients"],
+    ["PickChoppedSaladIngredients", "ServeSalad"],
+
     ["PickVegetables", "ChopVegetables"],
     ["ChopVegetables", "PickChoppedVegetables"],
     ["PickChoppedVegetables", "ServeSides"],
@@ -301,18 +373,19 @@
     ["PickRice", "CookRice"],
     ["CookRice", "ServeMainDish"],
 
-    ["PickMeat", "GrillMeat"],
-    ["GrillMeat", "PickGrilledMeat"],
-    ["PickGrilledMeat", "ServeMeat"],
+    ["PickFoodIngredientsGrill", "GrillFood"],
+    ["GrillFood", "PickGrilledFood"],
+    ["PickGrilledFood", "ServeGrilledFood"],
 
     ["PickDishes", "DoTheDishes"],
     ["DoTheDishes", "PutTheDishesAway"],
 
     ["WelcomeGuests", "BarbecueParty"],
     ["ServeMainDish", "BarbecueParty"],
-    ["ServeMeat", "BarbecueParty"],
-    ["PickPlaceDrinks", "BarbecueParty"],
+    ["ServeGrilledFood", "BarbecueParty"],
+    ["ServeDrinks", "BarbecueParty"],
     ["PutTheDishesAway", "BarbecueParty"],
-    ["ServeSides", "BarbecueParty"]
+    ["ServeSides", "BarbecueParty"],
+    ["ServeSalad", "BarbecueParty"]
   ]
 }

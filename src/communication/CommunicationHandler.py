@@ -126,6 +126,16 @@ class CommunicationHandler:
                 return
             self.agent.update_task_status_received_supervisor(task_id, task_status)
 
+        elif msg_type == "task_ready_clearance":
+            task_id = msg["data"]["task_id"]
+            target = msg["data"].get("target", None)
+ 
+            # Ignore if not meant for me
+            if target is not None and target != self.agent.id:
+                return
+ 
+            self.agent.handle_task_clearance(task_id)
+
             
         elif msg_type == "Rebuild_GlobalGraph":
             self.agent.update_global_graph(msg)

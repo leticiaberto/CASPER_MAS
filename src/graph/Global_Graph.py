@@ -61,9 +61,18 @@ class GlobalGraph:
         else:
             current = assignment.status
 
+            if current == status:
+                return  # idempotent — already in this state, nothing to do
+
+            # The global graph is a passive mirror of what agents report over
+            # the network.  Agents may skip intermediate states (e.g. a
+            # time_to_clean task goes ASSIGNED → READY without broadcasting
+            # PENDING), so we only log a warning instead of raising here.
             if not TaskStatus.is_valid_transition(current, status):
-                raise ValueError(
-                    f"[{task_id}] Illegal transition {current.name} → {status.name}"
+                print(
+                    f"[GlobalGraph] Warning: non-standard transition "
+                    f"{current.name} → {status.name} for task '{task_id}'. "
+                    f"Accepting remote update."
                 )
 
             self.G.nodes[task_id]["assignment"].status = status

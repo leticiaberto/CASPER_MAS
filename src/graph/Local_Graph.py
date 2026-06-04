@@ -23,21 +23,38 @@ class LocalGraph:
             if assignment:
                 self.task_to_agent[node] = assignment.selected_agent
 
+        tasks_assigned = False
         # --- Add my tasks ---
         for node, agent in self.task_to_agent.items():
             if agent == self.agent_id:
+                tasks_assigned = True
                 global_data = self.global_graph.nodes[node]
                 required_constraints = global_data.get("required_constraints", {})
+
+                # time_to_clean: None means the field is absent (no special gating).
+                # False means the supervisor must explicitly clear this task before it can go READY.
+                # True means clearance has been received and the task can proceed normally.
+                raw_ttc = global_data.get("time_to_clean", None)
+                time_to_clean = False if raw_ttc is False else None
+
+                # time_to_clean tasks start as ASSIGNED: the supervisor has
+                # allocated them but must explicitly clear them before they
+                # can become PENDING → READY.  All other tasks start PENDING.
+                initial_status = TaskStatus.ASSIGNED if time_to_clean is False else TaskStatus.PENDING
+
                 self.graph.add_node(
                     node,
-                    status=TaskStatus.PENDING,
+                    status=initial_status,
                     local_predecessors=set(),
                     external_predecessors=set(),
                     local_successors=set(),
                     external_successors=set(),
                     required_constraints=required_constraints,
                     workspace=required_constraints.get("workspace"),
+                    time_to_clean=time_to_clean,
                 )
+        if not tasks_assigned:
+            print(f"[{self.agent_id}] Warning: No tasks assigned for me.")
 
         # --- Classify dependencies ---
         for u, v in self.global_graph.edges():
@@ -97,19 +114,29 @@ class LocalGraph:
     # -------------------------
     def is_ready(self, task_id):
         node = self.graph.nodes[task_id]
-        if node["status"] != TaskStatus.PENDING:
+ 
+        # time_to_clean tasks sit in ASSIGNED until the supervisor clears them,
+        # then transition to PENDING before the normal readiness check runs.
+        # Any other status means the task is already past ready or not yet here.
+        if node["status"] not in (TaskStatus.PENDING, TaskStatus.ASSIGNED):
             return False
-
+ 
+        # --- Supervisor clearance gate ---
+        # ASSIGNED + time_to_clean=False → clearance not yet received, not ready.
+        # ASSIGNED + time_to_clean=True  → clearance received; fall through to dep check.
+        if node["status"] == TaskStatus.ASSIGNED and node.get("time_to_clean") is False:
+            return False
+ 
         # --- Local dependencies ---
         for pred in node["local_predecessors"]:
             if self.graph.nodes[pred]["status"] != TaskStatus.DONE:
                 return False
-
+ 
         # --- External dependencies ---
         for pred in node["external_predecessors"]:
             if pred not in self.external_done:
                 return False
-
+ 
         return True
     
     # -------------------------
@@ -170,3 +197,33 @@ class LocalGraph:
 
         return successor_agents
 
+    # -------------------------
+    # Supervisor clearance for time_to_clean tasks
+    # -------------------------
+    def receive_clearance(self, task_id):
+        """
+        Called when the supervisor sends a task_ready_clearance message.
+        Flips time_to_clean from False → True so is_ready() can proceed.
+        Returns True if the task became READY as a result.
+        """
+        if task_id not in self.graph:
+            raise ValueError(f"Task {task_id} not found in local graph.")
+ 
+        node = self.graph.nodes[task_id]
+ 
+        if node.get("time_to_clean") is not False:
+            # Field absent or already cleared — nothing to do
+            return False
+ 
+        node["time_to_clean"] = True
+ 
+        # Advance from ASSIGNED → PENDING now that the clearance gate is lifted,
+        # so the normal is_ready() dep check can run cleanly.
+        if node["status"] == TaskStatus.ASSIGNED:
+            node["status"] = TaskStatus.PENDING
+ 
+        if self.is_ready(task_id):
+            node["status"] = TaskStatus.READY
+            return True
+ 
+        return False

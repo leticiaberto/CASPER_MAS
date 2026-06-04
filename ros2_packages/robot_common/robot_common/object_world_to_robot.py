@@ -52,7 +52,7 @@ Assumptions
 """
 
 import time
-from typing import Optional
+from typing import Optional, Tuple
 
 import rclpy
 from rclpy.node import Node
@@ -244,6 +244,15 @@ class ObjectToRobot:
         """Convenience wrapper for a single object. Returns one result dict."""
         return self.get_poses([object_name])[object_name]
 
+    def world_xyz_to_robot(self, world_xyz) -> Optional[Tuple[float, float, float]]:
+        robot_world_pose = self._latest_poses.get(self.robot_name)
+        if robot_world_pose is None:
+            return None
+        obj_pose = Pose()
+        obj_pose.position.x, obj_pose.position.y, obj_pose.position.z = world_xyz
+        obj_pose.orientation.w = 1.0
+        p = self._relative_pose(obj_pose, robot_world_pose).position
+        return (p.x, p.y, p.z)
     # ─────────────────────────────────────────────────────────────────────
     #  Internals
     # ─────────────────────────────────────────────────────────────────────

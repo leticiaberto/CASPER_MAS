@@ -1,0 +1,179 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <!--
+    Composite chopping-board model.  Link origin = bottom of the board.
+
+    Overall external dimensions:
+      Width  (x) : 0.35 m
+      Depth  (y) : 0.25 m
+      Height (z) : 0.02 m  (board thickness)
+
+    Part layout (pose = centre of each shape):
+    ──────────────────────────────────────────────────────────────────
+    Part         Geometry              Centre pose (x     y     z)
+    ──────────────────────────────────────────────────────────────────
+    board        box 0.35×0.25×0.02   0      0     0.01
+    handle       box 0.08×0.06×0.02   0.215  0     0.01
+    groove_l     box 0.30×0.003×0.003 0     -0.08  0.021
+    groove_r     box 0.30×0.003×0.003 0      0.08  0.021
+    foot_fl      cylinder r=0.01 h=0.01  -0.15  0.10 -0.005
+    foot_fr      cylinder r=0.01 h=0.01   0.15  0.10 -0.005
+    foot_bl      cylinder r=0.01 h=0.01  -0.15 -0.10 -0.005
+    foot_br      cylinder r=0.01 h=0.01   0.15 -0.10 -0.005
+    ──────────────────────────────────────────────────────────────────
+
+    Placement : world pose z = 0.85 (table surface)
+                origin is the bottom — sits directly on the surface
+    Top world z = 0.85 + 0.02 = 0.87 m
+
+    Visual == Collision per part  ✓
+  -->
+  <model name="chop_board">
+    <static>false</static>
+    <link name="link">
+
+      <inertial>
+        <!-- Approximate as solid box 0.35 × 0.25 × 0.02 m, ~1.2 kg -->
+        <mass>1.2</mass>
+        <inertia>
+          <!-- ixx=(1/12)*m*(y²+z²)  iyy=(1/12)*m*(x²+z²)  izz=(1/12)*m*(x²+y²) -->
+          <ixx>0.006253</ixx>
+          <iyy>0.012260</iyy>
+          <izz>0.018300</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <!-- Main board ───────────────────────────────── -->
+      <collision name="board_collision">
+        <pose>0 0 0.01 0 0 0</pose>
+        <geometry><box><size>0.35 0.25 0.02</size></box></geometry>
+        <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+      </collision>
+      <visual name="board_visual">
+        <pose>0 0 0.01 0 0 0</pose>
+        <geometry><box><size>0.35 0.25 0.02</size></box></geometry>
+        <material>
+          <ambient>0.55 0.38 0.18 1</ambient>
+          <diffuse>0.65 0.46 0.22 1</diffuse>
+          <specular>0.04 0.03 0.02 1</specular>
+        </material>
+      </visual>
+
+      <!-- Handle ───────────────────────────────────── -->
+      <collision name="handle_collision">
+        <pose>0.215 0 0.01 0 0 0</pose>
+        <geometry><box><size>0.08 0.06 0.02</size></box></geometry>
+      </collision>
+      <visual name="handle_visual">
+        <pose>0.215 0 0.01 0 0 0</pose>
+        <geometry><box><size>0.08 0.06 0.02</size></box></geometry>
+        <material>
+          <ambient>0.50 0.32 0.14 1</ambient>
+          <diffuse>0.58 0.38 0.16 1</diffuse>
+          <specular>0.04 0.03 0.02 1</specular>
+        </material>
+      </visual>
+
+      <!-- Juice groove — left ──────────────────────── -->
+      <collision name="groove_left_collision">
+        <pose>0 -0.08 0.021 0 0 0</pose>
+        <geometry><box><size>0.30 0.003 0.003</size></box></geometry>
+      </collision>
+      <visual name="groove_left_visual">
+        <pose>0 -0.08 0.021 0 0 0</pose>
+        <geometry><box><size>0.30 0.003 0.003</size></box></geometry>
+        <material>
+          <ambient>0.35 0.22 0.08 1</ambient>
+          <diffuse>0.40 0.26 0.10 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+        </material>
+      </visual>
+
+      <!-- Juice groove — right ─────────────────────── -->
+      <collision name="groove_right_collision">
+        <pose>0 0.08 0.021 0 0 0</pose>
+        <geometry><box><size>0.30 0.003 0.003</size></box></geometry>
+      </collision>
+      <visual name="groove_right_visual">
+        <pose>0 0.08 0.021 0 0 0</pose>
+        <geometry><box><size>0.30 0.003 0.003</size></box></geometry>
+        <material>
+          <ambient>0.35 0.22 0.08 1</ambient>
+          <diffuse>0.40 0.26 0.10 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+        </material>
+      </visual>
+
+      <!-- ══════════════════════════════════════════════
+           RUBBER FEET  (4 × small cylinders, anti-slip)
+           Extend 0.01 m below the board bottom (z = -0.005 centre)
+           ══════════════════════════════════════════════ -->
+
+      <!-- Front-left foot ──────────────────────────── -->
+      <collision name="foot_front_left_collision">
+        <pose>-0.15 0.10 -0.005 0 0 0</pose>
+        <geometry><cylinder><radius>0.010</radius><length>0.010</length></cylinder></geometry>
+        <surface><friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction></surface>
+      </collision>
+      <visual name="foot_front_left_visual">
+        <pose>-0.15 0.10 -0.005 0 0 0</pose>
+        <geometry><cylinder><radius>0.010</radius><length>0.010</length></cylinder></geometry>
+        <material>
+          <ambient>0.08 0.08 0.08 1</ambient>
+          <diffuse>0.10 0.10 0.10 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+        </material>
+      </visual>
+
+      <!-- Front-right foot ─────────────────────────── -->
+      <collision name="foot_front_right_collision">
+        <pose>0.15 0.10 -0.005 0 0 0</pose>
+        <geometry><cylinder><radius>0.010</radius><length>0.010</length></cylinder></geometry>
+        <surface><friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction></surface>
+      </collision>
+      <visual name="foot_front_right_visual">
+        <pose>0.15 0.10 -0.005 0 0 0</pose>
+        <geometry><cylinder><radius>0.010</radius><length>0.010</length></cylinder></geometry>
+        <material>
+          <ambient>0.08 0.08 0.08 1</ambient>
+          <diffuse>0.10 0.10 0.10 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+        </material>
+      </visual>
+
+      <!-- Back-left foot ───────────────────────────── -->
+      <collision name="foot_back_left_collision">
+        <pose>-0.15 -0.10 -0.005 0 0 0</pose>
+        <geometry><cylinder><radius>0.010</radius><length>0.010</length></cylinder></geometry>
+        <surface><friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction></surface>
+      </collision>
+      <visual name="foot_back_left_visual">
+        <pose>-0.15 -0.10 -0.005 0 0 0</pose>
+        <geometry><cylinder><radius>0.010</radius><length>0.010</length></cylinder></geometry>
+        <material>
+          <ambient>0.08 0.08 0.08 1</ambient>
+          <diffuse>0.10 0.10 0.10 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+        </material>
+      </visual>
+
+      <!-- Back-right foot ──────────────────────────── -->
+      <collision name="foot_back_right_collision">
+        <pose>0.15 -0.10 -0.005 0 0 0</pose>
+        <geometry><cylinder><radius>0.010</radius><length>0.010</length></cylinder></geometry>
+        <surface><friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction></surface>
+      </collision>
+      <visual name="foot_back_right_visual">
+        <pose>0.15 -0.10 -0.005 0 0 0</pose>
+        <geometry><cylinder><radius>0.010</radius><length>0.010</length></cylinder></geometry>
+        <material>
+          <ambient>0.08 0.08 0.08 1</ambient>
+          <diffuse>0.10 0.10 0.10 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+        </material>
+      </visual>
+
+    </link>
+  </model>
+</sdf>

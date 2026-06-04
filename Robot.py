@@ -136,7 +136,7 @@ def _launch_human(robot_id, world_name, actor_type, color, x_pos, y_pos, yaw):
 
 def _make_agent(robot_model, AgentClass, robot_id, world_name,
                 skill_weights, contexts, agent_role, teamsize,
-                use_sim, result_timeout, workspace):
+                use_sim, result_timeout, workspace, party_duration):
     """Instantiate the correct agent class with its specific parameters."""
 
     if robot_model == "Pepper":
@@ -148,6 +148,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             teamsize      = teamsize,
             use_sim       = use_sim,
             workspace     = workspace,
+            party_duration = party_duration,
         )
 
     if robot_model == "FrankaResearch3":
@@ -160,6 +161,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             teamsize      = teamsize,
             use_sim       = use_sim,
             workspace     = workspace,
+            party_duration = party_duration,
         )
 
     if robot_model == "Tiago":
@@ -172,6 +174,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             teamsize      = teamsize,
             use_sim       = use_sim,
             workspace     = workspace,
+            party_duration = party_duration,
         )
 
     if robot_model == "Human":
@@ -184,6 +187,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             result_timeout= result_timeout,
             use_sim       = use_sim,
             workspace     = workspace,
+            party_duration = party_duration,
         )
 
     raise ValueError(f"Unknown robot_model: '{robot_model}'")
@@ -311,7 +315,7 @@ def main():
 
     # ── Args ────────────────────────────────────────────────────────────────
     parser = argparse.ArgumentParser()
-    parser.add_argument("--robot", default="configs/robots/default.yaml")
+    parser.add_argument("--robot", default="configs/robots/fr3_arm_1.yaml")
     parser.add_argument("--role",  default="member",
                         choices=["member", "supervisor"])
     parser.add_argument("--exp",   default="configs/exps/exp1.yaml")
@@ -355,6 +359,7 @@ def main():
     optimizeMode = exp_config["optimizeMode"]
     use_sim      = exp_config["use_sim"]
     world_name   = exp_config.get("world_name", "backyard")
+    party_duration = exp_config.get("party_duration", 3600)
     
     agent_role   = args.role
 
@@ -421,6 +426,7 @@ def main():
         use_sim       = use_sim,
         result_timeout = result_timeout,
         workspace      = workspace,
+        party_duration  = party_duration,
     )
 
     print(f"[Robot] Agent '{robot_id}' instantiated.")
@@ -429,11 +435,12 @@ def main():
     test = False
     if test:
         if (robot_model == "FrankaResearch3"):
-            ok, msg = agent.pick_and_place((0.56, 0.0004, 0.0350), (0.0094, -0.7, 0.0))
+            ok, msg = agent.pick_and_place(pick_name="tomato_1", place_xyz=(1.0, 5.20, 0.875))
+            #ok, msg = agent.pick_and_place((0.56, 0.0004, 0.0350), (0.0094, -0.7, 0.0))
             #ok, msg = agent.pick_and_place(pick_name="meat_1", place_name="plate_1")
-            #agent.pick_and_place(pick_name="tomato_1", place_xyz=(0.5, 0.4, 0.3))
+            #ok, msg = agent.pick_and_place(pick_name="tomato_1", place_xyz=(0.5, 0.4, 0.3))
         elif (robot_model == "Human"):
-            #ok, msg = agent.goto(x=0, y=0, final_yaw=3.14)
+            ok, msg = agent.goto(x=0, y=0, final_yaw=3.14)
             #ok, msg = agent.goto(location = "DiningTable")
             pass
         elif (robot_model == "Tiago"):
@@ -454,6 +461,13 @@ def main():
         time.sleep(2)
 
         while True:
+            # Drain the message queue on every iteration — this is the only
+            # place on the main thread that processes incoming ZMQ messages
+            # during the startup handshake (partner discovery) phase.
+            # Once ready=True, step() calls spin_once() itself at the top.
+            if not ready:
+                agent.spin_once()
+
             # Gets the skills and preferences of all the members of the team first
             if not ready:
                 if len(agent.partners) == agent.teamSize - 1:
@@ -489,7 +503,6 @@ def main():
             # restart it manually:
             # pkill -f "parameter_bridge"
 
-    agent.closeComm()
     #agent.shutdown_adapter()
 
 main()

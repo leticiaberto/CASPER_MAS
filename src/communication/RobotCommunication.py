@@ -148,29 +148,39 @@ class RobotComm:
     # ----------------------------------------------------
     # BACKGROUND LISTENER WITH SELECTIVE ACK
     # ----------------------------------------------------
-    def start_listener(self, callback):
+    def start_listener(self, msg_queue):
+        """
+            Receive messages in a background thread and put them onto msg_queue.
+            ACKs are still sent inline here (they are tiny and must be prompt).
+            Processing is left entirely to the main thread via spin_once().
+        """
+        self._running = True
+ 
         def loop():
-            while True:
-                msg = self.receive()
-                if msg:
-                    # Only send ACK for selected message types
-                    if "type" in msg and "from" in msg and msg["type"] in self.ACK_TYPES:
-                        ack = {
-                            "from": self.robot_id,
-                            "to": msg["from"],
-                            "type": f"ack_{msg['type']}",
-                            "time": time.time(),
-                        }
-                        self.pub.send_json(ack)
-                    callback(msg)
-
+            while self._running:
+                try:
+                    msg = self.receive()
+                    if msg:
+                        # ACKs must be sent immediately — do it here before queuing
+                        if "type" in msg and "from" in msg and msg["type"] in self.ACK_TYPES:
+                            ack = {
+                                "from": self.robot_id,
+                                "to": msg["from"],
+                                "type": f"ack_{msg['type']}",
+                                "time": time.time(),
+                            }
+                            self.pub.send_json(ack)
+                        msg_queue.put(msg)
+                except Exception:
+                    break  # context terminated or socket closed — exit cleanly
+ 
         thread = threading.Thread(target=loop, daemon=True)
         thread.start()
-
     # ----------------------------------------------------
     # CLEANUP
     # ----------------------------------------------------
     def close(self):
+        self._running = False  # signal listener loop to stop
         try:
             self.pub.close(0)
             self.sub.close(0)

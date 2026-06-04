@@ -20,6 +20,7 @@ Usage (from Robot.py)
         role          = agent_role,
         teamsize      = teamsize,
         use_sim       = USE_SIM,
+        party_duration = party_duration,
     )
 
     ok, msg = agent.pick_and_place(
@@ -46,7 +47,6 @@ from utils import ROSUtils
 
 ResultCallback = Callable[[bool, str], None]
 XYZ = Tuple[float, float, float]
-
 
 class FrankaResearch3(Agent):
     """
@@ -83,6 +83,7 @@ class FrankaResearch3(Agent):
         teamsize:             int           = 1,
         use_sim:              bool          = True,
         workspace:            str           = None,
+        party_duration:       float         = 3600.0, #1h default
         franky_ip:            Optional[str] = None,
         franky_gripper_speed: float         = 0.05,
         franky_gripper_force: float         = 10.0,
@@ -109,6 +110,7 @@ class FrankaResearch3(Agent):
             contexts or list((skill_weights or {}).keys()),
             role,
             teamsize,
+            party_duration,
         )
 
         self._robot_name     = robot_name
@@ -184,6 +186,33 @@ class FrankaResearch3(Agent):
             f"Name resolution: {'enabled' if self._otr else 'disabled (no world_name)'}."
         )
 
+        self.scene = {
+            "food_grill": {
+                "placements": {
+                    "meat_1":         {"place_grill": (5.0, 4.65, 0.885), "place_plate": (4.30, 5.26, 0.90)},
+                    #"meat_2":         {"place_grill": (5.2, 4.65, 0.885), "place_plate": (4.20, 5.18, 0.90)},
+                    #"meat_3":         {"place_grill": (4.8, 4.65, 0.885), "place_plate": (4.38, 5.15, 0.90)},
+                    #"garlic_bread_1": {"place_grill": (5.1, 4.40, 0.900), "place_plate": (4.25, 5.21, 0.92)},
+                    #"garlic_bread_2": {"place_grill": (4.9, 4.40, 0.900), "place_plate": (4.34, 4.19, 0.92)},
+                }
+            },
+            "vegetables_side": {
+                "placements": {
+                    "carrot_1":       {"place_chop": (1.12, 4.90, 0.91), "place_bowl": (1.47, 4.90, 0.89)},
+                    #"carrot_2":       {"place_chop": (1.04, 4.90, 0.91), "place_bowl": (1.54, 4.90, 0.89)},
+                    #"cucumber_1":     {"place_chop": (0.94, 4.90, 0.91), "place_bowl": (1.50, 4.90, 0.89)},
+                    #"cucumber_2":     {"place_chop": (0.86, 4.90, 0.91), "place_bowl": (1.59, 4.90, 0.89)},
+                }
+            },
+            "salads_side": {
+                "placements": {
+                    "tomato_1":       {"place_chop": (0.9, 4.85, 0.91), "place_bowl": (0.52, 4.84, 0.89)},
+                    #"tomato_2":       {"place_chop": (1.11, 4.84, 0.91), "place_bowl": (0.53, 4.96, 0.89)},
+                   # "tomato_3":       {"place_chop": (1.07, 4.97, 0.91), "place_bowl": (0.64, 4.84, 0.89)},
+                    #"purple_onion_1": {"place_chop": (0.95, 4.95, 0.91), "place_bowl": (0.64, 4.96, 0.89)},
+                }
+            }
+        }
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -230,6 +259,10 @@ class FrankaResearch3(Agent):
             pick_xyz = (pos.x, pos.y, pos.z)
             print(f"[FrankaResearch3] '{pick_name}' pick XYZ (robot frame): "
                   f"({pick_xyz[0]:.3f}, {pick_xyz[1]:.3f}, {pick_xyz[2]:.3f})")
+        else:
+            # Raw pick_xyz is in world frame — convert to robot frame.
+            pick_xyz = self._otr.world_xyz_to_robot(pick_xyz)
+
 
         # ── Resolve place XYZ ────────────────────────────────────────
         if place_xyz is None:
@@ -253,6 +286,10 @@ class FrankaResearch3(Agent):
             print(f"[FrankaResearch3] '{place_name}' place XYZ (robot frame): "
                   f"({place_xyz[0]:.3f}, {place_xyz[1]:.3f}, {place_xyz[2]:.3f}) "
                   f"(surface_offset={surface_offset:.3f})")
+        else:
+            # Raw place_xyz is in world frame — convert to robot frame.
+            place_xyz = self._otr.world_xyz_to_robot(place_xyz)
+
 
         # ── Dispatch ─────────────────────────────────────────────────
         if callback is not None:
@@ -287,42 +324,105 @@ class FrankaResearch3(Agent):
     def is_busy(self) -> bool:
         return self.adapter.is_busy
 
+    def create_tasks_sequence(self, task_type: str, group: str, target_place: str, use_names: bool = False) -> List[dict]:
+        sequence = []
+        if task_type == "pick_place":
+            for food, placements in self.scene[group]["placements"].items():
+                if use_names:
+                    task = {
+                        "action":      "pick_and_place",
+                        "pick_name":   food,
+                        "place_name":  target_place,
+                    }
+                else:
+                    task = {
+                        "action":     "pick_and_place",
+                        "pick_name":  food,
+                        "place_xyz":  placements[target_place],
+                    }
+                sequence.append(task)
+        else:
+            print(f"Task type '{task_type}' not recognized.")
+        return sequence
+
+    def define_subtask(self, action: str, use_names: bool = False) -> List[dict]:
+        sequence = None
+
+        # Vegetables
+        if action == "PickVegetables":
+            sequence = self.create_tasks_sequence(
+                "pick_place", "vegetables_side", "place_chop" if not use_names else "chop_board_1",
+                use_names=use_names,
+            )
+        elif action == "ChopVegetables":
+            print("Chopping vegetables... (not implemented)")
+            time.sleep(2)
+        elif action == "PickChoppedVegetables":
+            sequence = self.create_tasks_sequence(
+                "pick_place", "vegetables_side", "place_bowl" if not use_names else "bowl_2",
+                use_names=use_names,
+            )
+
+        # Salad
+        elif action == "PickSaladIngredients":
+            sequence = self.create_tasks_sequence(
+                "pick_place", "salads_side", "place_chop" if not use_names else "chop_board_1",
+                use_names=use_names,
+            )
+        elif action == "ChopSaladIngredients":
+            print("Chopping salad ingredients... (not implemented)")
+            time.sleep(2)
+        elif action == "PickChoppedSaladIngredients":
+            sequence = self.create_tasks_sequence(
+                "pick_place", "salads_side", "place_bowl" if not use_names else "bowl_1",
+                use_names=use_names,
+            )
+
+        # Meat + Garlic Bread
+        elif action == "PickFoodIngredientsGrill":
+            sequence = self.create_tasks_sequence(
+                "pick_place", "food_grill", "place_grill" if not use_names else "grill",
+                use_names=use_names,
+            )
+        elif action == "GrillFood":
+            print("Grilling food... (not implemented)")
+            time.sleep(2)
+        elif action == "PickGrilledFood":
+            sequence = self.create_tasks_sequence(
+                "pick_place", "food_grill", "place_plate" if not use_names else "plate_1",
+                use_names=use_names,
+            )
+
+        return sequence
+    
     # ------------------------------------------------------------------
     # Agent interface (task-graph dispatch)
     # ------------------------------------------------------------------
-
     def _execute_task_specific(self, task: dict) -> None:
         """
         Called by the Agent base class task dispatcher.
-
-        Expected task format:
-            {"action": "pick_and_place", "pick": [x,y,z], "place": [x,y,z]}
-            {"action": "grasp"}
-            {"action": "move_arm"}
-            {"action": "inspect"}
         """
-        action = task.get("action") if isinstance(task, dict) else task
-
-        if action == "pick_and_place":
-            ok, msg = self.pick_and_place(
-                pick_xyz   = tuple(task["pick"])  if "pick"  in task else None,
-                place_xyz  = tuple(task["place"]) if "place" in task else None,
-                pick_name  = task.get("pick_name"),
-                place_name = task.get("place_name"),
-            )
-            log = self.adapter.get_logger() if self.adapter else None
-            if log:
-                (log.info if ok else log.error)(
-                    f"[FrankaResearch3] task result: {msg}"
+        sequence = self.define_subtask(task)
+        if sequence is None:
+            print(f"[FrankaResearch3] No sequence defined for action: '{task}'")
+            return
+    
+        for subtask in sequence:
+            action = subtask["action"]
+            if action == "pick_and_place":
+                ok, msg = self.pick_and_place(
+                    pick_xyz   = subtask["pick_xyz"] if "pick_xyz" in subtask else None,
+                    place_xyz  = subtask["place_xyz"] if "place_xyz" in subtask else None,
+                    pick_name  = subtask["pick_name"] if "pick_name" in subtask else None,
+                    place_name = subtask["place_name"] if "place_name" in subtask else None,
                 )
-        elif action in ("grasp", "move_arm", "inspect"):
-            print(f"[FrankaResearch3] '{action}' not yet implemented.")
-        else:
-            print(f"[FrankaResearch3] Unknown task action: '{action}'")
-
-    def start_adapter(self) -> None:
-        """No-op — adapter starts in __init__."""
-        pass
+                log = self.adapter.get_logger() if self.adapter else None
+                if log:
+                    (log.info if ok else log.error)(f"[FrankaResearch3] task result: {msg}")
+            elif action in ("grasp", "move_arm", "inspect"):
+                print(f"[FrankaResearch3] '{action}' not yet implemented.")
+            else:
+                print(f"[FrankaResearch3] Unknown task action: '{action}'")
 
     def shutdown(self) -> None:
         """Cleanly stop executor, destroy nodes, shut down ROS2."""

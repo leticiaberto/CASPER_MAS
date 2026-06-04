@@ -119,6 +119,7 @@ class Human(Agent):
         node_name:     Optional[str] = None,
         use_sim       = True,
         workspace:    str           = None,
+        party_duration:       float         = 3600.0, #1h default
     ) -> None:
         constraints = {
             "can_move":               True,
@@ -130,7 +131,7 @@ class Human(Agent):
             "workspace":              workspace,
         }
 
-        super().__init__(actor_name, constraints, skill_weights, contexts, role, teamsize)
+        super().__init__(actor_name, constraints, skill_weights, contexts, role, teamsize, party_duration)
 
         self._actor_name = actor_name
 
@@ -272,6 +273,38 @@ class Human(Agent):
     def is_busy(self) -> bool:
         """True while a command is in flight."""
         return self._adapter.is_busy
+
+    # ------------------------------------------------------------------
+    # Agent interface (task-graph dispatch)
+    # ------------------------------------------------------------------
+
+    def _execute_task_specific(self, task: dict) -> None:
+        print(f"[Human] Executing task: {task}")
+        action = task.get("action") if isinstance(task, dict) else task
+
+        if action == "PickRice":
+            ok, msg = self.goto(location="House")
+        elif action == "CookRice":
+            ok, msg = self.goto(location="House")
+        elif action == "ServeMainDish":
+            ok, msg = self.goto(location="House")
+            ok, msg = self.goto(location="DiningTable")
+        elif action == "ServeSides":
+            ok, msg = self.goto(location="MainPrepTable")
+            ok, msg = self.goto(location="DiningTable")
+        elif action == "ServeSalad":
+            ok, msg = self.goto(location="MainPrepTable")
+            ok, msg = self.goto(location="DiningTable")
+        elif action == "ServeGrilledFood":
+            ok, msg = self.goto(location="GrillPrepTable")
+            ok, msg = self.goto(location="DiningTable")
+        elif action == "WelcomeGuests":
+            ok, msg = self.goto(location="House")
+            ok, msg = self.goto(location="GroupOfGuests")
+        elif action == "PutTheDishesAway":
+            ok, msg = self.goto(location="House")
+        else:
+            print(f"[Human] Unknown task action: {action}")
 
     def shutdown(self) -> None:
         """Cleanly stop the executor and destroy the ROS2 node."""

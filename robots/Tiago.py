@@ -202,6 +202,7 @@ class Tiago(Agent):
         teamsize:     int,
         use_sim: bool,
         workspace:    str           = None,
+        party_duration:       float         = 3600.0, #1h default
         arm_base_z:   Optional[float] = None,
         pose_timeout: float           = 15.0,
         table_standoff  = 0.10,
@@ -215,7 +216,7 @@ class Tiago(Agent):
             "can_transport_objects":  True,
             "workspace":              workspace,
         }
-        super().__init__(robot_name, constraints, skill_weights, contexts, role, teamsize)
+        super().__init__(robot_name, constraints, skill_weights, contexts, role, teamsize, party_duration)
 
         if use_sim:
             mode = RobotMode.SIMULATION
@@ -456,7 +457,8 @@ class Tiago(Agent):
                 "place_z_offset": 0.0   # optional
             }
         """
-        action = task.get("action")
+        pass
+        """ action = task.get("action")
         if action == "pick_and_place":
             pairs  = [tuple(p) for p in task.get("objects", [])]
             offset = task.get("place_z_offset", 0.0)
@@ -464,7 +466,7 @@ class Tiago(Agent):
         else:
             self._adapter.get_logger().warn(
                 f"[Tiago] Unknown task action: '{action}'"
-            )
+            ) """
 
     def start_adapter(self) -> None:
         """No-op — adapter starts automatically in __init__."""

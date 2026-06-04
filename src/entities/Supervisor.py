@@ -241,4 +241,16 @@ class Supervisor:
         }
 
         # Publish all at once
-        self.publish("task_assignment_batch", all_assignments)       
+        self.publish("task_assignment_batch", all_assignments)
+
+    def release_task(self, task_id, assigned_agent_id):
+        """
+        Supervisor explicitly clears a task whose time_to_clean was False.
+        Sends a task_ready_clearance message directly to the assigned agent.
+        """
+        self.publish(
+            "task_ready_clearance",
+            {"task_id": task_id},
+            assigned_agent_id,
+        )
+        print(f"[{self.name}] Sent task_ready_clearance for task '{task_id}' to agent '{assigned_agent_id}'.")

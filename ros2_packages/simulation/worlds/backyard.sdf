@@ -295,29 +295,29 @@
     <include>
       <uri>model://meat</uri>
       <name>meat_1</name>
-      <pose>5.0 4.65 0.885 0 0 0</pose>
+      <pose>5.32 4.97 0.90 0 0 0</pose>
     </include>
     <include>
       <uri>model://meat</uri>
       <name>meat_2</name>
-      <pose>5.2 4.65 0.885 0 0 0</pose>
+      <pose>5.4 5.08 0.90 0 0 0</pose>
     </include>
     <include>
       <uri>model://meat</uri>
-      <name>meat_3</name>
-      <pose>4.8 4.65 0.885 0 0 0</pose>
+      <name>meat_3</name> 
+      <pose>5.23 5.07 0.90 0 0 0</pose>
     </include>
 
     <!-- garlic_bread: box centre, half-height=0.04  → z=0.900 -->
     <include>
       <uri>model://garlic_bread</uri>
       <name>garlic_bread_1</name>
-      <pose>5.1 4.40 0.900 0 0 0</pose>
+      <pose>5.63 5.11 0.92 0 0 0</pose>
     </include>
     <include>
       <uri>model://garlic_bread</uri>
       <name>garlic_bread_2</name>
-      <pose>4.9 4.40 0.900 0 0 0</pose>
+      <pose>5.75 5.11 0.92 0 0 0</pose>
     </include>
 
     <!-- Grill-prep table items  (surface z = 0.85) ───────────────── -->
@@ -328,53 +328,71 @@
       <pose>4.3 5.20 0.850 0 0 0</pose>
     </include>
 
+     <include>
+      <uri>model://plate</uri>
+      <name>plate_2</name>
+      <pose>5.70 5.12 0.850 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://plate</uri>
+      <name>plate_3</name>
+      <pose>5.32 5.03 0.850 0 0 0</pose>
+    </include>
+
     <!-- Main prep table items  (surface z = 0.85) ────────────────── -->
     <!-- tomato: box centre, half-height=0.025  → z=0.875 -->
     <include>
       <uri>model://tomato</uri>
       <name>tomato_1</name>
-      <pose>1.0 5.20 0.875 0 0 0</pose>
+      <pose>1.0 5.20 0.875 0 0 0</pose> 
     </include>
     <include>
       <uri>model://tomato</uri>
-      <name>tomato_2</name>
-      <pose>1.2 5.00 0.875 0 0 0</pose>
+      <name>tomato_2</name>  
+      <pose>1.53 5.38 0.87 0 0 0</pose>
     </include>
     <include>
       <uri>model://tomato</uri>
       <name>tomato_3</name>
-      <pose>1.0 5.00 0.875 0 0 0</pose>
+      <pose>1.0 5.07 0.875 0 0 0</pose> 
+    </include>
+
+    <include>
+      <uri>model://chop_board</uri>
+      <name>chop_board_1</name>
+      <pose>1.0 4.9 0.86 0 0 0</pose> 
     </include>
 
     <!-- purple_onion: box centre, half-height=0.025  → z=0.875 -->
     <include>
       <uri>model://purple_onion</uri>
-      <name>purple_onion_1</name>
-      <pose>1.2 5.20 0.875 0 0 0</pose>
+      <name>purple_onion_1</name> 
+      <pose>1.55 5.19 0.87 0 0 0</pose>
     </include>
 
     <!-- carrot: box centre, pitch=π/2 → lies flat, half world-Z=0.02  → z=0.870 -->
     <include>
       <uri>model://carrot</uri>
       <name>carrot_1</name>
-      <pose>1.7 5.30 0.870 0 0 0</pose>
+      <pose>1.7 5.30 0.870 0 0 0</pose>  
     </include>
     <include>
       <uri>model://carrot</uri>
-      <name>carrot_2</name>
-      <pose>0.7 5.25 0.870 0 0 0</pose>
+      <name>carrot_2</name>  
+      <pose>0.7 5.19 0.870 0 0 0</pose>
     </include>
 
     <!-- cucumber: same as carrot  → z=0.870 -->
     <include>
       <uri>model://cucumber</uri>
       <name>cucumber_1</name>
-      <pose>0.5 5.25 0.870 0 0 0</pose>
+      <pose>0.5 5.25 0.870 0 0 0</pose>  
     </include>
     <include>
       <uri>model://cucumber</uri>
       <name>cucumber_2</name>
-      <pose>1.4 5.30 0.870 0 0 0</pose>
+      <pose>1.4 5.30 0.870 0 0 0</pose>  
     </include>
 
     <!-- bowl: origin at bottom  → z=0.850 -->
@@ -394,7 +412,7 @@
     <include>
       <uri>model://drink</uri>
       <name>drink_1</name>
-      <pose>-5.0 5.60 0.410 0 0 0</pose>
+      <pose>-5.0 5.60 0.410 0 0 0</pose><!-- (-2.74, -0.75, 0.30) (-3.01, -0.62, 0.30) (-3.26, -0.74, 0.30) (-2.57, -0.63, 0.30)-->
     </include>
     <include>
       <uri>model://drink</uri>

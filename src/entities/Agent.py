@@ -14,13 +14,14 @@ from utils import Roles
 import time
 
 class Agent:
-    def __init__(self, id, constraints, skills, contexts, role, teamsize):
+    def __init__(self, id, constraints, skills, contexts, role, teamsize, party_duration):
         self.id = id
         self.constraints = constraints  # Task independent      
         self.skills = ContextualSkillModel(skills, contexts)
         self.supervisor_id = None
         self.role = Roles(role)
         self.teamSize = teamsize
+        self.party_duration = party_duration
 
         # Create communication
         self.comm = RobotComm(self.id, self.teamSize)
@@ -38,6 +39,9 @@ class Agent:
         self.supervisor_id = None
 
         self.goal_finished = False
+
+        # Message queue: listener thread enqueues, main thread drains in step()
+        self._msg_queue = queue.Queue()
 
     # ----------------------------
     # Partners
@@ -73,7 +77,7 @@ class Agent:
         if(self.role == Roles.SUPERVISOR):
             self.comm_handler.publish("SUPERVISOR", {"supervisor_id": self.id})
             self.supervisor_id = self.id
-            self.supervisor.assign_agents_to_tasks(self.global_graph.G, agents, mode, top_k, debug)
+            self.supervisor.assign_agents_to_tasks(self.global_graph.G, agents, mode, top_k, debug, self.id)
             self.graph_visualizer.export_multiagent_graph(self.global_graph.G, output_name=f"["+self.id+"] Global_Supervisor_Allocation", palette_mode="pastel")
             self.vis_queue = queue.Queue()
             visualizer = RealTimeGraphVisualizer(
@@ -89,32 +93,72 @@ class Agent:
         self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
         for node_id in self.local_graph.graph.nodes:
             self.publish_task_status_update(node_id, self.local_graph.graph.nodes[node_id]["status"])
-            time.sleep(3)
+            print(f"Published initial status of task {node_id} as {self.local_graph.graph.nodes[node_id]['status'].value}")
+            time.sleep(10)
         print("Assigned tasks received and local graph initialized.")
 
+    def spin_once(self):
+        """
+            Drain every queued message on the main thread.
+            Call this anywhere the main thread needs to process incoming
+            messages: at the top of step(), and in the Robot.py startup
+            polling loop while waiting for partners to announce themselves.
+        """
+        while not self._msg_queue.empty():
+            try:
+                msg = self._msg_queue.get_nowait()
+                self.comm_handler.on_message(msg)
+            except queue.Empty:
+                break
+
     def step(self):
+        self.spin_once()  # process all pending messages before acting
+
         ready_tasks = self.local_graph.get_ready_tasks()
-        if not ready_tasks:
-            pass
-        else:
-            #print(f"Ready tasks for execution: {ready_tasks}")
-            # Inform all the tasks ready to be executed (to improve explanation and trust)
+
+        if ready_tasks:
+            #  READY announce used for explainability/trust on the receiving end (other agents)
             for task in ready_tasks:
-                self.task_update_status_and_publish(task, TaskStatus.READY, ignore=True) # #Do not need to update local because get_ready_tasks() does
-                time.sleep(6)
-            # Execute each ready task
-            for task in ready_tasks:
-                self.task_update_status_and_publish(task, TaskStatus.RUNNING)
-                time.sleep(3)
-                self._execute_task_specific(task) # Physical execution
+                #print(f"Ready task: {t} with priority {self.local_graph.graph.nodes[t].get('priority', 'N/A')}")
+                self.task_update_status_and_publish(task, TaskStatus.READY, ignore=True)# Do not need to update local because get_ready_tasks() does
                 time.sleep(10)
-                self.task_update_status_and_publish(task, TaskStatus.DONE)
-                time.sleep(2)
-        if(self.role == Roles.SUPERVISOR):
-            if(self.check_all_tasks_done()):# Check everytime in case one can change the status back
+
+            # Pick the single highest-priority (lowest number) ready task
+            task = min(
+                ready_tasks,
+                key=lambda t: self.local_graph.graph.nodes[t].get("priority", float('inf'))
+            )
+
+            self.task_update_status_and_publish(task, TaskStatus.RUNNING)
+            time.sleep(5)
+            self._execute_task_specific(task)# Physical execution
+            time.sleep(10)
+            self.task_update_status_and_publish(task, TaskStatus.DONE)
+            time.sleep(10)
+
+        if self.role == Roles.SUPERVISOR:
+            # Release any time_to_clean tasks once the party duration has elapsed
+            elapsed = time.time() - self._start_time
+            if elapsed >= self.party_duration:
+                print(f"[{self.id}] Party duration of {self.party_duration} seconds has elapsed. Releasing time_to_clean tasks.")
+                for node_id in self.global_graph.G.nodes:
+                    node_data = self.global_graph.G.nodes[node_id]
+                    assignment = node_data.get("assignment")
+                    if (
+                        node_data.get("time_to_clean") is False
+                        and assignment.status != TaskStatus.NOT_ASSIGNED
+                        and assignment.selected_agent is not None
+                        and assignment.status not in (TaskStatus.RUNNING, TaskStatus.DONE)
+                    ):
+                        print(f"[{self.id}] Party over ({elapsed:.1f}s >= {self.party_duration}s). Releasing clean task '{node_id}'.")
+                        self.release_task(node_id)
+                        # Flip the flag on the global graph so we don't re-release next step
+                        self.global_graph.G.nodes[node_id]["time_to_clean"] = True
+
+            if self.check_all_tasks_done():# Check everytime in case one can change the status back
                 print("All tasks are done!")
                 self.comm_handler.publish("all_tasks_done", {"agent_id": self.id})
-                time.sleep(2)
+                time.sleep(5)
                 self.goal_finished = True
 
     def task_update_status_and_publish(self, task, new_status, ignore=False):
@@ -157,14 +201,6 @@ class Agent:
             for s in context.relevance
         )
     
-    # ----------------------------
-    # Decisions - Todo: now just for testing the connection with the robot using ROS
-    def decide(self):
-        return {
-            "action": "pick_and_place",
-            "pick": [0.5, 0.0, 0.1],
-            "place": [0.3, -0.3, 0.1]
-        }
     # ----------------------------
 
     # ----------------------------
@@ -215,6 +251,34 @@ class Agent:
             self.global_graph.update_status(task_id, task_status)
             self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="["+self.id+"] Global_Supervisor_StatusUpdated", palette_mode="pastel", graphType="updated")
 
+    def handle_task_clearance(self, task_id):
+        """
+        Called by CommunicationHandler when a task_ready_clearance message arrives.
+        Flips time_to_clean on the local graph and, if all other deps are met,
+        marks the task READY and publishes the status update.
+        """
+        became_ready = self.local_graph.receive_clearance(task_id)
+        if became_ready:
+            print(f"[{self.id}] Task '{task_id}' cleared by supervisor and is now READY.")
+            self.publish_task_status_update(task_id, TaskStatus.READY)
+            self.graph_visualizer.plot_task_graph(self.local_graph.graph, "[" + self.id + "] Local_")
+        else:
+            print(f"[{self.id}] Task '{task_id}' received clearance but is not yet READY (deps still pending).")
+ 
+    def release_task(self, task_id):
+        """
+        Supervisor-side convenience: look up the assigned agent and send clearance.
+        Only callable when this agent holds the supervisor role.
+        """
+        if self.role != Roles.SUPERVISOR:
+            raise RuntimeError("Only the supervisor agent can release tasks.")
+ 
+        assignment = self.global_graph.G.nodes[task_id].get("assignment")
+        if assignment is None or assignment.selected_agent is None:
+            raise ValueError(f"Task '{task_id}' has no assigned agent.")
+ 
+        self.supervisor.release_task(task_id, assignment.selected_agent)
+
     # ----------------------------
     # Startup Procedure
     # ----------------------------
@@ -227,8 +291,8 @@ class Agent:
           4. Request skills from others 
         """
 
-        # Add partners
-        self.comm.start_listener(self.comm_handler.on_message)
+        # Add partners — listener thread only enqueues; main thread drains
+        self.comm.start_listener(self._msg_queue)
 
         time.sleep(1.0)
 
@@ -243,6 +307,9 @@ class Agent:
 
         # Step 4: request everyone else's skills (optional, because they may have already sent them as a reply to hello)
         #self.comm_handler.request_skills()
+
+        # Start the party timer so step() can release time_to_clean tasks after party_duration seconds
+        self._start_time = time.time()
 
     
     def closeComm(self):

@@ -35,7 +35,8 @@ import yaml
 from pathlib import Path
 import fcntl
 
-import ros2_path_setup  # noqa: F401 — registers all ROS2 adapter packages
+import ros2_path_setup
+from utils import Roles  # noqa: F401 — registers all ROS2 adapter packages
 
 
 # ---------------------------------------------------------------------------
@@ -360,6 +361,7 @@ def main():
     use_sim      = exp_config["use_sim"]
     world_name   = exp_config.get("world_name", "backyard")
     party_duration = exp_config.get("party_duration", 3600)
+    supervisor_team = exp_config.get("supervisor_team", True)
     
     agent_role   = args.role
 
@@ -474,8 +476,15 @@ def main():
                     team_complete = True
                     #agent.print_partners()
                 if team_complete:
-                    # Add yourself as agent to be considered in the task allocation
-                    all_agents = {agent.id: agent.skills} | agent.partners
+                    if supervisor_team:# Supervisor has tasks too -- Add yourself as agent to be considered in the task allocation
+                        all_agents = {agent.id: agent.skills} | agent.partners
+                    else:# Supervisor does not have tasks -- Do not add yourself as agent to be considered in the task allocation
+                        all_agents = {
+                            pid: skills
+                            for pid, skills in agent.partners.items()
+                            if agent.partners.get(pid).role != Roles.SUPERVISOR
+                        }
+                
                     agent.allocate_task(all_agents, optimizeMode, top_k, debug)
                     time.sleep(3)
                     ready = True

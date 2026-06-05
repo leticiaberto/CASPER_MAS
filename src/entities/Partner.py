@@ -2,10 +2,11 @@ from src.entities.ContextualSkill import ContextualSkillModel
 
 # It is a class because I'm modeling beliefs about other agents, not the agents themselves.
 class PartnerAgent:
-    def __init__(self, skills, contexts, init_trust=0.5):
+    def __init__(self, skills, contexts, role, init_trust=0.5):
         self.skills = ContextualSkillModel(skills, contexts)
         self.trust = {c: init_trust for c in contexts}
         self.constraints = {} 
+        self.role = role
     
     def print_partner_info(self):
         self.skills.print_skills_preferences()

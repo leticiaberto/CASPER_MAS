@@ -46,8 +46,8 @@ class Agent:
     # ----------------------------
     # Partners
     # ----------------------------
-    def add_partner(self, partner_id, skills, contexts):
-        self.partners[partner_id] = PartnerAgent(skills, contexts)
+    def add_partner(self, partner_id, skills, contexts, role):
+        self.partners[partner_id] = PartnerAgent(skills, contexts, role)
 
     def print_partners(self):
         print("------\n Partners of ", self.id)
@@ -206,10 +206,10 @@ class Agent:
     # ----------------------------
     # Used in the message protocol
     # ----------------------------
-    def partners_skills_update(self, sender, received_weights, contexts):
+    def partners_skills_update(self, sender, received_weights, contexts, role):
         # Add partner if not already present
         if sender not in self.partners:
-            self.add_partner(sender, received_weights, contexts)
+            self.add_partner(sender, received_weights, contexts, role)
             print(f"Created partner {sender} skills!")
         else:
             self.partners[sender].skills.update_skills_and_preferences(received_weights)

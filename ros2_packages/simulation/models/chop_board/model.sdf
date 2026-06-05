@@ -76,7 +76,7 @@
       </visual>
 
       <!-- Juice groove — left ──────────────────────── -->
-      <collision name="groove_left_collision">
+      <!-- <collision name="groove_left_collision">
         <pose>0 -0.08 0.021 0 0 0</pose>
         <geometry><box><size>0.30 0.003 0.003</size></box></geometry>
       </collision>
@@ -88,10 +88,10 @@
           <diffuse>0.40 0.26 0.10 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
         </material>
-      </visual>
+      </visual> -->
 
       <!-- Juice groove — right ─────────────────────── -->
-      <collision name="groove_right_collision">
+      <!-- <collision name="groove_right_collision">
         <pose>0 0.08 0.021 0 0 0</pose>
         <geometry><box><size>0.30 0.003 0.003</size></box></geometry>
       </collision>
@@ -103,7 +103,7 @@
           <diffuse>0.40 0.26 0.10 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
         </material>
-      </visual>
+      </visual> -->
 
       <!-- ══════════════════════════════════════════════
            RUBBER FEET  (4 × small cylinders, anti-slip)

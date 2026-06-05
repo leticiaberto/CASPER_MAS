@@ -18,3 +18,5 @@ agents:
 
 
 supervisor: fr3_arm_1
+
+supervisor_team: True # True = Supervisor has tasks too, False = Supervisor does not have tasks

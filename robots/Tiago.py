@@ -203,6 +203,7 @@ class Tiago(Agent):
         use_sim: bool,
         workspace:    str           = None,
         party_duration:       float         = 3600.0, #1h default
+        guests:               int           = 0,
         arm_base_z:   Optional[float] = None,
         pose_timeout: float           = 15.0,
         table_standoff  = 0.10,
@@ -216,7 +217,7 @@ class Tiago(Agent):
             "can_transport_objects":  True,
             "workspace":              workspace,
         }
-        super().__init__(robot_name, constraints, skill_weights, contexts, role, teamsize, party_duration)
+        super().__init__(robot_name, constraints, skill_weights, contexts, role, teamsize, party_duration, guests)
 
         if use_sim:
             mode = RobotMode.SIMULATION

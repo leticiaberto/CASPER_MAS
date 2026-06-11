@@ -137,7 +137,7 @@ def _launch_human(robot_id, world_name, actor_type, color, x_pos, y_pos, yaw):
 
 def _make_agent(robot_model, AgentClass, robot_id, world_name,
                 skill_weights, contexts, agent_role, teamsize,
-                use_sim, result_timeout, workspace, party_duration):
+                use_sim, result_timeout, workspace, party_duration, guests):
     """Instantiate the correct agent class with its specific parameters."""
 
     if robot_model == "Pepper":
@@ -150,6 +150,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             use_sim       = use_sim,
             workspace     = workspace,
             party_duration = party_duration,
+            guests         = guests,
         )
 
     if robot_model == "FrankaResearch3":
@@ -163,6 +164,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             use_sim       = use_sim,
             workspace     = workspace,
             party_duration = party_duration,
+            guests         = guests,
         )
 
     if robot_model == "Tiago":
@@ -176,6 +178,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             use_sim       = use_sim,
             workspace     = workspace,
             party_duration = party_duration,
+            guests         = guests,
         )
 
     if robot_model == "Human":
@@ -189,6 +192,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             use_sim       = use_sim,
             workspace     = workspace,
             party_duration = party_duration,
+            guests         = guests,
         )
 
     raise ValueError(f"Unknown robot_model: '{robot_model}'")
@@ -285,7 +289,7 @@ def _wait_for_spawner_chain(launch_proc: subprocess.Popen, timeout: float = 120.
     return False
 
 
-def _wait_for_actor(robot_id: str, timeout: float = 60.0) -> bool:
+def _wait_for_actor(robot_id: str, timeout: float = 45.0) -> bool:
     """
     Block until /<robot_id>/robot_state_publisher appears in the ROS2 node list.
     Used for Human actors (no controller_manager).
@@ -316,16 +320,16 @@ def main():
 
     # ── Args ────────────────────────────────────────────────────────────────
     parser = argparse.ArgumentParser()
-    parser.add_argument("--robot", default="configs/robots/fr3_arm_1.yaml")
+    parser.add_argument("--robot", default="fr3_arm_1.yaml")
     parser.add_argument("--role",  default="member",
                         choices=["member", "supervisor"])
-    parser.add_argument("--exp",   default="configs/exps/exp1.yaml")
+    parser.add_argument("--exp",   default="exp1.yaml")
     args = parser.parse_args()
 
     # ── Load configs ─────────────────────────────────────────────────────────
-    with open(args.robot) as f:
+    with open('configs/robots/' + args.robot) as f:
         robot_config = yaml.safe_load(f)
-    with open(args.exp) as f:
+    with open('configs/exps/' + args.exp) as f:
         exp_config = yaml.safe_load(f)
 
     print(f"[Robot] Loaded robot config : {args.robot}")
@@ -362,6 +366,7 @@ def main():
     world_name   = exp_config.get("world_name", "backyard")
     party_duration = exp_config.get("party_duration", 3600)
     supervisor_team = exp_config.get("supervisor_team", True)
+    guests        = exp_config.get("guests", 0)
     
     agent_role   = args.role
 
@@ -429,6 +434,7 @@ def main():
         result_timeout = result_timeout,
         workspace      = workspace,
         party_duration  = party_duration,
+        guests         = guests,
     )
 
     print(f"[Robot] Agent '{robot_id}' instantiated.")

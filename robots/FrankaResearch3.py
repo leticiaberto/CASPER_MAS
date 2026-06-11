@@ -48,6 +48,10 @@ from utils import ROSUtils
 ResultCallback = Callable[[bool, str], None]
 XYZ = Tuple[float, float, float]
 
+TIME_GRILL_FOOD = 60  # seconds
+TIME_CHOP_VEGETABLES = 60  # seconds
+TIME_CHOP_SALAD_INGREDIENTS = 60  # seconds
+
 class FrankaResearch3(Agent):
     """
     Parameters
@@ -84,6 +88,7 @@ class FrankaResearch3(Agent):
         use_sim:              bool          = True,
         workspace:            str           = None,
         party_duration:       float         = 3600.0, #1h default
+        guests:               int           = 0,
         franky_ip:            Optional[str] = None,
         franky_gripper_speed: float         = 0.05,
         franky_gripper_force: float         = 10.0,
@@ -111,6 +116,7 @@ class FrankaResearch3(Agent):
             role,
             teamsize,
             party_duration,
+            guests,
         )
 
         self._robot_name     = robot_name
@@ -356,7 +362,7 @@ class FrankaResearch3(Agent):
             )
         elif action == "ChopVegetables":
             print("Chopping vegetables... (not implemented)")
-            time.sleep(2)
+            time.sleep(TIME_CHOP_VEGETABLES)  # Simulate chopping time
         elif action == "PickChoppedVegetables":
             sequence = self.create_tasks_sequence(
                 "pick_place", "vegetables_side", "place_bowl" if not use_names else "bowl_2",
@@ -371,7 +377,7 @@ class FrankaResearch3(Agent):
             )
         elif action == "ChopSaladIngredients":
             print("Chopping salad ingredients... (not implemented)")
-            time.sleep(2)
+            time.sleep(TIME_CHOP_SALAD_INGREDIENTS)  # Simulate chopping time
         elif action == "PickChoppedSaladIngredients":
             sequence = self.create_tasks_sequence(
                 "pick_place", "salads_side", "place_bowl" if not use_names else "bowl_1",
@@ -386,7 +392,7 @@ class FrankaResearch3(Agent):
             )
         elif action == "GrillFood":
             print("Grilling food... (not implemented)")
-            time.sleep(2)
+            time.sleep(TIME_GRILL_FOOD)  # Simulate grilling time
         elif action == "PickGrilledFood":
             sequence = self.create_tasks_sequence(
                 "pick_place", "food_grill", "place_plate" if not use_names else "plate_1",

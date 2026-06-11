@@ -3,7 +3,7 @@ from src.entities.Agent import Agent
 
 
 class Pepper(Agent):
-    def __init__(self, id, skill_weights, contexts, role, teamsize, use_sim, agent_agnostic=True, workspace=None, party_duration: float = 3600.0):
+    def __init__(self, id, skill_weights, contexts, role, teamsize, use_sim, agent_agnostic=True, workspace=None, party_duration: float = 3600.0, guests: int = 0):
         constraints={
             "can_move": True,
             "can_manipulate": False,
@@ -12,7 +12,7 @@ class Pepper(Agent):
             "max_payload_kg": 1, # refers to maximum weight the robot can carry while navigating
             "workspace": workspace
         }
-        super().__init__(id, constraints, skill_weights, contexts, role, teamsize, party_duration)
+        super().__init__(id, constraints, skill_weights, contexts, role, teamsize, party_duration, guests)
         #self.adapter = PepperAdapter(id, use_sim=use_sim, agent_agnostic=agent_agnostic)
 
     def start(self):

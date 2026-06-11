@@ -7,16 +7,18 @@ world_name: backyard
 
 use_sim: True          # True = simulation mode, False = real robot
 
-team_size: 2 #4
+team_size: 3 #4
 top_k: 1 #2
 
 agents:
   - fr3_arm_1
   #- tiago_robot_1
-  #- fr3_arm_2
-  #- human_host
+  - fr3_arm_2
+  - human_host
 
 
 supervisor: fr3_arm_1
 
 supervisor_team: True # True = Supervisor has tasks too, False = Supervisor does not have tasks
+
+guests: 5

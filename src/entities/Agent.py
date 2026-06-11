@@ -14,7 +14,7 @@ from utils import Roles
 import time
 
 class Agent:
-    def __init__(self, id, constraints, skills, contexts, role, teamsize, party_duration):
+    def __init__(self, id, constraints, skills, contexts, role, teamsize, party_duration, guests):
         self.id = id
         self.constraints = constraints  # Task independent      
         self.skills = ContextualSkillModel(skills, contexts)
@@ -22,6 +22,7 @@ class Agent:
         self.role = Roles(role)
         self.teamSize = teamsize
         self.party_duration = party_duration
+        self.guests = guests
 
         # Create communication
         self.comm = RobotComm(self.id, self.teamSize)

@@ -196,7 +196,7 @@ class HumanAdapter(Node):
 
         with self._busy_lock:
             if self._busy:
-                self.get_logger().warn(
+                self.get_logger().warning(
                     f"[HumanAdapter] Rejected '{cmd}' — adapter is already busy."
                 )
                 return False
@@ -237,8 +237,11 @@ class HumanAdapter(Node):
         message = str(result.get("message", ""))
 
         icon   = "✓" if success else "✗"
-        log_fn = self.get_logger().info if success else self.get_logger().error
-        log_fn(f"[HumanAdapter] {icon} {message}")
+        if success:
+            self.get_logger().info(f"[HumanAdapter] {icon} {message}")
+        else:
+            self.get_logger().warning(f"[HumanAdapter] {icon} {message}")
+        
 
         self._result_callback(success, message)
 

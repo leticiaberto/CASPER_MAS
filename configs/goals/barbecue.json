@@ -1,6 +1,25 @@
 {
   "tasks": [
     {
+      "id": "WelcomeGuests",
+      "context": "HouseParty",
+      "required_skills": {
+        "communication": 0.7,
+        "openDoor": 0.3
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "can_communicate": true,
+        "max_payload_kg": 3,
+        "workspace": ["House", "Garden"]
+      },
+      "duration": 600,
+      "priority": 1
+    },
+    
+    {
       "id": "PickSaladIngredients",
       "context": "HouseParty",
       "required_skills": {
@@ -156,7 +175,7 @@
       "id": "PickRice",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 0.8
+        "manipulation": 0.6
       },
       "required_constraints": {
         "can_move": false,
@@ -172,7 +191,7 @@
       "id": "CookRice",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 1.0
+        "manipulation": 0.9
       },
       "required_constraints": {
         "can_move": false,
@@ -188,7 +207,7 @@
       "id": "ServeMainDish",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 1.0,
+        "manipulation": 0.9,
         "transport": 1.0
       },
       "required_constraints": {
@@ -269,29 +288,10 @@
     },
 
     {
-      "id": "WelcomeGuests",
-      "context": "HouseParty",
-      "required_skills": {
-        "communication": 0.7,
-        "openDoor": 0.3
-      },
-      "required_constraints": {
-        "can_move": true,
-        "can_manipulate": false,
-        "can_transport_objects": false,
-        "can_communicate": true,
-        "max_payload_kg": 3,
-        "workspace": ["House", "Garden"]
-      },
-      "duration": 600,
-      "priority": 1
-    },
-
-    {
       "id": "PickDishes",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 1.0,
+        "manipulation": 0.8,
         "transport": 1.0
       },
       "required_constraints": {
@@ -310,7 +310,7 @@
       "id": "DoTheDishes",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 1.0
+        "manipulation": 0.7
       },
       "required_constraints": {
         "can_move": false,

@@ -19,6 +19,20 @@ Architecture
                 │    └─ sub /<name>/actor_result   (std_msgs/String JSON)
                 └─────────────────────────────┘
 
+Two-point rendezvous with GuestManager
+---------------------------------------
+During WelcomeGuests the host blocks on one sync signal published by
+GuestManager on /<actor_name>/guest_sync (String JSON):
+ 
+  {"phase": "ready", "guest": N}   — guest spawned at door, adapter live
+ 
+Topic map
+---------
+  pub /<name>/actor_command   → actor_controller
+  sub /<name>/actor_result    ← actor_controller
+  pub /<name>/actor_state     → GuestManager reads WelcomeGuests transitions
+  sub /<name>/guest_sync      ← GuestManager signals the two sync points
+
 Usage
 -----
     human = Human(actor_name="host")
@@ -39,47 +53,31 @@ Usage
 
 from __future__ import annotations
 
+import json
 import threading
 import time
 from typing import Callable, Optional, Tuple
 
 import rclpy
-from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+from std_msgs.msg import String
 
 from human_adapters.HumanAdapter import HumanAdapter
 from src.entities.Agent import Agent
 
 locations = {
-    "DiningTable": {
-        "x": -0.77,
-        "y": -1.54,
-        "yaw": 3.14
-    },
-
-    "House": {
-        "x": -0.19,
-        "y": -6.76,
-        "yaw": 1.57
-    },
-
-    "GroupOfGuests": {
-        "x": 3.25,
-        "y": -2.82,
-        "yaw": 0.0
-    },
-
-    "MainPrepTable": {
-        "x": 0.95,
-        "y": 4.30,
-        "yaw": 1.57
-    },
-
-    "GrillPrepTable": {
-        "x": 4.14,
-        "y": 4.24,
-        "yaw": 0.8
-    }
+    "DiningTable":    {"x": -0.77, "y": -1.54, "yaw": 3.14},
+    "House":          {"x": -0.19, "y": -6.76, "yaw": 1.57},
+    "GroupOfGuests_1":{"x":  3.25, "y": -2.82, "yaw": 0.0},
+    "GroupOfGuests_2":{"x": -2.07, "y":  3.33,  "yaw": 2.39},
+    "MainPrepTable":  {"x":  0.95, "y":  4.30, "yaw": 1.57},
+    "GrillPrepTable": {"x":  4.14, "y":  4.24, "yaw": 0.8},
 }
+
+TIME_COOKING_RICE = 60.0  # seconds to "cook" the rice (simulate with sleep)
+TIME_PICKING_RICE = 10.0   # seconds to "pick" the rice (simulate with sleep)
+TIME_PUTTING_AWAY_DISHES = 60.0  # seconds to "put away dishes" (simulate with sleep)
+TIME_WELCOMING_GUESTS = 15.0  # seconds to "welcome guests" (simulate with sleep)
 
 # ---------------------------------------------------------------------------
 # Types
@@ -104,6 +102,8 @@ class Human(Agent):
     result_timeout : float
         Seconds to wait for a result before declaring a timeout.
         Default: 120 s — covers slow or long-range moves.
+    sync_timeout : float
+        Seconds to wait for each GuestManager sync signal. Default 300 s.
     node_name : str, optional
         Override the internal ROS2 node name.
     """
@@ -116,10 +116,12 @@ class Human(Agent):
         role,
         teamsize:     int,
         result_timeout: float         = 120.0,
+        sync_timeout:    float         = 60,
         node_name:     Optional[str] = None,
         use_sim       = True,
         workspace:    str           = None,
         party_duration:       float         = 3600.0, #1h default
+        guests:               int           = 0,
     ) -> None:
         constraints = {
             "can_move":               True,
@@ -131,9 +133,10 @@ class Human(Agent):
             "workspace":              workspace,
         }
 
-        super().__init__(actor_name, constraints, skill_weights, contexts, role, teamsize, party_duration)
+        super().__init__(actor_name, constraints, skill_weights, contexts, role, teamsize, party_duration, guests)
 
         self._actor_name = actor_name
+        self._sync_timeout  = sync_timeout
 
         # ── ROS2 initialisation ───────────────────────────────────────
         if not rclpy.ok():
@@ -151,24 +154,40 @@ class Human(Agent):
             node_name       = node_name,
         )
 
-        # ── Executor + spin thread ────────────────────────────────────
-        self._executor = MultiThreadedExecutor()
-        self._executor.add_node(self._adapter)
+        # ── State publisher  (/<actor_name>/actor_state) ──────────────
+        # GuestManager listens here to know when WelcomeGuests fires.
+        self._state_pub = self._adapter.create_publisher(
+            String, f"/{actor_name}/actor_state", 10,
+        )
 
+        # ── Sync pub/sub on /<actor_name>/guest_sync ───────────────────
+        # GuestManager → host : "ready"   (guest spawned, adapter live)
+        # Host → GuestManager : "walk"    (host at group, guest may now walk)
+        self._sync_pub = self._adapter.create_publisher(
+            String, f"/{actor_name}/guest_sync", 10,
+        )
+        self._sync_event = threading.Event()
+        self._sync_phase: Optional[str] = None
+        self._sync_sub = self._adapter.create_subscription(
+            String,
+            f"/{actor_name}/guest_sync",
+            self._on_guest_sync,
+            10,
+        )
+ 
+        # ── Executor — SingleThreaded prevents duplicate message dispatch ─
+        self._executor = SingleThreadedExecutor()
+        self._executor.add_node(self._adapter)
+ 
         self._spin_thread = threading.Thread(
             target = self._executor.spin,
             daemon = True,
             name   = f"human_{actor_name}_spin",
         )
         self._spin_thread.start()
-
-        # Give the publisher/subscriber a moment to register before any
-        # caller tries to send a command.
+ 
         time.sleep(0.5)
-
-        self._adapter.get_logger().info(
-            f"[Human] Ready — actor='{actor_name}'."
-        )
+        self._adapter.get_logger().info(f"[Human] Ready — actor='{actor_name}'.")
 
     # ------------------------------------------------------------------
     # Public API
@@ -275,6 +294,46 @@ class Human(Agent):
         return self._adapter.is_busy
 
     # ------------------------------------------------------------------
+    # State / sync helpers
+    # ------------------------------------------------------------------
+    def _publish_state(self, action: str, phase: str, **extra) -> None:
+        payload = {"action": action, "phase": phase, **extra}
+        self._state_pub.publish(String(data=json.dumps(payload)))
+ 
+    def _publish_sync(self, phase: str, guest_number: int) -> None:
+        """Publish a sync signal to GuestManager (e.g. 'walk')."""
+        payload = {"phase": phase, "guest": guest_number}
+        self._sync_pub.publish(String(data=json.dumps(payload)))
+        self._adapter.get_logger().info(
+            f"[Human] sync → phase='{phase}' guest={guest_number}"
+        )
+ 
+    def _wait_for_guest_sync(self, phase: str) -> bool:
+        """Block until GuestManager publishes the given phase on guest_sync."""
+        self._sync_phase = phase
+        self._sync_event.clear()
+        self._adapter.get_logger().info(
+            f"[Human] Waiting for guest_sync phase='{phase}' …"
+        )
+        arrived = self._sync_event.wait(timeout=self._sync_timeout)
+        self._sync_phase = None
+        if not arrived:
+            self._adapter.get_logger().error(
+                f"[Human] Timed out waiting for guest_sync phase='{phase}'."
+            )
+        return arrived
+ 
+    def _on_guest_sync(self, msg: String) -> None:
+        try:
+            data = json.loads(msg.data)
+        except json.JSONDecodeError:
+            return
+        # Only wake if this matches the phase we're currently waiting for
+        if data.get("phase") == self._sync_phase:
+            self._adapter.get_logger().info(f"[Human] guest_sync received: {data}")
+            self._sync_event.set()
+
+    # ------------------------------------------------------------------
     # Agent interface (task-graph dispatch)
     # ------------------------------------------------------------------
 
@@ -284,8 +343,10 @@ class Human(Agent):
 
         if action == "PickRice":
             ok, msg = self.goto(location="House")
+            time.sleep(TIME_PICKING_RICE)  # Simulate picking time
         elif action == "CookRice":
             ok, msg = self.goto(location="House")
+            time.sleep(TIME_COOKING_RICE)  # Simulate cooking time
         elif action == "ServeMainDish":
             ok, msg = self.goto(location="House")
             ok, msg = self.goto(location="DiningTable")
@@ -299,13 +360,64 @@ class Human(Agent):
             ok, msg = self.goto(location="GrillPrepTable")
             ok, msg = self.goto(location="DiningTable")
         elif action == "WelcomeGuests":
-            ok, msg = self.goto(location="House")
-            ok, msg = self.goto(location="GroupOfGuests")
+            self._action_welcome_guests()
+            time.sleep(50)  # Brief pause before going to check on guests
+            ok, msg = self.goto(location="GroupOfGuests_1")
+            time.sleep(10)  # Brief pause before moving to next group
+            ok, msg = self.goto(location="GroupOfGuests_2")
+            time.sleep(10)  # Brief pause before moving to next group
+            ok, msg = self.goto(location="DiningTable")
+            time.sleep(10)  # Brief pause before moving to next task
         elif action == "PutTheDishesAway":
             ok, msg = self.goto(location="House")
+            time.sleep(TIME_PUTTING_AWAY_DISHES)  # Simulate putting away dishes time
         else:
             print(f"[Human] Unknown task action: {action}")
 
+    def _action_welcome_guests(self) -> None:
+        self._publish_state("WelcomeGuests", "start", total_guests=self.guests)
+ 
+        for guest_number in range(1, self.guests + 1):
+            self._adapter.get_logger().info(
+                f"[Human] WelcomeGuests — guest {guest_number}/{self.guests}"
+            )
+ 
+            # 1. Trigger GuestManager to spawn this guest
+            self._publish_state(
+                "WelcomeGuests", "loop",
+                guest_index  = guest_number - 1,
+                guest_number = guest_number,
+                total_guests = self.guests,
+            )
+ 
+            # 2. Walk to door (while guest is being spawned in parallel)
+            ok, msg = self.goto(location="House")
+            if not ok:
+                print(f"[Human] Could not reach House for guest {guest_number}: {msg}")
+ 
+            # 3. Wait for GuestManager: guest is spawned and adapter is live
+            if not self._wait_for_guest_sync("ready"):
+                print(f"[Human] Sync 'ready' timed out for guest {guest_number}.")
+                continue
+ 
+            # 4. Greet guest at door
+            self._adapter.get_logger().info(
+                f"[Human] Greeting guest {guest_number} at the door …"
+            )
+            time.sleep(TIME_WELCOMING_GUESTS)
+ 
+            # 5. Signal guest to walk to group — host stays at door
+            self._publish_sync("walk", guest_number)
+ 
+            # 7. Brief pause before next guest
+            if guest_number < 3:  # First few guests are more likely to cause performance hitches in Gazebo, so wait a bit after each
+                time.sleep(10)
+            else:
+                time.sleep(30)# Longer trajectory, so wait a bit more before next guest to have problems with gazebo dropping performance
+ 
+        self._publish_state("WelcomeGuests", "end", total_guests=self.guests)
+ 
+        
     def shutdown(self) -> None:
         """Cleanly stop the executor and destroy the ROS2 node."""
         self._adapter.get_logger().info("[Human] Shutting down ...")

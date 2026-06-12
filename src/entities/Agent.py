@@ -136,11 +136,13 @@ class Agent:
             time.sleep(5)
             self.task_update_status_and_publish(task, TaskStatus.DONE)
             time.sleep(10)
-
+        else:
+            print("No Tasks READY to execute")
+            
         if self.role == Roles.SUPERVISOR:
             # Release any time_to_clean tasks once the party duration has elapsed
             elapsed = time.time() - self._start_time
-            if elapsed >= self.party_duration:
+            if elapsed >= self.party_duration and not self.supervisor.release_clean_msg:
                 print(f"[{self.id}] Party duration of {self.party_duration} seconds has elapsed. Releasing time_to_clean tasks.")
                 for node_id in self.global_graph.G.nodes:
                     node_data = self.global_graph.G.nodes[node_id]
@@ -155,6 +157,7 @@ class Agent:
                         self.release_task(node_id)
                         # Flip the flag on the global graph so we don't re-release next step
                         self.global_graph.G.nodes[node_id]["time_to_clean"] = True
+                self.supervisor.release_clean_msg = True
 
             if self.check_all_tasks_done():# Check everytime in case one can change the status back
                 print("All tasks are done!")

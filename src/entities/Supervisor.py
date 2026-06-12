@@ -7,6 +7,7 @@ class Supervisor:
         self.graph_visualizer = GraphVisualizer()# All agentes could have this, but only the supervisor will use it for now.
         self.publish = publish_fn
         self.agent = agent   # reference to owner Agent
+        self.release_clean_msg = False
     
     @property
     def constraints(self):

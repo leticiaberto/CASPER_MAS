@@ -451,6 +451,10 @@ def _parse_args() -> argparse.Namespace:
 def main() -> None:
     args = _parse_args()
 
+    # Kill any stale actor_controller processes from previous runs
+    subprocess.run(["pkill", "-f", "actor_controller"], capture_output=True)
+    time.sleep(1.0)
+
     with open("configs/exps/" + args.exp) as f:
         exp_cfg = yaml.safe_load(f)
 

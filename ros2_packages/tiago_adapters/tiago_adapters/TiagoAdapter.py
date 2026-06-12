@@ -98,7 +98,7 @@ class RobotMode(str, Enum):
 _NAV_RATE_HZ       = 10.0
 _GOAL_XY_TOL       = 0.15    # m   — position tolerance
 _GOAL_THETA_TOL    = 0.03    # rad (~1.7°) — tight final alignment tolerance
-_MAX_LINEAR        = 0.90    # m/s
+_MAX_LINEAR        = 2.0    # m/s
 _MAX_ANGULAR       = 1.60    # rad/s
 _K_LINEAR          = 1.20
 _K_ANGULAR         = 2.40

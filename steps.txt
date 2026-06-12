@@ -1,0 +1,11 @@
+ros2 launch simulation world.launch.py
+
+python3 PubSubProxy/Hub.py
+
+python3 ros2_packages/human_adapters/human_adapters/GuestManager.py --host host --world backyard --exp exp1.yaml
+
+python3 Robot.py --robot human_host.yaml
+
+python3 Robot.py --robot fr3_arm_2.yaml
+
+python3 Robot.py --robot fr3_arm_1.yaml --role supervisor

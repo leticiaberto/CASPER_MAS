@@ -243,7 +243,7 @@
     <!-- Drinks table  0.5×0.5 m -->
     <model name="drink_table">
       <static>true</static>
-      <pose>-5.2 5.4 0.3 0 0 0</pose>
+      <pose>-5.2 4.89 0.3 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>0.5 0.5 0.10</size></box></geometry>
@@ -412,22 +412,66 @@
     <include>
       <uri>model://drink</uri>
       <name>drink_1</name>
-      <pose>-5.0 5.60 0.410 0 0 0</pose><!-- (-2.74, -0.75, 0.30) (-3.01, -0.62, 0.30) (-3.26, -0.74, 0.30) (-2.57, -0.63, 0.30)-->
+      <pose>-5.0 5.09 0.410 0 0 0</pose><!-- (-2.74, -0.75, 0.30) (-3.01, -0.62, 0.30) (-3.26, -0.74, 0.30) (-2.57, -0.63, 0.30)-->
     </include>
     <include>
       <uri>model://drink</uri>
       <name>drink_2</name>
-      <pose>-5.2 5.40 0.410 0 0 0</pose>
+      <pose>-5.04 4.96 0.410 0 0 0</pose>
     </include>
     <include>
       <uri>model://drink</uri>
       <name>drink_3</name>
-      <pose>-5.0 5.20 0.410 0 0 0</pose>
+      <pose>-5.01 4.83 0.410 0 0 0</pose>
     </include>
     <include>
       <uri>model://drink</uri>
       <name>drink_4</name>
-      <pose>-5.4 5.20 0.410 0 0 0</pose>
+      <pose>-5.03 4.69 0.410 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_5</name>
+      <pose>-5.16 4.71 0.410 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_6</name>
+      <pose>-5.28 4.75 0.410 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_7</name>
+      <pose>-5.40 4.69 0.410 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_8</name>
+      <pose>-5.14 5.07 0.410 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_9</name>
+      <pose>-5.13 4.83 0.410 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_10</name>
+      <pose>-5.39 4.79 0.410 0 0 0</pose>
+    </include>
+
+     <include>
+      <uri>model://drink</uri>
+      <name>drink_11</name>
+      <pose>-5.28 4.92 0.410 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_12</name>
+      <pose>-5.35 5.06 0.410 0 0 0</pose>
     </include>
 
   <!-- ═══════════════════════════════════════════════════════════════

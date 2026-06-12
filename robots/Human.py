@@ -59,7 +59,7 @@ import time
 from typing import Callable, Optional, Tuple
 
 import rclpy
-from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+from rclpy.executors import SingleThreadedExecutor
 from std_msgs.msg import String
 
 from human_adapters.HumanAdapter import HumanAdapter
@@ -78,6 +78,7 @@ TIME_COOKING_RICE = 60.0  # seconds to "cook" the rice (simulate with sleep)
 TIME_PICKING_RICE = 10.0   # seconds to "pick" the rice (simulate with sleep)
 TIME_PUTTING_AWAY_DISHES = 60.0  # seconds to "put away dishes" (simulate with sleep)
 TIME_WELCOMING_GUESTS = 15.0  # seconds to "welcome guests" (simulate with sleep)
+TIME_DOING_THE_DISHES = 60.0  # seconds to "do the dishes" (simulate with sleep)
 
 # ---------------------------------------------------------------------------
 # Types
@@ -363,14 +364,20 @@ class Human(Agent):
             self._action_welcome_guests()
             time.sleep(50)  # Brief pause before going to check on guests
             ok, msg = self.goto(location="GroupOfGuests_1")
-            time.sleep(10)  # Brief pause before moving to next group
+            time.sleep(15)  # Brief pause before moving to next group
             ok, msg = self.goto(location="GroupOfGuests_2")
-            time.sleep(10)  # Brief pause before moving to next group
+            time.sleep(15)  # Brief pause before moving to next group
             ok, msg = self.goto(location="DiningTable")
-            time.sleep(10)  # Brief pause before moving to next task
-        elif action == "PutTheDishesAway":
+            time.sleep(15)  # Brief pause before moving to next task
+        elif action == "PickDishes":
             ok, msg = self.goto(location="House")
             time.sleep(TIME_PUTTING_AWAY_DISHES)  # Simulate putting away dishes time
+        elif action == "DoTheDishes":
+            ok, msg = self.goto(location="House")
+            time.sleep(TIME_DOING_THE_DISHES)  # Simulate cleaning time
+        elif action == "PutTheDishesAway":
+            ok, msg = self.goto(location="House")
+            time.sleep(TIME_PUTTING_AWAY_DISHES)  # Simulate cleaning time  
         else:
             print(f"[Human] Unknown task action: {action}")
 

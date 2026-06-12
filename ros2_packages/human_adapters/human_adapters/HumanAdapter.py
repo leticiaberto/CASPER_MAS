@@ -105,11 +105,14 @@ class HumanAdapter(Node):
         # Task state
         self._busy      = False
         self._busy_lock = threading.Lock()
+        self._seq       = 0   # incremented with every dispatch
 
         # Used to wake the waiting thread when a result arrives
         self._result_event: threading.Event = threading.Event()
-        self._pending_result: Optional[dict] = None
-        self._pending_command: Optional[str] = None
+        self._pending_result:  Optional[dict] = None
+        self._pending_command: Optional[str]  = None
+        self._pending_seq:     int            = 0
+        self._dispatch_time:   float          = 0.0
 
         # Publisher — send commands to actor_controller
         self._cmd_pub = self.create_publisher(
@@ -201,8 +204,11 @@ class HumanAdapter(Node):
                 )
                 return False
             self._busy            = True
+            self._seq            += 1
+            self._pending_seq     = self._seq
             self._pending_command = cmd
             self._pending_result  = None
+            self._dispatch_time   = time.time()
             self._result_event.clear()
 
         self.get_logger().info(f"[HumanAdapter] Sending command: {payload}")
@@ -220,6 +226,11 @@ class HumanAdapter(Node):
         """Block until a result arrives for *cmd*, then fire the callback."""
         arrived = self._result_event.wait(timeout=self._result_timeout)
 
+        # Small settle delay — gives the actor controller time to fully stop
+        # before the next command is dispatched, preventing "already executing"
+        # rejections on rapid consecutive gotos.
+        time.sleep(0.3)
+
         with self._busy_lock:
             self._busy = False
 
@@ -236,12 +247,11 @@ class HumanAdapter(Node):
         success = bool(result.get("success", False))
         message = str(result.get("message", ""))
 
-        icon   = "✓" if success else "✗"
+        icon = "✓" if success else "✗"
         if success:
             self.get_logger().info(f"[HumanAdapter] {icon} {message}")
         else:
             self.get_logger().warning(f"[HumanAdapter] {icon} {message}")
-        
 
         self._result_callback(success, message)
 
@@ -263,13 +273,17 @@ class HumanAdapter(Node):
             return
 
         incoming_cmd = result.get("command", "")
-
-        # Only wake the watcher if this result matches what we sent
         with self._busy_lock:
             if incoming_cmd != self._pending_command:
                 self.get_logger().debug(
                     f"[HumanAdapter] Ignoring result for '{incoming_cmd}' "
                     f"(waiting for '{self._pending_command}')."
+                )
+                return
+            # Reject results that arrived before the current dispatch
+            if time.time() < self._dispatch_time:
+                self.get_logger().debug(
+                    "[HumanAdapter] Ignoring result that predates current dispatch."
                 )
                 return
             self._pending_result = result

@@ -35,6 +35,7 @@ Architecture
                     │    ├─ P-controller navigation        │
                     │    │    └─ ground-truth feedback     │
                     │    └─ TiagoGripperAdapter            │
+                    │  TiagoNavigator (standalone nav)     │
                     └─────────────────────────────────────┘
 
 ObjectToRobot shares the adapter's ROS2 node so all subscriptions live on
@@ -50,9 +51,30 @@ Usage
         role        = ...,
         teamsize    = 1,
     )
+    # Navigate by location name (from the locations dict):
+    tiago.navigate_to("DiningTable")
+
+    # Navigate by Gazebo model name (resolved via OTR):
+    tiago.navigate_to("prep_table_1")
+
+    # Navigate by explicit world-frame XYZ:
+    tiago.navigate_to((-0.77, -1.54, 0.0))
+
+    # Name-based (resolved via Gazebo / ObjectToRobot):
     tiago.pick_and_place_objects([
         ("tomato_1", "bowl_1"),
         ("meat_1",   "plate_1"),
+    ])
+
+    # Coordinate-based (world-frame XYZ tuples):
+    tiago.pick_and_place_objects([
+        ((0.5, 1.2, 0.85), (0.5, 2.0, 0.85)),
+    ])
+
+    # Mixed — pick by name, place by coordinate (or vice-versa):
+    tiago.pick_and_place_objects([
+        ("tomato_1", (0.5, 2.0, 0.85)),
+        ((0.5, 1.2, 0.85), "bowl_1"),
     ])
 """
 from __future__ import annotations
@@ -72,6 +94,7 @@ import tf2_ros
 
 from src.entities.Agent import Agent
 from tiago_adapters.TiagoAdapter import TiagoAdapter, RobotMode
+from tiago_navigator import TiagoNavigator
 from robot_common.object_world_to_robot import ObjectToRobot
 from robot_common.sdf_surface_resolver import SdfSurfaceResolver
 from utils import ROSUtils
@@ -81,8 +104,19 @@ from utils import ROSUtils
 # ---------------------------------------------------------------------------
 
 XYZ        = Tuple[float, float, float]
-ObjectPair = Tuple[str, str]   # (pick_model_name, place_model_name)
+NameOrXYZ  = Union[str, XYZ]           # object name  OR  explicit (x,y,z)
+ObjectPair = Tuple[NameOrXYZ, NameOrXYZ]  # (pick, place) — each can be a name or XYZ
 
+TIME_DOING_THE_DISHES = 60.0  # seconds to "do the dishes" (simulate with sleep)
+
+locations = {
+    "DiningTable":    {"x": -0.77, "y": -1.54, "yaw": 3.14},
+    "House":          {"x": -0.19, "y": -6.76, "yaw": 1.57},
+    "GroupOfGuests_1":{"x":  3.25, "y": -2.82, "yaw": 0.0},
+    "GroupOfGuests_2":{"x": -2.07, "y":  3.33,  "yaw": 2.39},
+    "MainPrepTable":  {"x":  0.95, "y":  4.30, "yaw": 1.57},
+    "GrillPrepTable": {"x":  4.14, "y":  4.24, "yaw": 0.8},
+}
 
 # ---------------------------------------------------------------------------
 # TF-based arm height lookup
@@ -190,6 +224,8 @@ class Tiago(Agent):
         edge. The actual arm reach is auto-computed to reach_pref=0.55 m.
     pose_timeout : float
         Seconds to wait for the first pose/info message on startup. Default 15.
+    nav_timeout : float
+        Seconds to wait for a navigation goal to complete. Default 120.
     """
 
     def __init__(
@@ -207,6 +243,7 @@ class Tiago(Agent):
         arm_base_z:   Optional[float] = None,
         pose_timeout: float           = 15.0,
         table_standoff  = 0.10,
+        nav_timeout:  float           = 120.0,
     ) -> None:
         constraints = {
             "can_move":               True,
@@ -246,6 +283,7 @@ class Tiago(Agent):
         # Event + storage for adapter completion signal
         self._goal_done_event = threading.Event()
         self._last_result: Tuple[bool, str] = (False, "No goal sent yet.")
+        self._nav_timeout = nav_timeout
 
         # ── ROS2 initialisation ───────────────────────────────────────
         if not rclpy.ok():
@@ -298,6 +336,20 @@ class Tiago(Agent):
         )
         self._spin_thread.start()
 
+        # ── TiagoNavigator (standalone navigation) ────────────────────
+        # Shares the same world_name / SDF / models_dir so it uses the
+        # same ground-truth pose source and table-aware standoff logic.
+        self._navigator = TiagoNavigator(
+            robot_name      = robot_name,
+            world_sdf_path  = sdf_path,
+            models_base_dir = models_base_dir,
+            table_standoff  = table_standoff,
+            world_name      = world_name,
+        )
+        self._executor.add_node(self._navigator)
+        self._nav_done_event = threading.Event()
+        self._nav_result: Tuple[bool, str] = (False, "No nav goal sent yet.")
+
         # ── Ground-truth pose confirmation ────────────────────────────
         # Wait for the first GT message so we know the bridge is live before
         # attempting navigation.  The adapter's _pose_ready event fires on
@@ -329,6 +381,24 @@ class Tiago(Agent):
             f"robot='{robot_name}'  world='{world_name}'"
         )
 
+        self.scene = {
+                "drinks": {
+                    "placements": {
+                        #"drink_1":  {"place_guests": (-2.68, -0.72, 0.30)}, # Dinning table, guest 1
+                        #"drink_2":  {"place_guests": (-1.11, -0.72, 0.30)}, # Dinning table, guest 2
+                        #"drink_3":  {"place_guests": (-2.92, -0.72, 0.30)}, # Dinning table, guest 3
+                        #"drink_4":  {"place_guests": (-1.34, -0.60, 0.30)}, # Dinning table, guest 4
+
+                        #"drink_5":  {"place_guests": (4.74, -3.31, 0.30)}, # GroupOfGuests1, guests 5
+                        #"drink_6":  {"place_guests": (3.8, -2.36, 0.30)}, # GroupOfGuests1, guests 6
+                        #"drink_7":  {"place_guests": (3.54, -3.62, 0.30)}, # GroupOfGuests1, guests 7
+
+                        #"drink_8":  {"place_guests": (-1.90, 4.66, 0.30)}, # GroupOfGuests2, guests 8
+                        #"drink_9":  {"place_guests": (-1.30, 4.11, 0.30)}, # GroupOfGuests2, guests 9
+                        #"drink_10": {"place_guests": (-3.14, -0.72, 0.30)}, # Dinning Table, guests 10
+                    }
+                }
+            }
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -343,65 +413,84 @@ class Tiago(Agent):
 
         Parameters
         ----------
-        object_pairs : list of (pick_name, place_name)
-            Gazebo model names.  E.g.:
-                [("tomato_1", "bowl_1"), ("meat_1", "plate_1")]
-            Each pair is executed in order; the method blocks until all
-            pairs are done or a fatal error occurs.
+        object_pairs : list of (pick, place)
+            Each element is a 2-tuple where every item can be **either**:
+
+            * a ``str``  — Gazebo model name, resolved automatically via
+              ObjectToRobot (requires the gz-ros2 bridge to be running).
+            * an ``(x, y, z)`` tuple — explicit world-frame coordinates used
+              directly, bypassing Gazebo lookup.
+
+            Mixed pairs are supported, e.g.::
+
+                [
+                    ("tomato_1", "bowl_1"),            # both by name
+                    ("meat_1",   (0.5, 2.0, 0.85)),    # pick by name, place by XYZ
+                    ((0.5, 1.2, 0.85), "plate_1"),     # pick by XYZ, place by name
+                    ((0.5, 1.2, 0.85), (0.5, 2.0, 0.85)), # both by XYZ
+                ]
 
         place_z_offset : float
-            Manual z offset added to every place target.  Only used when
-            sdf_path was not provided at init.  When sdf_path was provided,
-            offsets are computed automatically per model and this is ignored.
+            Manual z offset added to place targets that are resolved **by
+            name** when no ``sdf_path`` was provided at init.  Ignored when
+            coordinates are given directly or when SdfSurfaceResolver is
+            active.
 
         Returns when all pairs have been attempted.  Per-pair success/failure
         is logged; the method does not raise on individual failures.
         """
         results = []
 
-        for idx, (pick_name, place_name) in enumerate(object_pairs):
+        for idx, (pick, place) in enumerate(object_pairs):
+            pick_label  = pick  if isinstance(pick,  str) else _fmt(pick)
+            place_label = place if isinstance(place, str) else _fmt(place)
             self._adapter.get_logger().info(
                 f"[Tiago] Pair {idx+1}/{len(object_pairs)}: "
-                f"pick='{pick_name}'  place='{place_name}'"
+                f"pick={pick_label!r}  place={place_label!r}"
             )
 
             # ── Resolve pick world pose ──────────────────────────────
-            # Re-query per pair: the pick object may have moved (e.g. a
-            # previous robot already picked it) and static place objects
-            # don't change, so per-pair queries are always safe.
-            pick_xyz = self._resolve_world_xyz(pick_name)
-            if pick_xyz is None:
-                self._adapter.get_logger().error(
-                    f"[Tiago] Skipping pair {idx+1}: "
-                    f"cannot find '{pick_name}' in Gazebo."
-                )
-                continue
-
-            # ── Resolve place world pose ─────────────────────────────
-            # Use SdfSurfaceResolver.place_xyz() directly — same as the test
-            # script.  This returns (x, y, world_pose.z + top_surface_offset),
-            # i.e. the z at which a placed object rests on the destination surface.
-            # Fall back to manual place_z_offset when the resolver is absent.
-            if self._surface is not None:
-                result = self._otr.get_pose(place_name)
-                if "error" in result:
+            if isinstance(pick, str):
+                # Re-query per pair: pick object may have moved.
+                pick_xyz = self._resolve_world_xyz(pick)
+                if pick_xyz is None:
                     self._adapter.get_logger().error(
                         f"[Tiago] Skipping pair {idx+1}: "
-                        f"cannot find '{place_name}' in Gazebo."
+                        f"cannot find '{pick}' in Gazebo."
                     )
                     continue
-                place_xyz = self._surface.place_xyz(result, place_name)
-                if place_xyz is None:
-                    pos = result["world_pose"].position
-                    place_xyz = (pos.x, pos.y, pos.z + place_z_offset)
             else:
-                place_xyz = self._resolve_surface_xyz(place_name, place_z_offset)
-            if place_xyz is None:
-                self._adapter.get_logger().error(
-                    f"[Tiago] Skipping pair {idx+1}: "
-                    f"cannot find '{place_name}' in Gazebo."
-                )
-                continue
+                pick_xyz = tuple(pick)   # explicit world-frame XYZ
+
+            pick_name = pick if isinstance(pick, str) else None
+
+            # ── Resolve place world pose ─────────────────────────────
+            if isinstance(place, str):
+                # Use SdfSurfaceResolver.place_xyz() when available — it returns
+                # (x, y, world_pose.z + top_surface_offset).  Fall back to
+                # manual place_z_offset when the resolver is absent.
+                if self._surface is not None:
+                    result = self._otr.get_pose(place)
+                    if "error" in result:
+                        self._adapter.get_logger().error(
+                            f"[Tiago] Skipping pair {idx+1}: "
+                            f"cannot find '{place}' in Gazebo."
+                        )
+                        continue
+                    place_xyz = self._surface.place_xyz(result, place)
+                    if place_xyz is None:
+                        pos = result["world_pose"].position
+                        place_xyz = (pos.x, pos.y, pos.z + place_z_offset)
+                else:
+                    place_xyz = self._resolve_surface_xyz(place, place_z_offset)
+                if place_xyz is None:
+                    self._adapter.get_logger().error(
+                        f"[Tiago] Skipping pair {idx+1}: "
+                        f"cannot find '{place}' in Gazebo."
+                    )
+                    continue
+            else:
+                place_xyz = tuple(place)   # explicit world-frame XYZ
 
             self._adapter.get_logger().info(
                 f"[Tiago] Executing: pick={_fmt(pick_xyz)}  place={_fmt(place_xyz)}"
@@ -443,41 +532,183 @@ class Tiago(Agent):
         summary = "; ".join(r[1] for r in results)
         
         return all_ok, summary  
+    
+    # ------------------------------------------------------------------
+    # Navigation API
+    # ------------------------------------------------------------------
+
+    def navigate_to(
+        self,
+        target: Union[str, XYZ],
+        timeout: Optional[float] = None,
+    ) -> Tuple[bool, str]:
+        """
+        Drive the robot to a named location or explicit world-frame coordinates.
+
+        Parameters
+        ----------
+        target : str or (x, y, z)
+            * ``str`` — key in the ``locations`` dict (e.g. ``"DiningTable"``),
+              or a Gazebo model name resolved via ObjectToRobot.
+              Named locations in the dict are tried first; if not found there
+              the name is looked up in Gazebo via OTR.
+            * ``(x, y, z)`` tuple — explicit world-frame target.  The z value
+              is passed to the navigator as ``target_z`` (used for approach
+              pose height; navigation is planar).
+
+        timeout : float, optional
+            Override the instance-level ``nav_timeout``.
+
+        Returns
+        -------
+        (success, message)
+        """
+        # ── Resolve target XYZ ──────────────────────────────────────────
+        if isinstance(target, str):
+            if target in locations:
+                loc = locations[target]
+                target_xyz = (loc["x"], loc["y"], 0.0)
+                self._adapter.get_logger().info(
+                    f"[Tiago] navigate_to: '{target}' → "
+                    f"({loc['x']:.3f}, {loc['y']:.3f}) [locations dict]"
+                )
+            else:
+                # Fall back to Gazebo pose lookup
+                result = self._otr.get_pose(target)
+                if "error" in result:
+                    return False, f"Cannot resolve navigate target '{target}': {result['error']}"
+                pos = result["world_pose"].position
+                target_xyz = (pos.x, pos.y, pos.z)
+                self._adapter.get_logger().info(
+                    f"[Tiago] navigate_to: '{target}' → "
+                    f"({pos.x:.3f}, {pos.y:.3f}, {pos.z:.3f}) [Gazebo OTR]"
+                )
+        else:
+            target_xyz = tuple(target)
+            self._adapter.get_logger().info(
+                f"[Tiago] navigate_to: XYZ={_fmt(target_xyz)}"
+            )
+
+        tx, ty, tz = target_xyz
+
+        # ── Dispatch via TiagoNavigator ──────────────────────────────────
+        self._nav_done_event.clear()
+
+        def _on_nav_done(success: bool, message: str) -> None:
+            self._nav_result = (success, message)
+            self._nav_done_event.set()
+
+        accepted = self._navigator.navigate_to(tx, ty, _on_nav_done, target_z=tz)
+        if not accepted:
+            msg = "[Tiago] Navigator rejected goal (already busy)."
+            self._adapter.get_logger().error(msg)
+            return False, msg
+
+        deadline = timeout if timeout is not None else self._nav_timeout
+        finished = self._nav_done_event.wait(timeout=deadline)
+        if not finished:
+            self._navigator.cancel()
+            msg = f"[Tiago] Navigation timed out after {deadline:.0f} s."
+            self._adapter.get_logger().error(msg)
+            return False, msg
+
+        success, message = self._nav_result
+        log_fn = self._adapter.get_logger().info if success else self._adapter.get_logger().error
+        log_fn(f"[Tiago] navigate_to result: {message}")
+        return success, message
+
+    # ------------------------------------------------------------------
+    # Internals
+    # ------------------------------------------------------------------
+    def create_tasks_sequence(self, task_type: str, group: str, target_place: str, use_names: bool = False) -> List[dict]:
+        sequence = []
+        if task_type == "pick_place":
+            for food, placements in self.scene[group]["placements"].items():
+                if use_names:
+                    task = {
+                        "action":      "pick_and_place",
+                        "pick_name":   food,
+                        "place_name":  target_place,
+                    }
+                else:
+                    task = {
+                        "action":     "pick_and_place",
+                        "pick_name":  food,
+                        "place_xyz":  placements[target_place],
+                    }
+                sequence.append(task)
+        else:
+            print(f"Task type '{task_type}' not recognized.")
+        return sequence
+
+    def define_subtask(self, action: str, use_names: bool = False) -> List[dict]:
+        sequence = None
+
+        if action == "ServeDrinks":
+            sequence = self.create_tasks_sequence(
+                "pick_place", "drinks",
+                "place_guests" if not use_names else "dining_table_1",
+                use_names=use_names,
+            )
+        elif action == "NavigateTo":
+            # Generic navigate: caller must pass the target as the task string
+            # or use navigate_to() directly.  This branch handles dict tasks of
+            # the form {"action": "NavigateTo", "target": "House"}.
+            print("[Tiago] NavigateTo: use navigate_to() directly or pass a dict task.")
+            sequence = []
+        elif action == "PickDishes":
+            # Drive to the House location first, then simulate collecting dishes.
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+        elif action == "DoTheDishes":
+            print("Doing the Dishes... (not implemented)")
+            time.sleep(TIME_DOING_THE_DISHES)  # Simulate doing the dishes
+        else:
+            print(f"Action '{action}' not recognized.")
+
+        return sequence
+    
     # ------------------------------------------------------------------
     # Agent interface (called by base class task dispatch)
     # ------------------------------------------------------------------
 
     def _execute_task_specific(self, task: dict) -> None:
-        """
-        Entry point for task-dispatch from the Agent base class.
+        sequence = self.define_subtask(task)
+        if sequence is None:
+            print(f"[Tiago] No sequence defined for action: '{task}'")
+            return
+    
+        for subtask in sequence:
+            action = subtask["action"]
+            if action == "pick_and_place":
+                # Each side is either a name (str) or an explicit XYZ tuple.
+                pick  = subtask.get("pick_name")  or subtask.get("pick_xyz")
+                place = subtask.get("place_name") or subtask.get("place_xyz")
+                ok, msg = self.pick_and_place_objects([(pick, place)])
+                log = self._adapter.get_logger() if self._adapter else None
+                if log:
+                    (log.info if ok else log.error)(f"[Tiago] task result: {msg}")
+            elif action == "navigate_to":
+                # target may be a location name (str), Gazebo model name, or XYZ tuple.
+                target  = subtask.get("target_name") or subtask.get("target_xyz")
+                timeout = subtask.get("timeout")      # optional per-subtask override
+                if target is None:
+                    print("[Tiago] navigate_to subtask missing 'target_name' or 'target_xyz'.")
+                    continue
+                ok, msg = self.navigate_to(target, timeout=timeout)
+                log = self._adapter.get_logger() if self._adapter else None
+                if log:
+                    (log.info if ok else log.error)(f"[Tiago] navigate result: {msg}")
+            else:
+                print(f"[Tiago] Unknown task action: '{action}'")
 
-        Expected task format:
-            {
-                "action":  "pick_and_place",
-                "objects": [["pick_name", "place_name"], ...],
-                "place_z_offset": 0.0   # optional
-            }
-        """
-        pass
-        """ action = task.get("action")
-        if action == "pick_and_place":
-            pairs  = [tuple(p) for p in task.get("objects", [])]
-            offset = task.get("place_z_offset", 0.0)
-            self.pick_and_place_objects(pairs, place_z_offset=offset)
-        else:
-            self._adapter.get_logger().warn(
-                f"[Tiago] Unknown task action: '{action}'"
-            ) """
-
-    def start_adapter(self) -> None:
-        """No-op — adapter starts automatically in __init__."""
-        pass
 
     def shutdown(self) -> None:
         """Cleanly shut down ROS2 executor and nodes."""
         self._adapter.get_logger().info("[Tiago] Shutting down ...")
         self._executor.shutdown(timeout_sec=3.0)
-        for node in (self._adapter._gripper, self._adapter):
+        for node in (self._adapter._gripper, self._adapter, self._navigator):
             try:
                 node.destroy_node()
             except Exception:

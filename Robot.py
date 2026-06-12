@@ -320,16 +320,16 @@ def main():
 
     # ── Args ────────────────────────────────────────────────────────────────
     parser = argparse.ArgumentParser()
-    parser.add_argument("--robot", default="fr3_arm_1.yaml")
+    parser.add_argument("--robot", default="fr3_arm_1")
     parser.add_argument("--role",  default="member",
                         choices=["member", "supervisor"])
-    parser.add_argument("--exp",   default="exp1.yaml")
+    parser.add_argument("--exp",   default="exp1")
     args = parser.parse_args()
 
     # ── Load configs ─────────────────────────────────────────────────────────
-    with open('configs/robots/' + args.robot) as f:
+    with open('configs/robots/' + args.robot + ".yaml") as f:
         robot_config = yaml.safe_load(f)
-    with open('configs/exps/' + args.exp) as f:
+    with open('configs/exps/' + args.exp + ".yaml") as f:
         exp_config = yaml.safe_load(f)
 
     print(f"[Robot] Loaded robot config : {args.robot}")

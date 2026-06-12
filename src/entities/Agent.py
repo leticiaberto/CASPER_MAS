@@ -122,7 +122,7 @@ class Agent:
             for task in ready_tasks:
                 #print(f"Ready task: {t} with priority {self.local_graph.graph.nodes[t].get('priority', 'N/A')}")
                 self.task_update_status_and_publish(task, TaskStatus.READY, ignore=True)# Do not need to update local because get_ready_tasks() does
-                time.sleep(10)
+                time.sleep(5)
 
             # Pick the single highest-priority (lowest number) ready task
             task = min(
@@ -133,7 +133,7 @@ class Agent:
             self.task_update_status_and_publish(task, TaskStatus.RUNNING)
             time.sleep(5)
             self._execute_task_specific(task)# Physical execution
-            time.sleep(10)
+            time.sleep(5)
             self.task_update_status_and_publish(task, TaskStatus.DONE)
             time.sleep(10)
 

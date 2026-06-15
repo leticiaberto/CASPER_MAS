@@ -385,7 +385,7 @@ class Tiago(Agent):
                 "drinks": {
                     "placements": {
                         #"drink_1":  {"place_guests": (-2.68, -0.72, 0.30)}, # Dinning table, guest 1
-                        #"drink_2":  {"place_guests": (-1.11, -0.72, 0.30)}, # Dinning table, guest 2
+                        "drink_2":  {"place_guests": (-1.11, -0.72, 0.30)}, # Dinning table, guest 2
                         #"drink_3":  {"place_guests": (-2.92, -0.72, 0.30)}, # Dinning table, guest 3
                         #"drink_4":  {"place_guests": (-1.34, -0.60, 0.30)}, # Dinning table, guest 4
 
@@ -613,8 +613,12 @@ class Tiago(Agent):
             return False, msg
 
         success, message = self._nav_result
-        log_fn = self._adapter.get_logger().info if success else self._adapter.get_logger().error
-        log_fn(f"[Tiago] navigate_to result: {message}")
+        logger = self._adapter.get_logger()
+        if success:
+            logger.info(f"[Tiago] navigate_to result: {message}")
+        else:
+            logger.error(f"[Tiago] navigate_to result: {message}")
+
         return success, message
 
     # ------------------------------------------------------------------
@@ -650,6 +654,7 @@ class Tiago(Agent):
                 "place_guests" if not use_names else "dining_table_1",
                 use_names=use_names,
             )
+            sequence.append({"action": "navigate_to", "target_xyz": "(0,0,0)"})
         elif action == "NavigateTo":
             # Generic navigate: caller must pass the target as the task string
             # or use navigate_to() directly.  This branch handles dict tasks of
@@ -688,7 +693,10 @@ class Tiago(Agent):
                 ok, msg = self.pick_and_place_objects([(pick, place)])
                 log = self._adapter.get_logger() if self._adapter else None
                 if log:
-                    (log.info if ok else log.error)(f"[Tiago] task result: {msg}")
+                    if ok:
+                        log.info(f"[Tiago] task result: {msg}")
+                    else:
+                        log.error(f"[Tiago] task result: {msg}")
             elif action == "navigate_to":
                 # target may be a location name (str), Gazebo model name, or XYZ tuple.
                 target  = subtask.get("target_name") or subtask.get("target_xyz")
@@ -699,7 +707,10 @@ class Tiago(Agent):
                 ok, msg = self.navigate_to(target, timeout=timeout)
                 log = self._adapter.get_logger() if self._adapter else None
                 if log:
-                    (log.info if ok else log.error)(f"[Tiago] navigate result: {msg}")
+                    if ok:
+                        log.info(f"[Tiago] navigate result: {msg}")
+                    else:
+                        log.error(f"[Tiago] navigate result: {msg}")
             else:
                 print(f"[Tiago] Unknown task action: '{action}'")
 

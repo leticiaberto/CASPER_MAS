@@ -1773,8 +1773,11 @@ class TiagoAdapter(Node):
 
     def _finish(self, success: bool, message: str) -> None:
         icon   = "✓" if success else "✗"
-        log_fn = self.get_logger().info if success else self.get_logger().error
-        log_fn(f"[TiagoAdapter] {icon} {message}")
+        logger = self.get_logger()
+        if success:
+            logger.info(f"[TiagoAdapter] {icon} {message}")
+        else:
+            logger.error(f"[TiagoAdapter] {icon} {message}")
         with self._busy_lock:
             self._busy = False
         self._result_callback(success, message)

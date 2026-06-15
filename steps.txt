@@ -4,8 +4,14 @@ python3 PubSubProxy/Hub.py
 
 python3 ros2_packages/human_adapters/human_adapters/GuestManager.py --host host --world backyard --exp exp1.yaml
 
-python3 Robot.py --robot human_host.yaml
+python3 Robot.py --robot human_host
 
-python3 Robot.py --robot fr3_arm_2.yaml
+python3 Robot.py --robot fr3_arm_2
 
-python3 Robot.py --robot fr3_arm_1.yaml --role supervisor
+python3 Robot.py --robot fr3_arm_1 --role supervisor
+
+python3 Robot.py --robot tiago_robot_1 
+
+# Remove stale Fast-DDS shared memory files
+sudo rm -rf /dev/shm/fastrtps_*
+sudo rm -rf /tmp/fastrtps_*

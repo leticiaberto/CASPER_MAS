@@ -13,13 +13,13 @@
         </geometry>
       </visual>
 
-      <collision name="collision">
+      <!-- <collision name="collision">
         <geometry>
           <mesh>
             <uri>model://FemaleVisitor_yellow/meshes/FemaleVisitor_Col.obj</uri>
           </mesh>
         </geometry>
-      </collision>
+      </collision> -->
 
     </link>
   </model>

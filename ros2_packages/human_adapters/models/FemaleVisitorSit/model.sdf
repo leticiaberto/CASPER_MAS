@@ -13,13 +13,14 @@
         </geometry>
       </visual>
 
+    <!-- <!-- Remove this entirely from model.sdf — actors don't need collision -->
       <collision name="collision">
         <geometry>
           <mesh>
             <uri>model://FemaleVisitorSit/meshes/FemaleVisitorSit_Col.obj</uri>
           </mesh>
         </geometry>
-      </collision>
+      </collision> -->
 
     </link>
   </model>

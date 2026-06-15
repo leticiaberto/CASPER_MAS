@@ -326,7 +326,7 @@
       "id": "PutTheDishesAway",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 1.0,
+        "manipulation": 0.6,
         "transport": 1.0
       },
       "required_constraints": {

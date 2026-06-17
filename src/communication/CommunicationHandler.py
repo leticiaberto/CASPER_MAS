@@ -30,8 +30,12 @@ class CommunicationHandler:
         Send skills_update.
         If target is set, only that robot processes it.
         """
-        self.publish("skills_update", {"skill_weights": self.agent.skills.export_skill_weights(), "role": self.agent.role.value}, target=target)
-
+        self.publish("skills_update", {
+            "skill_weights": self.agent.skills.export_skill_weights(),
+            "role": self.agent.role.value,
+            "constraints": self.agent.constraints
+        }, target=target)
+        
     def send_constraints(self, target=None):
         self.publish("constraints_update", {"constraints": self.agent.constraints}, target=target)
     
@@ -66,7 +70,7 @@ class CommunicationHandler:
 
             # Reply directly with my skills
             self.send_skills(target=sender)
-            self.send_constraints(target=sender)
+            #self.send_constraints(target=sender) # Now everything is inside send_skills
 
         # ----------------------------
         # SKILLS REQUEST
@@ -98,7 +102,9 @@ class CommunicationHandler:
             if role is not None:
                 role = Roles(role)  # deserialize back to enum
 
-            self.agent.partners_skills_update(sender, received_weights, contexts, role)
+            constraints = msg["data"].get("constraints", {})
+            
+            self.agent.partners_skills_update(sender, received_weights, contexts, role, constraints)
 
         elif msg_type == "task_assignment_batch":
             self.agent.get_task_assignment_batch(msg)

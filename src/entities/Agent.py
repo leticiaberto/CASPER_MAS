@@ -115,6 +115,9 @@ class Agent:
     def step(self):
         self.spin_once()  # process all pending messages before acting
 
+        if not hasattr(self, "local_graph"):
+            return
+        
         ready_tasks = self.local_graph.get_ready_tasks()
 
         if ready_tasks:
@@ -210,7 +213,7 @@ class Agent:
     # ----------------------------
     # Used in the message protocol
     # ----------------------------
-    def partners_skills_update(self, sender, received_weights, contexts, role):
+    def partners_skills_update(self, sender, received_weights, contexts, role, constraints):
         # Add partner if not already present
         if sender not in self.partners:
             self.add_partner(sender, received_weights, contexts, role)
@@ -218,10 +221,11 @@ class Agent:
         else:
             self.partners[sender].skills.update_skills_and_preferences(received_weights)
             print(f"Updated partner {sender} skills!")
-
+        
+        self.partners[sender].constraints = constraints  # <-- always apply
         print(f"[{self.id}] Partner table updated: {list(self.partners.keys())}")
 
-        #self.partners[sender].skills.print_skills_preferences()
+        self.partners[sender].skills.print_skills_preferences()
 
     def partners_constratints_update(self, sender, new):
         self.partners[sender].constraints = new
@@ -303,11 +307,8 @@ class Agent:
         # Step 1: announce join
         self.comm_handler.send_hello()
 
-        # Step 2: broadcast my skills once
+        # Step 2: broadcast my skills and constraints once
         self.comm_handler.send_skills()
-
-        # Step 3: broadcast my constraints once
-        self.comm_handler.send_constraints()
 
         # Step 4: request everyone else's skills (optional, because they may have already sent them as a reply to hello)
         #self.comm_handler.request_skills()

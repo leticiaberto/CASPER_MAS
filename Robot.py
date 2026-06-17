@@ -207,11 +207,18 @@ _BRIDGE_NODE_NAME = "/gz_ros2_bridge"   # the node name we give the bridge
 def _bridge_already_running() -> bool:
     """Return True if a gz-ros2 bridge node is already up."""
     try:
-        result = subprocess.run(
+        nodes = subprocess.run(
             ["ros2", "node", "list"],
             capture_output=True, text=True, timeout=5
-        )
-        return _BRIDGE_NODE_NAME in result.stdout.splitlines()
+        ).stdout.splitlines()
+        if _BRIDGE_NODE_NAME not in nodes:
+            return False
+
+        services = subprocess.run(
+            ["ros2", "service", "list"],
+            capture_output=True, text=True, timeout=5
+        ).stdout
+        return "/set_pose" in services
     except Exception:
         return False
 
@@ -239,8 +246,10 @@ def _launch_gz_ros2_bridge(world_name: str):
             "ros2", "run", "ros_gz_bridge", "parameter_bridge",
             f"/world/{world_name}/pose/info@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
             "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
+            f"/world/{world_name}/set_pose@ros_gz_interfaces/srv/SetEntityPose",
             "--ros-args", "-r", f"__node:={_BRIDGE_NODE_NAME.lstrip('/')}",
         ]
+        
         print(f"[Robot] Launching gz-ros2 bridge: {' '.join(cmd)}")
         return subprocess.Popen(cmd)
     finally:
@@ -379,12 +388,10 @@ def main():
         if robot_model == "FrankaResearch3":
             launch_process = _launch_fr3(
                 robot_id, x_pos, y_pos, z_pos, yaw, spawn_delay)
-            bridge_process = _launch_gz_ros2_bridge(world_name)
 
         elif robot_model == "Tiago":
             launch_process = _launch_tiago(
                 robot_id, world_name, x_pos, y_pos, z_pos, yaw, spawn_delay)
-            bridge_process = _launch_gz_ros2_bridge(world_name)
 
         elif robot_model == "Pepper":
             launch_process = _launch_pepper(
@@ -394,6 +401,8 @@ def main():
             launch_process = _launch_human(
                 robot_id, world_name, actor_type, actor_color,
                 x_pos, y_pos, yaw)
+
+        bridge_process = _launch_gz_ros2_bridge(world_name)
 
         if launch_process is not None:
             # Wait for the robot to be genuinely ready before connecting the agent.
@@ -492,7 +501,7 @@ def main():
                         }
                 
                     agent.allocate_task(all_agents, optimizeMode, top_k, debug)
-                    time.sleep(3)
+                    time.sleep(5)
                     ready = True
             else:
                 time.sleep(5)
@@ -517,8 +526,6 @@ def main():
 
             # restart it manually:
             # pkill -f "parameter_bridge"
-
-    #agent.shutdown_adapter()
 
 main()
 """"

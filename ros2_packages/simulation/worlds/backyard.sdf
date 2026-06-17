@@ -446,7 +446,7 @@
       <pose>-5.40 4.69 0.410 0 0 0</pose>
     </include>
 
-    <include>
+    <!-- <include>
       <uri>model://drink</uri>
       <name>drink_8</name>
       <pose>-5.14 5.07 0.410 0 0 0</pose>
@@ -462,7 +462,7 @@
       <pose>-5.39 4.79 0.410 0 0 0</pose>
     </include>
 
-     <include>
+    <include>
       <uri>model://drink</uri>
       <name>drink_11</name>
       <pose>-5.28 4.92 0.410 0 0 0</pose>
@@ -472,7 +472,7 @@
       <uri>model://drink</uri>
       <name>drink_12</name>
       <pose>-5.35 5.06 0.410 0 0 0</pose>
-    </include>
+    </include> -->
 
   <!-- ═══════════════════════════════════════════════════════════════
          Humans sit at the dining table (table_right) and interact with the grill and prep tables.

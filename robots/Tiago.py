@@ -393,6 +393,7 @@ class Tiago(Agent):
                         #"drink_6":  {"place_guests": (3.8, -2.36, 0.30)}, # GroupOfGuests1, guests 6
                         #"drink_7":  {"place_guests": (3.54, -3.62, 0.30)}, # GroupOfGuests1, guests 7
 
+                        # Removed from Gazebo to improve performance
                         #"drink_8":  {"place_guests": (-1.90, 4.66, 0.30)}, # GroupOfGuests2, guests 8
                         #"drink_9":  {"place_guests": (-1.30, 4.11, 0.30)}, # GroupOfGuests2, guests 9
                         #"drink_10": {"place_guests": (-3.14, -0.72, 0.30)}, # Dinning Table, guests 10
@@ -654,7 +655,7 @@ class Tiago(Agent):
                 "place_guests" if not use_names else "dining_table_1",
                 use_names=use_names,
             )
-            sequence.append({"action": "navigate_to", "target_xyz": "(0,0,0)"})
+            sequence.append({"action": "navigate_to", "target_xyz": (0, 0, 0)})
         elif action == "NavigateTo":
             # Generic navigate: caller must pass the target as the task string
             # or use navigate_to() directly.  This branch handles dict tasks of

@@ -12,6 +12,4 @@ python3 Robot.py --robot fr3_arm_1 --role supervisor
 
 python3 Robot.py --robot tiago_robot_1 
 
-# Remove stale Fast-DDS shared memory files
-sudo rm -rf /dev/shm/fastrtps_*
-sudo rm -rf /tmp/fastrtps_*
+./cleanup.sh

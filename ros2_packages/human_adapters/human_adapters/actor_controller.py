@@ -45,13 +45,23 @@ ros2 topic echo /w1/actor_result
 
 import json
 import math
-import subprocess
 import threading
 import time
 
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
+
+# ros_gz_interfaces provides the SetEntityPose service used by Gazebo/Ignition.
+# Package: ros-humble-ros-gz-interfaces  (or ros-iron-ros-gz-interfaces)
+from ros_gz_interfaces.srv import SetEntityPose
+from ros_gz_interfaces.msg import Entity
+from geometry_msgs.msg import Point, Quaternion
+from geometry_msgs.msg import Pose as GeomPose
+
+
+# Service call timeout (seconds). Generous — the sim may be loaded but slow.
+_SET_POSE_TIMEOUT = 2.0
 
 
 class ActorController(Node):
@@ -90,6 +100,24 @@ class ActorController(Node):
         self._stop_requested = False
         self._finish_after   = False
         self._busy           = False
+
+        # ------------------------------------------------------------------ #
+        # Gazebo set_pose service client
+        # Replaces the subprocess ign service call — no process fork overhead.
+        # ------------------------------------------------------------------ #
+        self._set_pose_client = self.create_client(
+            SetEntityPose,
+            f'/world/{self.world_name}/set_pose',
+        )
+        if not self._set_pose_client.wait_for_service(timeout_sec=10.0):
+            self.get_logger().warning(
+                f"Service '/world/{self.world_name}/set_pose' not yet available — "
+                "will retry on first call."
+            )
+        else:
+            self.get_logger().info(
+                f"Service '/world/{self.world_name}/set_pose' is ready."
+            )
 
         # ------------------------------------------------------------------ #
         # Topics
@@ -204,7 +232,7 @@ class ActorController(Node):
             f'goto → ({x:.2f}, {y:.2f}), final_yaw={math.degrees(final_yaw):.1f}°'
         )
 
-        self.move_to(x, y, speed=2.0, turn_speed=2.0)
+        self.move_to(x, y, speed=1.3, turn_speed=2.0)
         if self._is_stopped():
             result['success'] = False
             result['message'] = 'goto interrupted by stop.'
@@ -231,7 +259,7 @@ class ActorController(Node):
                 result['success'] = False
                 result['message'] = 'test trajectory interrupted by stop.'
                 return
-            self.move_to(wx, wy, speed=2.0, turn_speed=2.0)
+            self.move_to(wx, wy, speed=1.2, turn_speed=2.0)
             self.get_logger().info(f'Reached ({wx}, {wy}), pausing…')
             time.sleep(2.0)
 
@@ -241,7 +269,7 @@ class ActorController(Node):
     # ===================================================================== #
     # Motion primitives
     # ===================================================================== #
-    def move_to(self, target_x, target_y, speed=2.0, step_delay=0.05, turn_speed=2.0):
+    def move_to(self, target_x, target_y, speed=1.2, step_delay=0.05, turn_speed=2.0):
         dx       = target_x - self.current_x
         dy       = target_y - self.current_y
         distance = math.sqrt(dx**2 + dy**2)
@@ -287,24 +315,23 @@ class ActorController(Node):
         self.set_pose(self.current_x, self.current_y, self.current_yaw)
 
     # ===================================================================== #
-    # Gazebo interface
+    # Gazebo interface — ROS2 service client (replaces subprocess)
     # ===================================================================== #
     def set_pose(self, x, y, yaw):
         sdf_yaw         = yaw + self.MODEL_FORWARD_OFFSET
         qx, qy, qz, qw = self.yaw_to_quaternion(sdf_yaw)
-        req = (
-            f'name: "{self.actor_name}", '
-            f'position: {{x: {float(x)}, y: {float(y)}, z: {self.z}}}, '
-            f'orientation: {{x: {qx}, y: {qy}, z: {qz}, w: {qw}}}'
+
+        req          = SetEntityPose.Request()
+        req.entity   = Entity(name=self.actor_name)
+        req.pose     = GeomPose(
+            position    = Point(x=float(x), y=float(y), z=float(self.z)),
+            orientation = Quaternion(x=qx, y=qy, z=qz, w=qw),
         )
-        subprocess.run([
-            'ign', 'service',
-            '-s',        f'/world/{self.world_name}/set_pose',
-            '--reqtype', 'ignition.msgs.Pose',
-            '--reptype', 'ignition.msgs.Boolean',
-            '--timeout', '2000',
-            '--req',     req,
-        ], check=False)
+
+        # call_async is non-blocking — fire and forget.
+        # We don't await the future because motion steps overlap and
+        # waiting would halve our effective update rate.
+        self._set_pose_client.call_async(req)
 
     # ===================================================================== #
     # Helpers

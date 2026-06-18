@@ -103,7 +103,7 @@ class CommunicationHandler:
                 role = Roles(role)  # deserialize back to enum
 
             constraints = msg["data"].get("constraints", {})
-            
+
             self.agent.partners_skills_update(sender, received_weights, contexts, role, constraints)
 
         elif msg_type == "task_assignment_batch":
@@ -156,3 +156,24 @@ class CommunicationHandler:
             if sender == self.agent.supervisor_id:
                 print(f"[{self.agent.id}] Received all_tasks_done message. Shutting down.")
                 self.agent.goal_finished = True
+
+        elif msg_type == "party_over":
+            # Only react if it really came from the supervisor — any agent
+            # may receive this broadcast, but handle_party_over() forwards
+            # it to _on_party_ending(), which is a no-op except wherever
+            # it's overridden (e.g. Human, as the host).
+            if sender == self.agent.supervisor_id:
+                print(f"[{self.agent.id}] Received party_over message from supervisor {sender}.")
+                self.agent.handle_party_over()
+
+        elif msg_type == "shutdown":
+            # Sent by the supervisor when it aborts the run outright (e.g. an
+            # unworkable task allocation), as opposed to "all_tasks_done"
+            # which means the run completed successfully. Only the
+            # supervisor is allowed to trigger this.
+            if sender == self.agent.supervisor_id:
+                reason = msg["data"].get("reason", "unknown")
+                unassigned_tasks = msg["data"].get("unassigned_tasks", [])
+                print(f"[{self.agent.id}] Received shutdown from supervisor {sender} "
+                      f"(reason: {reason}). Stopping.")
+                self.agent.handle_shutdown(reason, unassigned_tasks)

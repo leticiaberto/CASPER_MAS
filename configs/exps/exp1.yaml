@@ -1,13 +1,13 @@
 #debug: True
 task: configs/goals/barbecue.json #configs/goals/default_graph.json
-party_duration: 300 #3600 #1h
+party_duration: 1680 #3600 #1h
 optimizeMode: skill
 
 world_name: backyard
 
 use_sim: True          # True = simulation mode, False = real robot
 
-team_size: 4 #4
+team_size: 5 #4
 top_k: 1 #2
 
 agents:
@@ -19,6 +19,6 @@ agents:
 
 supervisor: fr3_arm_1
 
-supervisor_team: True # True = Supervisor has tasks too, False = Supervisor does not have tasks
+supervisor_team: False # True = Supervisor has tasks too, False = Supervisor does not have tasks
 
 guests: 5

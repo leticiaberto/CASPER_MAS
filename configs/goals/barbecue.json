@@ -288,6 +288,23 @@
     },
 
     {
+      "id": "Host",
+      "context": "HouseParty",
+      "required_skills": {
+        "communication": 0.2
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0,
+        "workspace": ["Grill_Table", "Garden", "House", "Drinks_Table", "Prep_Table"]
+      },
+      "duration": 180,
+      "priority": 5
+    },
+
+    {
       "id": "PickDishes",
       "context": "HouseParty",
       "required_skills": {
@@ -386,6 +403,7 @@
     ["ServeDrinks", "BarbecueParty"],
     ["PutTheDishesAway", "BarbecueParty"],
     ["ServeSides", "BarbecueParty"],
-    ["ServeSalad", "BarbecueParty"]
+    ["ServeSalad", "BarbecueParty"],
+    ["Host", "BarbecueParty"]
   ]
 }

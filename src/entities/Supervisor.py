@@ -206,6 +206,7 @@ class Supervisor:
                     print(f"  Agent: {agent}, Score: {score}")
         
         # Select + store results inside each task
+        unassigned_tasks = []
         for node_id in G.nodes:
             task = G.nodes[node_id]
 
@@ -226,12 +227,43 @@ class Supervisor:
             # Store ONE structured object
             G.nodes[node_id]["assignment"] = assignment
 
+            if assignment.status == TaskStatus.NOT_ASSIGNED:
+                unassigned_tasks.append(node_id)
+
             if(debug):
                 print(
                     f"Selected agent for task {node_id}: "
                     f"{selected_agent if selected_agent else None}, "
                     f"score: {selected_score}"
                 )
+
+        # If any task couldn't be assigned to an agent, the plan is unworkable.
+        # Persist the graph as-is for inspection, alert, and shut the whole system down
+        # instead of handing out a partial/broken assignment batch.
+        if unassigned_tasks:
+            self.graph_visualizer.export_multiagent_graph(
+                G,
+                output_name=f"[{self.name}] Global_Supervisor_Allocation_FAILED",
+                palette_mode="pastel",
+            )
+            print(
+                f"[{self.name}] Allocation failed: {len(unassigned_tasks)} task(s) "
+                f"could not be assigned to any agent: {unassigned_tasks}. "
+                f"Shutting down."
+            )
+            self.publish(
+                "shutdown",
+                {
+                    "reason": "unassigned_tasks",
+                    "unassigned_tasks": unassigned_tasks,
+                    "supervisor_id": supervisor_id,
+                },
+            )
+            # Broadcasts aren't delivered back to the sender (same convention
+            # as "SUPERVISOR" / "party_over"), so also fire the hook locally.
+            self.agent.handle_shutdown("unassigned_tasks", unassigned_tasks)
+            return
+        
         self.send_task_assignment_batch(G)
 
     def send_task_assignment_batch(self, G):

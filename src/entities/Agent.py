@@ -41,6 +41,8 @@ class Agent:
 
         self.goal_finished = False
 
+        self.shutdown_reason = None
+
         # Message queue: listener thread enqueues, main thread drains in step()
         self._msg_queue = queue.Queue()
 
@@ -161,6 +163,16 @@ class Agent:
                         # Flip the flag on the global graph so we don't re-release next step
                         self.global_graph.G.nodes[node_id]["time_to_clean"] = True
                 self.supervisor.release_clean_msg = True
+                
+                # The supervisor doesn't necessarily know (or need to know) which
+                # agent is the host — broadcast so every agent gets a chance to react.
+                # Only an agent that overrides _on_party_ending() (e.g. Human) will
+                # actually do anything with it.
+                self.comm_handler.publish("party_over", {"supervisor_id": self.id})
+                # Broadcasts aren't delivered back to the sender (same convention as
+                # the "SUPERVISOR" / "all_tasks_done" messages above), so also fire
+                # the hook locally in case this agent is itself the host.
+                self._on_party_ending()
 
             if self.check_all_tasks_done():# Check everytime in case one can change the status back
                 print("All tasks are done!")
@@ -273,6 +285,28 @@ class Agent:
         else:
             print(f"[{self.id}] Task '{task_id}' received clearance but is not yet READY (deps still pending).")
  
+    def handle_party_over(self):
+        """
+        Called by CommunicationHandler when a 'party_over' message arrives
+        from the supervisor. Any agent may receive this broadcast; it's
+        forwarded to _on_party_ending() so only agents that override that
+        hook (e.g. Human, as the host) actually react to it.
+        """
+        self._on_party_ending()
+
+    def handle_shutdown(self, reason="unknown", unassigned_tasks=None):
+        """
+        Called by CommunicationHandler when a 'shutdown' message arrives from
+        the supervisor (e.g. allocation failed because some task had no
+        capable agent). Reuses goal_finished so the existing Robot.py
+        loop-exit / cleanup path fires unchanged, but records *why* we
+        stopped so logs/callers can tell an abort apart from a normal
+        "all_tasks_done" completion.
+        """
+        self.shutdown_reason = reason
+        self.shutdown_unassigned_tasks = unassigned_tasks or []
+        self.goal_finished = True
+
     def release_task(self, task_id):
         """
         Supervisor-side convenience: look up the assigned agent and send clearance.
@@ -286,6 +320,14 @@ class Agent:
             raise ValueError(f"Task '{task_id}' has no assigned agent.")
  
         self.supervisor.release_task(task_id, assignment.selected_agent)
+
+    def _on_party_ending(self):
+        """
+        Hook called exactly once, on the supervisor, the moment the party
+        duration elapses. No-op by default; subclasses (e.g. Human) can
+        override to trigger their own behavior (e.g. guests leaving).
+        """
+        pass
 
     # ----------------------------
     # Startup Procedure

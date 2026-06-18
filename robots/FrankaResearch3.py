@@ -48,9 +48,9 @@ from utils import ROSUtils
 ResultCallback = Callable[[bool, str], None]
 XYZ = Tuple[float, float, float]
 
-TIME_GRILL_FOOD = 60  # seconds
-TIME_CHOP_VEGETABLES = 60  # seconds
-TIME_CHOP_SALAD_INGREDIENTS = 60  # seconds
+TIME_GRILL_FOOD = 240  # seconds
+TIME_CHOP_VEGETABLES = 40  # seconds
+TIME_CHOP_SALAD_INGREDIENTS = 40  # seconds
 
 class FrankaResearch3(Agent):
     """
@@ -196,10 +196,10 @@ class FrankaResearch3(Agent):
             "food_grill": {
                 "placements": {
                     "meat_1":         {"place_grill": (5.0, 4.65, 0.885), "place_plate": (4.30, 5.26, 0.90)},
-                    #"meat_2":         {"place_grill": (5.2, 4.65, 0.885), "place_plate": (4.20, 5.18, 0.90)},
-                    #"meat_3":         {"place_grill": (4.8, 4.65, 0.885), "place_plate": (4.38, 5.15, 0.90)},
-                    #"garlic_bread_1": {"place_grill": (5.1, 4.40, 0.900), "place_plate": (4.25, 5.21, 0.92)},
-                    #"garlic_bread_2": {"place_grill": (4.9, 4.40, 0.900), "place_plate": (4.34, 4.19, 0.92)},
+                    "meat_2":         {"place_grill": (5.2, 4.65, 0.885), "place_plate": (4.20, 5.18, 0.90)},
+                    "meat_3":         {"place_grill": (4.8, 4.65, 0.885), "place_plate": (4.38, 5.15, 0.90)},
+                    "garlic_bread_1": {"place_grill": (5.1, 4.47, 0.900), "place_plate": (4.25, 5.21, 0.92)},
+                    "garlic_bread_2": {"place_grill": (4.9, 4.47, 0.900), "place_plate": (4.34, 5.21, 0.92)},
                 }
             },
             "vegetables_side": {
@@ -207,15 +207,15 @@ class FrankaResearch3(Agent):
                     "carrot_1":       {"place_chop": (1.12, 4.90, 0.91), "place_bowl": (1.47, 4.90, 0.89)},
                     #"carrot_2":       {"place_chop": (1.04, 4.90, 0.91), "place_bowl": (1.54, 4.90, 0.89)},
                     #"cucumber_1":     {"place_chop": (0.94, 4.90, 0.91), "place_bowl": (1.50, 4.90, 0.89)},
-                    #"cucumber_2":     {"place_chop": (0.86, 4.90, 0.91), "place_bowl": (1.59, 4.90, 0.89)},
+                    "cucumber_2":     {"place_chop": (0.86, 4.90, 0.91), "place_bowl": (1.59, 4.90, 0.89)},
                 }
             },
             "salads_side": {
                 "placements": {
                     "tomato_1":       {"place_chop": (0.9, 4.85, 0.91), "place_bowl": (0.52, 4.84, 0.89)},
                     #"tomato_2":       {"place_chop": (1.11, 4.84, 0.91), "place_bowl": (0.53, 4.96, 0.89)},
-                   # "tomato_3":       {"place_chop": (1.07, 4.97, 0.91), "place_bowl": (0.64, 4.84, 0.89)},
-                    #"purple_onion_1": {"place_chop": (0.95, 4.95, 0.91), "place_bowl": (0.64, 4.96, 0.89)},
+                    #"tomato_3":       {"place_chop": (1.07, 4.97, 0.91), "place_bowl": (0.64, 4.84, 0.89)},
+                    "purple_onion_1": {"place_chop": (0.95, 4.95, 0.91), "place_bowl": (0.64, 4.96, 0.89)},
                 }
             }
         }

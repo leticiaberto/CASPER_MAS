@@ -384,14 +384,16 @@ class Tiago(Agent):
         self.scene = {
                 "drinks": {
                     "placements": {
-                        #"drink_1":  {"place_guests": (-2.68, -0.72, 0.30)}, # Dinning table, guest 1
+                        "drink_1":  {"place_guests": (-2.68, -0.72, 0.30)}, # Dinning table, guest 1
                         "drink_2":  {"place_guests": (-1.11, -0.72, 0.30)}, # Dinning table, guest 2
-                        #"drink_3":  {"place_guests": (-2.92, -0.72, 0.30)}, # Dinning table, guest 3
+                        "drink_3":  {"place_guests": (-2.92, -0.72, 0.30)}, # Dinning table, guest 3
                         #"drink_4":  {"place_guests": (-1.34, -0.60, 0.30)}, # Dinning table, guest 4
 
-                        #"drink_5":  {"place_guests": (4.74, -3.31, 0.30)}, # GroupOfGuests1, guests 5
+                        "drink_5":  {"place_guests": (4.74, -3.31, 0.30)}, # GroupOfGuests1, guests 5
                         #"drink_6":  {"place_guests": (3.8, -2.36, 0.30)}, # GroupOfGuests1, guests 6
                         #"drink_7":  {"place_guests": (3.54, -3.62, 0.30)}, # GroupOfGuests1, guests 7
+
+                        "drink_7":  {"place_guests": (-1.90, 4.66, 0.30)}, # GroupOfGuests2, troquei pra ir em todos os grupos -- dps remover essa linha
 
                         # Removed from Gazebo to improve performance
                         #"drink_8":  {"place_guests": (-1.90, 4.66, 0.30)}, # GroupOfGuests2, guests 8

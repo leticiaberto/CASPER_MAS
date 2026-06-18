@@ -211,6 +211,13 @@ class GuestManager(Node):
         except json.JSONDecodeError:
             return
 
+        # Party is over — walk every already-spawned guest back home.
+        if state.get("action") == "FarewellGuests" and state.get("phase") == "start":
+            threading.Thread(
+                target=self._farewell_pipeline, daemon=True, name="farewell_pipeline"
+            ).start()
+            return
+
         if state.get("action") != "WelcomeGuests" or state.get("phase") != "loop":
             return
 
@@ -346,8 +353,6 @@ class GuestManager(Node):
 
         self._blocking_goto(
             adapter    = adapter,
-            done_event = done_event,
-            result_box = result_box,
             x          = group["x"],
             y          = group["y"],
             yaw        = group["yaw"],
@@ -369,13 +374,26 @@ class GuestManager(Node):
     def _blocking_goto(
         self,
         adapter:    HumanAdapter,
-        done_event: threading.Event,
-        result_box: list,
         x: float, y: float, yaw: float,
         label: str,
     ) -> bool:
-        done_event.clear()
-        result_box.clear()
+        """
+        Drive *adapter* to (x, y, yaw) and block until it finishes.
+
+        Retargets adapter._result_callback for this call — the adapter
+        is reused across multiple commands over its lifetime (arrival,
+        then later being walked home), and each call needs its own
+        done_event/result_box rather than the one from a previous call.
+        """
+        done_event = threading.Event()
+        result_box: list = []
+
+        def on_result(success: bool, message: str) -> None:
+            result_box.append((success, message))
+            done_event.set()
+
+        adapter._result_callback = on_result
+
         accepted = adapter.goto(x=x, y=y, final_yaw=yaw)
         if not accepted:
             self.get_logger().warn(
@@ -390,6 +408,30 @@ class GuestManager(Node):
         icon = "✓" if success else "✗"
         self.get_logger().info(f"[GuestManager] {label} {icon}  {message}")
         return success
+
+    def _farewell_pipeline(self) -> None:
+        """
+        Party is over — walk every already-spawned guest back to their
+        entry coordinates, then shut their controller down. Sequential,
+        same as the arrival pipeline, to protect Gazebo's real-time factor.
+        """
+        with self._adapter_lock:
+            adapters = list(self._guest_adapters)
+
+        self.get_logger().info(
+            f"[GuestManager] Party over — sending {len(adapters)} guest(s) home."
+        )
+
+        for i, adapter in enumerate(adapters):
+            cfg = self._guest_configs[i] if i < len(self._guest_configs) else {}
+            x   = cfg.get("entry_x", 0.0)
+            y   = cfg.get("entry_y", 0.0)
+            yaw = cfg.get("entry_yaw", 0.0)
+
+            self._blocking_goto(adapter, x, y, yaw, label=f"guest_{i + 1}/home")
+            adapter.finish()  # let the controller shut itself down once idle
+
+        self.get_logger().info("[GuestManager] All guests sent home.")
 
     def _launch_actor(self, actor_name: str, cfg: Dict) -> bool:
         cmd = [

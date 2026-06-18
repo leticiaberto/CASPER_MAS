@@ -69,16 +69,18 @@ locations = {
     "DiningTable":    {"x": -0.77, "y": -1.54, "yaw": 3.14},
     "House":          {"x": -0.19, "y": -6.76, "yaw": 1.57},
     "GroupOfGuests_1":{"x":  3.25, "y": -2.82, "yaw": 0.0},
-    "GroupOfGuests_2":{"x": -2.07, "y":  3.33,  "yaw": 2.39},
+    "GroupOfGuests_2":{"x": -2.21, "y":  3.54,  "yaw": 2.15},
     "MainPrepTable":  {"x":  0.95, "y":  4.30, "yaw": 1.57},
     "GrillPrepTable": {"x":  4.14, "y":  4.24, "yaw": 0.8},
+    "DrinksTable":    {"x": -4.50, "y":  4.89, "yaw": -1.55},
 }
 
-TIME_COOKING_RICE = 60.0  # seconds to "cook" the rice (simulate with sleep)
-TIME_PICKING_RICE = 10.0   # seconds to "pick" the rice (simulate with sleep)
+TIME_COOKING_RICE = 180.0  # seconds to "cook" the rice (simulate with sleep)
+TIME_PICKING_RICE = 60.0   # seconds to "pick" the rice (simulate with sleep)
 TIME_PUTTING_AWAY_DISHES = 60.0  # seconds to "put away dishes" (simulate with sleep)
 TIME_WELCOMING_GUESTS = 15.0  # seconds to "welcome guests" (simulate with sleep)
 TIME_DOING_THE_DISHES = 60.0  # seconds to "do the dishes" (simulate with sleep)
+TIME_SAYING_GOODBYE = 15.0  # seconds to "say goodbye" (simulate with sleep)
 
 # ---------------------------------------------------------------------------
 # Types
@@ -350,15 +352,20 @@ class Human(Agent):
             time.sleep(TIME_COOKING_RICE)  # Simulate cooking time
         elif action == "ServeMainDish":
             ok, msg = self.goto(location="House")
+            time.sleep(5)
             ok, msg = self.goto(location="DiningTable")
+            time.sleep(10)
         elif action == "ServeSides":
             ok, msg = self.goto(location="MainPrepTable")
+            time.sleep(5) # simulate picking sides
             ok, msg = self.goto(location="DiningTable")
         elif action == "ServeSalad":
             ok, msg = self.goto(location="MainPrepTable")
+            time.sleep(5) # simulate picking salad
             ok, msg = self.goto(location="DiningTable")
         elif action == "ServeGrilledFood":
             ok, msg = self.goto(location="GrillPrepTable")
+            time.sleep(5) # simulate picking food
             ok, msg = self.goto(location="DiningTable")
         elif action == "WelcomeGuests":
             self._action_welcome_guests()
@@ -377,11 +384,27 @@ class Human(Agent):
             time.sleep(TIME_DOING_THE_DISHES)  # Simulate cleaning time
         elif action == "PutTheDishesAway":
             ok, msg = self.goto(location="House")
-            time.sleep(TIME_PUTTING_AWAY_DISHES)  # Simulate cleaning time  
+            time.sleep(TIME_PUTTING_AWAY_DISHES)  # Simulate cleaning time
+        elif action == "Host":
+            time.sleep(20)  # Brief pause before going to check on guests
+            ok, msg = self.goto(location="GrillPrepTable")
+            time.sleep(15)
+            ok, msg = self.goto(location="MainPrepTable")
+            time.sleep(15)
+            ok, msg = self.goto(location="GroupOfGuests_2")
+            time.sleep(60)
+            ok, msg = self.goto(location="DrinksTable")
+            time.sleep(10)  # Brief pause before moving to next group
+            ok, msg = self.goto(location="GroupOfGuests_1")
+            time.sleep(45)  # Brief pause before moving to next group
+            ok, msg = self.goto(location="DiningTable")
+            time.sleep(25)
         else:
             print(f"[Human] Unknown task action: {action}")
 
     def _action_welcome_guests(self) -> None:
+        ok, msg = self.goto(location="House")
+
         self._publish_state("WelcomeGuests", "start", total_guests=self.guests)
  
         for guest_number in range(1, self.guests + 1):
@@ -424,6 +447,30 @@ class Human(Agent):
  
         self._publish_state("WelcomeGuests", "end", total_guests=self.guests)
  
+    def _on_party_ending(self) -> None:
+        """
+        Override of Agent._on_party_ending. Called once, on the supervisor,
+        when party_duration has elapsed. Runs in its own thread so the
+        caller (Agent.step()) is never blocked by it.
+        """
+        threading.Thread(
+            target=self._action_farewell_guests, daemon=True, name="farewell_guests"
+        ).start()
+
+    def _action_farewell_guests(self) -> None:
+        """
+        Mirror of _action_welcome_guests: walk to the door, announce
+        FarewellGuests on /<host>/actor_state so GuestManager can walk
+        every already-spawned guest back home, then pause to "say goodbye".
+        """
+        ok, msg = self.goto(location="House")
+        if not ok:
+            print(f"[Human] Could not reach House to say goodbye: {msg}")
+
+        self._publish_state("FarewellGuests", "start", total_guests=self.guests)
+        self._adapter.get_logger().info("[Human] Saying goodbye to guests …")
+        time.sleep(TIME_SAYING_GOODBYE)
+        self._publish_state("FarewellGuests", "end", total_guests=self.guests)
         
     def shutdown(self) -> None:
         """Cleanly stop the executor and destroy the ROS2 node."""

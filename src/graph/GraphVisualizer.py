@@ -159,7 +159,7 @@ class GraphVisualizer:
                 selected_agent = None
                 selected_score = None
                 top_candidates = []
-                status_text = TaskStatus.NOTASSIGNED
+                status_text = TaskStatus.NOT_ASSIGNED
 
             # --- Rendering ---
             self._render_node(node, palette, name, duration, status_text, context, workspace, selected_agent, selected_score, top_candidates, fillType, graphType)

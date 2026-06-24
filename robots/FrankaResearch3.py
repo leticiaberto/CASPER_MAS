@@ -85,6 +85,7 @@ class FrankaResearch3(Agent):
         contexts:             List[str]     = None,
         role:                 str           = "member",
         teamsize:             int           = 1,
+        run_id:               str           = "test",
         use_sim:              bool          = True,
         workspace:            str           = None,
         party_duration:       float         = 3600.0, #1h default
@@ -117,6 +118,7 @@ class FrankaResearch3(Agent):
             teamsize,
             party_duration,
             guests,
+            run_id,
         )
 
         self._robot_name     = robot_name
@@ -424,7 +426,19 @@ class FrankaResearch3(Agent):
                 )
                 log = self.adapter.get_logger() if self.adapter else None
                 if log:
-                    (log.info if ok else log.error)(f"[FrankaResearch3] task result: {msg}")
+                    try:
+                        if ok:
+                            log.info(f"[FrankaResearch3] task result: {msg}")
+                        else:
+                            log.error(f"[FrankaResearch3] task result: {msg}")
+                    except Exception as log_exc:
+                        # Never let a logging issue take down the whole agent —
+                        # the goal itself already finished (ok/msg), so just
+                        # fall back to print and keep going.
+                        print(
+                            f"[FrankaResearch3] (logger error: {log_exc}) "
+                            f"task result: {msg}"
+                        )
             elif action in ("grasp", "move_arm", "inspect"):
                 print(f"[FrankaResearch3] '{action}' not yet implemented.")
             else:

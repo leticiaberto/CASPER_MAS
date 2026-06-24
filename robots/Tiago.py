@@ -236,6 +236,7 @@ class Tiago(Agent):
         contexts,
         role,
         teamsize:     int,
+        run_id:               str           = "test",
         use_sim: bool,
         workspace:    str           = None,
         party_duration:       float         = 3600.0, #1h default
@@ -254,7 +255,7 @@ class Tiago(Agent):
             "can_transport_objects":  True,
             "workspace":              workspace,
         }
-        super().__init__(robot_name, constraints, skill_weights, contexts, role, teamsize, party_duration, guests)
+        super().__init__(robot_name, constraints, skill_weights, contexts, role, teamsize, party_duration, guests, run_id)
 
         if use_sim:
             mode = RobotMode.SIMULATION
@@ -386,7 +387,7 @@ class Tiago(Agent):
                     "placements": {
                         "drink_1":  {"place_guests": (-2.68, -0.72, 0.30)}, # Dinning table, guest 1
                         "drink_2":  {"place_guests": (-1.11, -0.72, 0.30)}, # Dinning table, guest 2
-                        "drink_3":  {"place_guests": (-2.92, -0.72, 0.30)}, # Dinning table, guest 3
+                        #"drink_3":  {"place_guests": (-2.92, -0.72, 0.30)}, # Dinning table, guest 3
                         #"drink_4":  {"place_guests": (-1.34, -0.60, 0.30)}, # Dinning table, guest 4
 
                         "drink_5":  {"place_guests": (4.74, -3.31, 0.30)}, # GroupOfGuests1, guests 5

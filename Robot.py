@@ -137,7 +137,7 @@ def _launch_human(robot_id, world_name, actor_type, color, x_pos, y_pos, yaw):
 
 def _make_agent(robot_model, AgentClass, robot_id, world_name,
                 skill_weights, contexts, agent_role, teamsize,
-                use_sim, result_timeout, workspace, party_duration, guests):
+                use_sim, result_timeout, workspace, party_duration, guests, run_id):
     """Instantiate the correct agent class with its specific parameters."""
 
     if robot_model == "Pepper":
@@ -151,6 +151,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             workspace     = workspace,
             party_duration = party_duration,
             guests         = guests,
+            run_id         = run_id,
         )
 
     if robot_model == "FrankaResearch3":
@@ -165,6 +166,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             workspace     = workspace,
             party_duration = party_duration,
             guests         = guests,
+            run_id         = run_id,
         )
 
     if robot_model == "Tiago":
@@ -179,6 +181,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             workspace     = workspace,
             party_duration = party_duration,
             guests         = guests,
+            run_id         = run_id,
         )
 
     if robot_model == "Human":
@@ -193,6 +196,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
             workspace     = workspace,
             party_duration = party_duration,
             guests         = guests,
+            run_id         = run_id,
         )
 
     raise ValueError(f"Unknown robot_model: '{robot_model}'")

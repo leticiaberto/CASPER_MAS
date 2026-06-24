@@ -118,6 +118,7 @@ class Human(Agent):
         contexts,
         role,
         teamsize:     int,
+        run_id:               str           = "test",
         result_timeout: float         = 120.0,
         sync_timeout:    float         = 60,
         node_name:     Optional[str] = None,
@@ -136,7 +137,7 @@ class Human(Agent):
             "workspace":              workspace,
         }
 
-        super().__init__(actor_name, constraints, skill_weights, contexts, role, teamsize, party_duration, guests)
+        super().__init__(actor_name, constraints, skill_weights, contexts, role, teamsize, party_duration, guests, run_id)
 
         self._actor_name = actor_name
         self._sync_timeout  = sync_timeout

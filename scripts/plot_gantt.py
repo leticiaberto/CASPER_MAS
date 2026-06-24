@@ -12,8 +12,6 @@ Usage
     python plot_gantt.py path/to/task_execution.csv --run-id my_run_1
     python plot_gantt.py path/to/task_execution.csv --out gantt.png
 
-    python src/analysis/plot_gantt.py experiment_logs/task_execution.csv --out gantt.png
-
 If the CSV contains multiple run_id values, pass --run-id to pick one
 (otherwise the most recent run, by max timestamp, is used automatically
 and a warning is printed).

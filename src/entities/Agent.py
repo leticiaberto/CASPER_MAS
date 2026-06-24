@@ -9,12 +9,13 @@ from src.graph.Global_Graph import GlobalGraph
 from src.graph.GraphVisualizer import GraphVisualizer
 from src.graph.Local_Graph import LocalGraph
 from src.graph.TaskAssignment import TaskAssignment, TaskStatus
+from src.analysis.ExperimentLogger import ExperimentLogger
 from abc import abstractmethod
 from utils import Roles
 import time
 
 class Agent:
-    def __init__(self, id, constraints, skills, contexts, role, teamsize, party_duration, guests):
+    def __init__(self, id, constraints, skills, contexts, role, teamsize, party_duration, guests, run_id, log_dir="experiment_logs"):
         self.id = id
         self.constraints = constraints  # Task independent      
         self.skills = ContextualSkillModel(skills, contexts)
@@ -27,9 +28,24 @@ class Agent:
         # Create communication
         self.comm = RobotComm(self.id, self.teamSize)
         self.comm_handler = CommunicationHandler(self, self.comm)
+
+        # Experiment analytics: every agent gets its own logger pointed at
+        # the same run_id/output_dir so per-agent execution-order rows from
+        # every team member land in the same shared CSV (task_execution.csv)
+        # and can be told apart by run_id when comparing experiments.
+        # run_id should be passed in (e.g. derived once per experiment and
+        # shared across all agents + the supervisor) so all rows from the
+        # same run carry a matching identifier; if omitted, each agent
+        # would otherwise generate its own random run_id.
+        self.experiment_logger = ExperimentLogger(run_id=run_id, output_dir=log_dir)
         
         if(self.role == Roles.SUPERVISOR):
-            self.supervisor = Supervisor(name=f"Supervisor_{self.id}", agent = self, publish_fn=self.comm_handler.publish)            
+            self.supervisor = Supervisor(name=f"Supervisor_{self.id}", agent = self, publish_fn=self.comm_handler.publish, run_id=self.experiment_logger.run_id, log_dir=log_dir)
+            # Reuse the supervisor's logger (same run_id) as this agent's
+            # own, so the supervisor's own task executions land under one
+            # consistent run_id instead of two separate ExperimentLogger
+            # instances that happen to share an output_dir.
+            self.experiment_logger = self.supervisor.experiment_logger           
             
         self.assigned_tasks = []
 
@@ -135,11 +151,37 @@ class Agent:
                 key=lambda t: self.local_graph.graph.nodes[t].get("priority", float('inf'))
             )
 
+            task_started_at = time.time()
             self.task_update_status_and_publish(task, TaskStatus.RUNNING)
             time.sleep(5)
             self._execute_task_specific(task)# Physical execution
             time.sleep(5)
+            task_finished_at = time.time()
             self.task_update_status_and_publish(task, TaskStatus.DONE)
+
+            # Experiment analytics: record the order in which THIS agent
+            # executed its tasks, plus a "supervisor view" snapshot of the
+            # task's position in the global DAG (predecessors/successors,
+            # bottleneck/source/leaf, how many downstream tasks it just
+            # unblocked) -- so later analysis can relate per-agent execution
+            # order to each task's actual importance to the team, not just
+            # to this agent. self.global_graph.G is the full DAG every
+            # agent holds read-only (see load_goal()); on non-supervisor
+            # agents its status fields reflect the last
+            # task_assignment_batch / task_status_update_supervisor
+            # messages received, so they may lag slightly behind the
+            # supervisor's own copy -- structure (predecessors/successors)
+            # is always accurate, status-derived fields (e.g.
+            # successors_unblocked_by_this) are best-effort.
+            #
+            # started_at/finished_at (unix timestamps) are what make a
+            # Gantt chart possible later: one bar per task, from started_at
+            # to finished_at, grouped by agent_id.
+            self.experiment_logger.log_task_execution(
+                self.id, task, self.global_graph.G,
+                extra_fields={"started_at": task_started_at, "finished_at": task_finished_at},
+            )
+
             time.sleep(10)
         else:
             print("No Tasks READY to execute")
@@ -270,6 +312,15 @@ class Agent:
             self.vis_queue.put(("refresh",))
             self.global_graph.update_status(task_id, task_status)
             self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="["+self.id+"] Global_Supervisor_StatusUpdated", palette_mode="pastel", graphType="updated")
+
+            # Runtime idle check: every time any task's status changes
+            # anywhere on the team, re-evaluate whether some agent now has
+            # nothing READY/RUNNING to do while at least one other agent
+            # does. Only meaningful on the supervisor (it's the only agent
+            # whose global_graph reflects everyone's live status), and
+            # logs to idle_events.csv via self.experiment_logger.
+            if(task_status == TaskStatus.RUNNING): # it makes sense only check for other idle agent if the message is that someone is running something
+                self.experiment_logger.check_and_log_idle_agents(self.global_graph.G, trigger_task_id=task_id, trigger_agent_id=self.id)
 
     def handle_task_clearance(self, task_id):
         """

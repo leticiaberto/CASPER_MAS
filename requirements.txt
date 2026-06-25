@@ -7,4 +7,5 @@ pygraphviz>=1.11
 matplotlib==3.5.1
 ikpy
 scipy
-numpy
+numpy<2
+pandas

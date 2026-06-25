@@ -15,11 +15,6 @@ Usage
 If the CSV contains multiple run_id values, pass --run-id to pick one
 (otherwise the most recent run, by max timestamp, is used automatically
 and a warning is printed).
-
-Requires started_at / finished_at columns. These are only present on
-rows logged after the started_at/finished_at fields were added to
-Agent.step()'s call to log_task_execution -- older CSVs without them
-will raise a clear error telling you what to do.
 """
 
 import argparse
@@ -37,8 +32,7 @@ def load_execution_data(csv_path, run_id=None):
         raise ValueError(
             "task_execution.csv has no 'started_at'/'finished_at' columns. "
             "These are written by Agent.step() via the extra_fields passed "
-            "to log_task_execution -- make sure you're using the updated "
-            "Agent.py and that this CSV was generated after that change."
+            "to log_task_execution."
         )
 
     if run_id is None:

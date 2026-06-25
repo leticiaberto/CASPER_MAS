@@ -237,7 +237,7 @@ class Tiago(Agent):
         role,
         teamsize:     int,
         run_id:               str           = "test",
-        use_sim: bool,
+        use_sim:              bool          = True,
         workspace:    str           = None,
         party_duration:       float         = 3600.0, #1h default
         guests:               int           = 0,

@@ -448,6 +448,7 @@ def main():
         workspace      = workspace,
         party_duration  = party_duration,
         guests         = guests,
+        run_id =        args.exp,
     )
 
     print(f"[Robot] Agent '{robot_id}' instantiated.")

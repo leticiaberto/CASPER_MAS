@@ -127,7 +127,7 @@ def plot_gantt(df, run_id, title=None):
             ax.axvline(row["finished_min"], color="grey", linestyle="--", linewidth=1.2, alpha=0.7, zorder=1)
             ax.text(
                 row["finished_min"] + label_offset, row["row_pos"],
-                f"{row['task_id']} (milestone)",
+                f"{row['task_id']} (goal)",
                 va="center", ha="left", fontsize=9, fontweight="bold",
             )
         else:
@@ -152,7 +152,7 @@ def plot_gantt(df, run_id, title=None):
     ax.invert_yaxis()  # first task at the top
     ax.set_xlabel("Elapsed time (minutes since experiment start)")
     ax.set_ylabel("Agent")
-    ax.set_title(title or f"Task execution Gantt chart -- run '{run_id}'")
+    ax.set_title(title or f"Task execution -- run '{run_id}'")
     ax.grid(axis="x", linestyle=":", alpha=0.5)
 
     # Explicitly pin the x-axis: left edge at exactly 0 (elapsed time

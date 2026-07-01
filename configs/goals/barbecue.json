@@ -75,7 +75,7 @@
           "Prep_Table"
         ]
       },
-      "duration": 1200,
+      "duration": 2000,
       "priority": 10
     },
     {
@@ -190,7 +190,7 @@
           "Prep_Table"
         ]
       },
-      "duration": 1200,
+      "duration": 3000,
       "priority": 14
     },
     {

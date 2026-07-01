@@ -187,10 +187,19 @@ class Agent:
             print("No Tasks READY to execute")
             
         if self.role == Roles.SUPERVISOR:
-            # Release any time_to_clean tasks once the party duration has elapsed
-            elapsed = time.time() - self._start_time
-            if elapsed >= self.party_duration and not self.supervisor.release_clean_msg:
-                print(f"[{self.id}] Party duration of {self.party_duration} seconds has elapsed. Releasing time_to_clean tasks.")
+            # Release any time_to_clean tasks once all subgoal_level==1 tasks are done
+            subgoal_level_1_nodes = [
+                node_id for node_id in self.global_graph.G.nodes
+                if self.global_graph.G.nodes[node_id].get("subgoal_level") == 1
+                and not self.global_graph.G.nodes[node_id].get("at_end", False)
+            ]
+            all_subgoals_done = bool(subgoal_level_1_nodes) and all(
+                self.global_graph.G.nodes[node_id].get("assignment") is not None
+                and self.global_graph.G.nodes[node_id]["assignment"].status == TaskStatus.DONE
+                for node_id in subgoal_level_1_nodes
+            )
+            if all_subgoals_done and not self.supervisor.release_clean_msg:
+                print(f"[{self.id}] All subgoal_level 1 tasks are done. Releasing time_to_clean tasks.")
                 for node_id in self.global_graph.G.nodes:
                     node_data = self.global_graph.G.nodes[node_id]
                     assignment = node_data.get("assignment")
@@ -200,7 +209,7 @@ class Agent:
                         and assignment.selected_agent is not None
                         and assignment.status not in (TaskStatus.RUNNING, TaskStatus.DONE)
                     ):
-                        print(f"[{self.id}] Party over ({elapsed:.1f}s >= {self.party_duration}s). Releasing clean task '{node_id}'.")
+                        print(f"[{self.id}] All subgoal_level 1 tasks done. Releasing clean task '{node_id}'.")
                         self.release_task(node_id)
                         # Flip the flag on the global graph so we don't re-release next step
                         self.global_graph.G.nodes[node_id]["time_to_clean"] = True
@@ -215,7 +224,7 @@ class Agent:
                 # the "SUPERVISOR" / "all_tasks_done" messages above), so also fire
                 # the hook locally in case this agent is itself the host.
                 self._on_party_ending()
-
+ 
             if self.check_all_tasks_done():# Check everytime in case one can change the status back
                 print("All tasks are done!")
                 self.comm_handler.publish("all_tasks_done", {"agent_id": self.id})
@@ -370,7 +379,11 @@ class Agent:
         if assignment is None or assignment.selected_agent is None:
             raise ValueError(f"Task '{task_id}' has no assigned agent.")
  
-        self.supervisor.release_task(task_id, assignment.selected_agent)
+        if assignment.selected_agent != self.id:
+            self.supervisor.release_task(task_id, assignment.selected_agent)
+        else:
+            self.task_update_status_and_publish(task_id, TaskStatus.READY, ignore=True)# Do not need to update local because get_ready_tasks() does
+            time.sleep(5)
 
     def _on_party_ending(self):
         """

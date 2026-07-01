@@ -66,8 +66,9 @@ class Supervisor:
 
             scored_agents = []
 
-            # If is the main goal, set everyone as part of the team, but the responsible for checking is the supervisor
-            if(task.get("is_end_goal", False) and supervisor_id is not None):
+            # If is the main goal (or a subgoal, e.g. subgoal_level == 1), set everyone as part of
+            # the team, but the one responsible for checking/executing it is the supervisor
+            if((task.get("is_end_goal", False) or task.get("subgoal_level") == 1) and supervisor_id is not None):
                 # Skip end goals for all agents except the one who owns the supervisor
                 scored_agents.append((supervisor_id, 1.0))
                 for agent_id, agent_obj in agents.items():
@@ -421,7 +422,7 @@ class Supervisor:
         end_goal_task = None
         for node_id in G.nodes:
             task = G.nodes[node_id]
-            if task.get("is_end_goal", False):
+            if task.get("is_end_goal", False) or task.get("subgoal_level") == 1:
                 end_goal_node = node_id
                 end_goal_task = task
                 break

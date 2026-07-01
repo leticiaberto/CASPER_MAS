@@ -30,6 +30,7 @@ class LocalGraph:
                 tasks_assigned = True
                 global_data = self.global_graph.nodes[node]
                 required_constraints = global_data.get("required_constraints", {})
+                priority = global_data.get("priority", float('inf'))
 
                 # time_to_clean: None means the field is absent (no special gating).
                 # False means the supervisor must explicitly clear this task before it can go READY.
@@ -51,6 +52,7 @@ class LocalGraph:
                     external_successors=set(),
                     required_constraints=required_constraints,
                     workspace=required_constraints.get("workspace"),
+                    priority=priority,
                     time_to_clean=time_to_clean,
                 )
         if not tasks_assigned:

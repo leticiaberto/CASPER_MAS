@@ -115,7 +115,7 @@ TIME_PUTTING_AWAY_DISHES = 300/CONST_SCALE    # seconds to "put away dishes" (si
 
 TIME_PICKING_RICE = 330/CONST_SCALE     # seconds to "pick" the rice (simulate with sleep)
 TIME_COOKING_RICE = 2400/CONST_SCALE    # seconds to "cook" the rice (simulate with sleep)
-#TIME_SERVE_MAIN_DISH = 0
+TIME_SERVE_MAIN_DISH = 120/CONST_SCALE
 
 TIME_WELCOMING_GUESTS = 5#15.0  # seconds to "welcome guests" (simulate with sleep)
 
@@ -125,12 +125,12 @@ TIME_PICK_GRILLED_FOOD = 300/CONST_SCALE
 TIME_SERVE_GRILLED_FOOD = 120/CONST_SCALE
 
 TIME_PICK_VEGETABLE = 300/CONST_SCALE
-TIME_CHOP_VEGETABLES = 1200/CONST_SCALE    # seconds
+TIME_CHOP_VEGETABLES = 3000/CONST_SCALE    # seconds
 TIME_PICK_CHOPPED_VEGETABLE = 300/CONST_SCALE
 TIME_SERVE_SIDES = 120/CONST_SCALE
 
 TIME_PICK_SALAD = 300/CONST_SCALE
-TIME_CHOP_SALAD_INGREDIENTS = 1200/CONST_SCALE    # seconds
+TIME_CHOP_SALAD_INGREDIENTS = 2000/CONST_SCALE    # seconds
 TIME_PICK_CHOPPED_SALAD = 300/CONST_SCALE
 TIME_SERVE_SALAD = 120/CONST_SCALE
 
@@ -690,6 +690,7 @@ class Tiago(Agent):
                 use_names=use_names,
             )
             sequence.append({"action": "navigate_to", "target_xyz": (0, 0, 0)})
+            print("[Tiago] Serve drinks sequence created.")
         elif action == "NavigateTo":
             # Generic navigate: caller must pass the target as the task string
             # or use navigate_to() directly.  This branch handles dict tasks of
@@ -701,119 +702,100 @@ class Tiago(Agent):
             sequence = [
                 {"action": "navigate_to", "target_name": "house"}
             ]
-            time.sleep(TIME_PICK_THE_DISHES)
-        elif action == "DoTheDishes":
-            sequence = [
-                {"action": "navigate_to", "target_name": "house"}
-            ]
-            print("Doing the Dishes... (not implemented)")
-            time.sleep(TIME_DOING_THE_DISHES)  # Simulate doing the dishes
-        elif action == "PickRice":
-            sequence = [
-                {"action": "navigate_to", "target_name": "house"}
-            ]
-            sequence.append({"action": "sleep", "time": TIME_PICKING_RICE})
-        elif action == "CookRice":
-            sequence = [
-                {"action": "navigate_to", "target_name": "house"}
-            ]
-            sequence.append({"action": "sleep", "time": TIME_COOKING_RICE})
-        elif action == "ServeMainDish":
-            sequence = [
-                {"action": "navigate_to", "target_name": "house"}
-            ]
-            sequence.append({"action": "sleep", "time": 5})
-            sequence = [
-                {"action": "navigate_to", "target_name": "DiningTable"}
-            ]
-            sequence.append({"action": "sleep", "time": 10})
-        elif action == "ServeSides":
-            sequence = [
-                {"action": "navigate_to", "target_name": "MainPrepTable"}
-            ]
-            sequence.append({"action": "sleep", "time": 5})
-            sequence = [
-                {"action": "navigate_to", "target_name": "DiningTable"}
-            ]
-        elif action == "ServeSalad":
-            sequence = [
-                {"action": "navigate_to", "target_name": "MainPrepTable"}
-            ]
-            sequence.append({"action": "sleep", "time": 5})
-            sequence = [
-                {"action": "navigate_to", "target_name": "DiningTable"}
-            ]
-        elif action == "ServeGrilledFood":
-            sequence = [
-                {"action": "navigate_to", "target_name": "GrillPrepTable"}
-            ]
-            sequence.append({"action": "sleep", "time": 5})
-            sequence = [
-                {"action": "navigate_to", "target_name": "DiningTable"}
-            ]
-        elif action == "WelcomeGuests":
-            sequence = [
-                {"action": "navigate_to", "target_name": "house"}
-            ]
-            sequence.append({"action": "sleep", "time": 120})
-            sequence = [
-                {"action": "navigate_to", "target_name": "GroupOfGuests_1"}
-            ]
-            sequence.append({"action": "sleep", "time": 15})
-            sequence = [
-                {"action": "navigate_to", "target_name": "GroupOfGuests_2"}
-            ]
-            sequence.append({"action": "sleep", "time": 15})
-            sequence = [
-                {"action": "navigate_to", "target_name": "DiningTable"}
-            ]
-            sequence.append({"action": "sleep", "time": 15})
-        elif action == "PickDishes":
-            sequence = [
-                {"action": "navigate_to", "target_name": "house"}
-            ]
             sequence.append({"action": "sleep", "time": TIME_PICK_THE_DISHES})
+            print("[Tiago] Pick dishes sequence created.")
         elif action == "DoTheDishes":
             sequence = [
                 {"action": "navigate_to", "target_name": "house"}
             ]
             sequence.append({"action": "sleep", "time": TIME_DOING_THE_DISHES})
+            print("[Tiago] Do the dishes sequence created.")
+        elif action == "PickRice":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PICKING_RICE})
+            print("[Tiago] Pick rice sequence created.")
+        elif action == "CookRice":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_COOKING_RICE})
+            print("[Tiago] Cook rice sequence created.")
+        elif action == "ServeMainDish":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": 5})
+            sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            sequence.append({"action": "sleep", "time": 10})
+            print("[Tiago] Serve main dish sequence created.")
+        elif action == "ServeSides":
+            sequence = [
+                {"action": "navigate_to", "target_name": "MainPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 5})
+            sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            print("[Tiago] Serve sides sequence created.")
+        elif action == "ServeSalad":
+            sequence = [
+                {"action": "navigate_to", "target_name": "MainPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 5})
+            sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            print("[Tiago] Serve salad sequence created.")
+        elif action == "ServeGrilledFood":
+            sequence = [
+                {"action": "navigate_to", "target_name": "GrillPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 5})
+            sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            print("[Tiago] Serve grilled food sequence created.")
+        elif action == "WelcomeGuests":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": 120})
+            sequence.append({"action": "navigate_to", "target_name": "GroupOfGuests_1"})
+            sequence.append({"action": "sleep", "time": 15})
+            sequence.append({"action": "navigate_to", "target_name": "GroupOfGuests_2"})
+            sequence.append({"action": "sleep", "time": 15})
+            sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            sequence.append({"action": "sleep", "time": 15})
+            print("[Tiago] Welcome guests sequence created.")
+        elif action == "PickDishes":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PICK_THE_DISHES})
+            print("[Tiago] Pick dishes sequence created.")
+        elif action == "DoTheDishes":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_DOING_THE_DISHES})
+            print("[Tiago] Do the dishes sequence created.")
         elif action == "PutTheDishesAway":
             sequence = [
                 {"action": "navigate_to", "target_name": "house"}
             ]
             sequence.append({"action": "sleep", "time": TIME_PUTTING_AWAY_DISHES})
+            print("[Tiago] Put the dishes away sequence created.")
         elif action == "Host":
-            sequence.append({"action": "sleep", "time": 20})
-            sequence = [
-                {"action": "navigate_to", "target_name": "GrillPrepTable"}
-            ]
+            sequence = [{"action": "sleep", "time": 20}]
+            sequence.append({"action": "navigate_to", "target_name": "GrillPrepTable"})
             sequence.append({"action": "sleep", "time": 25})
-
-            sequence = [
-                {"action": "navigate_to", "target_name": "MainPrepTable"}
-            ]
+            sequence.append({"action": "navigate_to", "target_name": "MainPrepTable"})
             sequence.append({"action": "sleep", "time": 20})
-
-            sequence = [
-                {"action": "navigate_to", "target_name": "GroupOfGuests_2"}
-            ]
+            sequence.append({"action": "navigate_to", "target_name": "GroupOfGuests_2"})
             sequence.append({"action": "sleep", "time": 120})
-
-            sequence = [
-                {"action": "navigate_to", "target_name": "DrinksTable"}
-            ]
+            sequence.append({"action": "navigate_to", "target_name": "DrinksTable"})
             sequence.append({"action": "sleep", "time": 20})
-
-            sequence = [
-                {"action": "navigate_to", "target_name": "GroupOfGuests_1"}
-            ]
+            sequence.append({"action": "navigate_to", "target_name": "GroupOfGuests_1"})
             sequence.append({"action": "sleep", "time": 120})
-            
-            sequence = [
-                {"action": "navigate_to", "target_name": "DiningTable"}
-            ]
+            sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
             sequence.append({"action": "sleep", "time": 60})
+            print("[Tiago] Host sequence created.")
 
         # Vegetables
         elif action == "PickVegetables":
@@ -821,17 +803,19 @@ class Tiago(Agent):
                 {"action": "navigate_to", "target_name": "MainPrepTable"}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_VEGETABLE})
+            print("[Tiago] Pick vegetables sequence created.")
         elif action == "ChopVegetables":
             sequence = [
                 {"action": "navigate_to", "target_name": "MainPrepTable"}
             ]
             sequence.append({"action": "sleep", "time": TIME_CHOP_VEGETABLES})
-            print("Chopping vegetables... (not implemented)")
+            print("[Tiago] Chopping vegetables... (not implemented)")
         elif action == "PickChoppedVegetables":
             sequence = [
                 {"action": "navigate_to", "target_name": "MainPrepTable"}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_CHOPPED_VEGETABLE})
+            print("[Tiago] Pick chopped vegetables sequence created.")
 
         # Salad
         elif action == "PickSaladIngredients":
@@ -839,17 +823,19 @@ class Tiago(Agent):
                 {"action": "navigate_to", "target_name": "MainPrepTable"}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_SALAD})
+            print("[Tiago] Pick salad ingredients sequence created.")
         elif action == "ChopSaladIngredients":
             sequence = [
                 {"action": "navigate_to", "target_name": "MainPrepTable"}
             ]
             sequence.append({"action": "sleep", "time": TIME_CHOP_SALAD_INGREDIENTS})
-            print("Chopping salad ingredients... (not implemented)")
+            print("[Tiago] Chopping salad ingredients... (not implemented)")
         elif action == "PickChoppedSaladIngredients":
             sequence = [
                 {"action": "navigate_to", "target_name": "MainPrepTable"}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_CHOPPED_SALAD})
+            print("[Tiago] Pick chopped salad ingredients sequence created.")
 
         # Meat + Garlic Bread
         elif action == "PickFoodIngredientsGrill":
@@ -857,19 +843,36 @@ class Tiago(Agent):
                 {"action": "navigate_to", "target_name": "GrillPrepTable"}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_FOOD_GRILL})
+            print("[Tiago] Pick food ingredients for grill sequence created.")
         elif action == "GrillFood":
             sequence = [
                 {"action": "navigate_to", "target_name": "GrillPrepTable"}
             ]
             sequence.append({"action": "sleep", "time": TIME_GRILL_FOOD})
-            print("Grilling food... (not implemented)")
+            print("[Tiago] Grilling food... (not implemented)")
         elif action == "PickGrilledFood":
             sequence = [
                 {"action": "navigate_to", "target_name": "GrillPrepTable"}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_GRILLED_FOOD})
+            print("[Tiago] Pick grilled food sequence created.")
+        elif action == "Reception":
+            print("[Tiago] Checking subgoal Reception task completeness... (not implemented)")
+            sequence = [{"action": "sleep", "time": 5}]
+        elif action == "PrepareDrinks":
+            print("[Tiago] Checking subgoal Preparing drinks completeness... (not implemented)")
+            sequence = [{"action": "sleep", "time": 5}]
+        elif action == "SuperviseParty":
+            print("[Tiago] Checking subgoal Supervising party completeness... (not implemented)")
+            sequence = [{"action": "sleep", "time": 5}]
+        elif action == "Clean":
+            print("[Tiago] Checking subgoal Cleaning completeness... (not implemented)")
+            sequence = [{"action": "sleep", "time": 5}]
+        elif action == "PrepareFood":
+            print("[Tiago] Checking subgoal Preparing food completeness... (not implemented)")
+            sequence = [{"action": "sleep", "time": 5}]
         else:
-            print(f"Action '{action}' not recognized.")
+            print(f"[Tiago] Action '{action}' not recognized.")
 
         return sequence
     

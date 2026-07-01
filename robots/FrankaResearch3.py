@@ -56,7 +56,7 @@ TIME_PUTTING_AWAY_DISHES = 300/CONST_SCALE    # seconds to "put away dishes" (si
 
 TIME_PICKING_RICE = 330/CONST_SCALE     # seconds to "pick" the rice (simulate with sleep)
 TIME_COOKING_RICE = 2400/CONST_SCALE    # seconds to "cook" the rice (simulate with sleep)
-#TIME_SERVE_MAIN_DISH = 0
+TIME_SERVE_MAIN_DISH = 120/CONST_SCALE
 
 TIME_WELCOMING_GUESTS = 5#15.0  # seconds to "welcome guests" (simulate with sleep)
 
@@ -66,12 +66,12 @@ TIME_PICK_GRILLED_FOOD = 300/CONST_SCALE
 TIME_SERVE_GRILLED_FOOD = 120/CONST_SCALE
 
 TIME_PICK_VEGETABLE = 300/CONST_SCALE
-TIME_CHOP_VEGETABLES = 1200/CONST_SCALE    # seconds
+TIME_CHOP_VEGETABLES = 3000/CONST_SCALE    # seconds
 TIME_PICK_CHOPPED_VEGETABLE = 300/CONST_SCALE
 TIME_SERVE_SIDES = 120/CONST_SCALE
 
 TIME_PICK_SALAD = 300/CONST_SCALE
-TIME_CHOP_SALAD_INGREDIENTS = 1200/CONST_SCALE    # seconds
+TIME_CHOP_SALAD_INGREDIENTS = 2000/CONST_SCALE    # seconds
 TIME_PICK_CHOPPED_SALAD = 300/CONST_SCALE
 TIME_SERVE_SALAD = 120/CONST_SCALE
 
@@ -391,14 +391,16 @@ class FrankaResearch3(Agent):
                 "pick_place", "vegetables_side", "place_chop" if not use_names else "chop_board_1",
                 use_names=use_names,
             )
+            print("[FR3]: Picking vegetables...")
         elif action == "ChopVegetables":
-            print("Chopping vegetables... (not implemented)")
-            time.sleep(TIME_CHOP_VEGETABLES)  # Simulate chopping time
+            sequence = [{"action": "sleep", "time": TIME_CHOP_VEGETABLES}]
+            print("[FR3]: Chopping vegetables...")
         elif action == "PickChoppedVegetables":
             sequence = self.create_tasks_sequence(
                 "pick_place", "vegetables_side", "place_bowl" if not use_names else "bowl_2",
                 use_names=use_names,
             )
+            print("[FR3]: Picking chopped vegetables...")
 
         # Salad
         elif action == "PickSaladIngredients":
@@ -406,14 +408,16 @@ class FrankaResearch3(Agent):
                 "pick_place", "salads_side", "place_chop" if not use_names else "chop_board_1",
                 use_names=use_names,
             )
+            print("[FR3]: Picking salad ingredients...")
         elif action == "ChopSaladIngredients":
-            print("Chopping salad ingredients... (not implemented)")
-            time.sleep(TIME_CHOP_SALAD_INGREDIENTS)  # Simulate chopping time
+            sequence = [{"action": "sleep", "time": TIME_CHOP_SALAD_INGREDIENTS}]  # Simulate chopping time
+            print("[FR3]: Chopping salad ingredients...")
         elif action == "PickChoppedSaladIngredients":
             sequence = self.create_tasks_sequence(
                 "pick_place", "salads_side", "place_bowl" if not use_names else "bowl_1",
                 use_names=use_names,
             )
+            print("[FR3]: Picking chopped salad ingredients...")
 
         # Meat + Garlic Bread
         elif action == "PickFoodIngredientsGrill":
@@ -421,14 +425,32 @@ class FrankaResearch3(Agent):
                 "pick_place", "food_grill", "place_grill" if not use_names else "grill",
                 use_names=use_names,
             )
+            print("[FR3]: Picking food ingredients for the grill...")
         elif action == "GrillFood":
-            print("Grilling food... (not implemented)")
-            time.sleep(TIME_GRILL_FOOD)  # Simulate grilling time
+            sequence = [{"action": "sleep", "time": TIME_GRILL_FOOD}]  # Simulate grilling time
+            print("[FR3]: Grilling food...")
         elif action == "PickGrilledFood":
             sequence = self.create_tasks_sequence(
                 "pick_place", "food_grill", "place_plate" if not use_names else "plate_1",
                 use_names=use_names,
             )
+            print("[FR3]: Picking grilled food...")
+
+        elif action == "Reception":
+            print("[FR3]: receiving guests...")
+            sequence.append({"action": "sleep", "time": 5})
+        elif action == "PrepareDrinks":
+            print("[FR3]: Preparing drinks...")
+            sequence.append({"action": "sleep", "time": 5})
+        elif action == "SuperviseParty":
+            print("[FR3]: Supervising party...")
+            sequence.append({"action": "sleep", "time": 5})
+        elif action == "Clean":
+            print("[FR3]: Cleaning...")
+            sequence.append({"action": "sleep", "time": 5})
+        elif action == "PrepareFood":
+            print("[FR3]: Preparing food...")
+            sequence.append({"action": "sleep", "time": 5})
 
         return sequence
     
@@ -468,6 +490,8 @@ class FrankaResearch3(Agent):
                             f"[FrankaResearch3] (logger error: {log_exc}) "
                             f"task result: {msg}"
                         )
+            elif action == "sleep":
+                time.sleep(subtask.get("time"))
             elif action in ("grasp", "move_arm", "inspect"):
                 print(f"[FrankaResearch3] '{action}' not yet implemented.")
             else:

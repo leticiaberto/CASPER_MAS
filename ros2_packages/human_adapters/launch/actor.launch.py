@@ -88,7 +88,7 @@ def spawn_actor(context, *args, **kwargs):
 
 def generate_launch_description():
     return LaunchDescription([
-        DeclareLaunchArgument('actor_name',  default_value='human_1'),
+        DeclareLaunchArgument('actor_name',  default_value='human_host_1'),
         DeclareLaunchArgument('world_name',  default_value='backyard'),
         DeclareLaunchArgument('actor_type',  default_value='WalkingActor',
                               description='WalkingActor | CasualFemale | FemaleVisitor'),

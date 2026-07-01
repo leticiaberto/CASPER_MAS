@@ -75,12 +75,38 @@ locations = {
     "DrinksTable":    {"x": -4.50, "y":  4.89, "yaw": -1.55},
 }
 
-TIME_COOKING_RICE = 180.0  # seconds to "cook" the rice (simulate with sleep)
-TIME_PICKING_RICE = 60.0   # seconds to "pick" the rice (simulate with sleep)
-TIME_PUTTING_AWAY_DISHES = 60.0  # seconds to "put away dishes" (simulate with sleep)
-TIME_WELCOMING_GUESTS = 15.0  # seconds to "welcome guests" (simulate with sleep)
-TIME_DOING_THE_DISHES = 60.0  # seconds to "do the dishes" (simulate with sleep)
-TIME_SAYING_GOODBYE = 15.0  # seconds to "say goodbye" (simulate with sleep)
+CONST_SCALE = 10
+
+TIME_PICK_THE_DISHES = 600/CONST_SCALE  
+TIME_DOING_THE_DISHES = 600/CONST_SCALE    # seconds to "do the dishes" (simulate with sleep)
+TIME_PUTTING_AWAY_DISHES = 300/CONST_SCALE    # seconds to "put away dishes" (simulate with sleep)
+
+TIME_PICKING_RICE = 330/CONST_SCALE     # seconds to "pick" the rice (simulate with sleep)
+TIME_COOKING_RICE = 2400/CONST_SCALE    # seconds to "cook" the rice (simulate with sleep)
+#TIME_SERVE_MAIN_DISH = 0
+
+TIME_WELCOMING_GUESTS = 5#15.0  # seconds to "welcome guests" (simulate with sleep)
+
+TIME_PICK_FOOD_GRILL = 300/CONST_SCALE
+TIME_GRILL_FOOD = 5000/CONST_SCALE    # seconds
+TIME_PICK_GRILLED_FOOD = 300/CONST_SCALE
+TIME_SERVE_GRILLED_FOOD = 120/CONST_SCALE
+
+TIME_PICK_VEGETABLE = 300/CONST_SCALE
+TIME_CHOP_VEGETABLES = 1200/CONST_SCALE    # seconds
+TIME_PICK_CHOPPED_VEGETABLE = 300/CONST_SCALE
+TIME_SERVE_SIDES = 120/CONST_SCALE
+
+TIME_PICK_SALAD = 300/CONST_SCALE
+TIME_CHOP_SALAD_INGREDIENTS = 1200/CONST_SCALE    # seconds
+TIME_PICK_CHOPPED_SALAD = 300/CONST_SCALE
+TIME_SERVE_SALAD = 120/CONST_SCALE
+
+#TIME_SERVING_DRINKS = 0
+
+#TIME_HOST = 0
+
+TIME_SAYING_GOODBYE = 15.0
 
 # ---------------------------------------------------------------------------
 # Types
@@ -379,7 +405,7 @@ class Human(Agent):
             time.sleep(15)  # Brief pause before moving to next task
         elif action == "PickDishes":
             ok, msg = self.goto(location="House")
-            time.sleep(TIME_PUTTING_AWAY_DISHES)  # Simulate putting away dishes time
+            time.sleep(TIME_PICK_THE_DISHES)  # Simulate putting away dishes time
         elif action == "DoTheDishes":
             ok, msg = self.goto(location="House")
             time.sleep(TIME_DOING_THE_DISHES)  # Simulate cleaning time
@@ -389,17 +415,65 @@ class Human(Agent):
         elif action == "Host":
             time.sleep(20)  # Brief pause before going to check on guests
             ok, msg = self.goto(location="GrillPrepTable")
-            time.sleep(15)
+            time.sleep(20)
             ok, msg = self.goto(location="MainPrepTable")
-            time.sleep(15)
-            ok, msg = self.goto(location="GroupOfGuests_2")
-            time.sleep(60)
-            ok, msg = self.goto(location="DrinksTable")
-            time.sleep(10)  # Brief pause before moving to next group
-            ok, msg = self.goto(location="GroupOfGuests_1")
-            time.sleep(45)  # Brief pause before moving to next group
-            ok, msg = self.goto(location="DiningTable")
             time.sleep(25)
+            ok, msg = self.goto(location="GroupOfGuests_2")
+            time.sleep(120)
+            ok, msg = self.goto(location="DrinksTable")
+            time.sleep(20)  # Brief pause before moving to next group
+            ok, msg = self.goto(location="GroupOfGuests_1")
+            time.sleep(120)  # Brief pause before moving to next group
+            ok, msg = self.goto(location="DiningTable")
+            time.sleep(60)
+        elif action == "ServeDrinks":
+            ok, msg = self.goto(location="DrinksTable")
+            time.sleep(5) # simulate picking food
+            ok, msg = self.goto(location="DiningTable")
+            time.sleep(10)
+            ok, msg = self.goto(location="DrinksTable")
+            time.sleep(5) # simulate picking food
+            ok, msg = self.goto(location="GroupOfGuests_1")
+            time.sleep(10)
+            ok, msg = self.goto(location="DrinksTable")
+            time.sleep(5) # simulate picking food
+            ok, msg = self.goto(location="GroupOfGuests_2")
+            time.sleep(10)
+        # Vegetables
+        elif action == "PickVegetables":
+            ok, msg = self.goto(location="MainPrepTable")
+            time.sleep(TIME_PICK_VEGETABLE)
+        elif action == "ChopVegetables":
+            ok, msg = self.goto(location="MainPrepTable")
+            print("Chopping vegetables... (not implemented)")
+            time.sleep(TIME_CHOP_VEGETABLES)  # Simulate chopping time
+        elif action == "PickChoppedVegetables":
+            ok, msg = self.goto(location="MainPrepTable")
+            time.sleep(TIME_PICK_CHOPPED_VEGETABLE)
+
+        # Salad
+        elif action == "PickSaladIngredients":
+            ok, msg = self.goto(location="MainPrepTable")
+            time.sleep(TIME_PICK_SALAD)
+        elif action == "ChopSaladIngredients":
+            ok, msg = self.goto(location="MainPrepTable")
+            print("Chopping salad ingredients... (not implemented)")
+            time.sleep(TIME_CHOP_SALAD_INGREDIENTS)  # Simulate chopping time
+        elif action == "PickChoppedSaladIngredients":
+            ok, msg = self.goto(location="MainPrepTable")
+            time.sleep(TIME_PICK_CHOPPED_SALAD)
+
+        # Meat + Garlic Bread
+        elif action == "PickFoodIngredientsGrill":
+            ok, msg = self.goto(location="GrillPrepTable")
+            time.sleep(TIME_PICK_FOOD_GRILL)
+        elif action == "GrillFood":
+            ok, msg = self.goto(location="GrillPrepTable")
+            print("Grilling food... (not implemented)")
+            time.sleep(TIME_GRILL_FOOD)  # Simulate grilling time
+        elif action == "PickGrilledFood":
+            ok, msg = self.goto(location="GrillPrepTable")
+            time.sleep(TIME_PICK_GRILLED_FOOD)
         else:
             print(f"[Human] Unknown task action: {action}")
 

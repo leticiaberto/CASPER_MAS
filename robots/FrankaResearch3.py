@@ -48,9 +48,38 @@ from utils import ROSUtils
 ResultCallback = Callable[[bool, str], None]
 XYZ = Tuple[float, float, float]
 
-TIME_GRILL_FOOD = 240  # seconds
-TIME_CHOP_VEGETABLES = 40  # seconds
-TIME_CHOP_SALAD_INGREDIENTS = 40  # seconds
+CONST_SCALE = 10
+
+TIME_PICK_THE_DISHES = 600/CONST_SCALE  
+TIME_DOING_THE_DISHES = 600/CONST_SCALE    # seconds to "do the dishes" (simulate with sleep)
+TIME_PUTTING_AWAY_DISHES = 300/CONST_SCALE    # seconds to "put away dishes" (simulate with sleep)
+
+TIME_PICKING_RICE = 330/CONST_SCALE     # seconds to "pick" the rice (simulate with sleep)
+TIME_COOKING_RICE = 2400/CONST_SCALE    # seconds to "cook" the rice (simulate with sleep)
+#TIME_SERVE_MAIN_DISH = 0
+
+TIME_WELCOMING_GUESTS = 5#15.0  # seconds to "welcome guests" (simulate with sleep)
+
+TIME_PICK_FOOD_GRILL = 300/CONST_SCALE
+TIME_GRILL_FOOD = 5000/CONST_SCALE    # seconds
+TIME_PICK_GRILLED_FOOD = 300/CONST_SCALE
+TIME_SERVE_GRILLED_FOOD = 120/CONST_SCALE
+
+TIME_PICK_VEGETABLE = 300/CONST_SCALE
+TIME_CHOP_VEGETABLES = 1200/CONST_SCALE    # seconds
+TIME_PICK_CHOPPED_VEGETABLE = 300/CONST_SCALE
+TIME_SERVE_SIDES = 120/CONST_SCALE
+
+TIME_PICK_SALAD = 300/CONST_SCALE
+TIME_CHOP_SALAD_INGREDIENTS = 1200/CONST_SCALE    # seconds
+TIME_PICK_CHOPPED_SALAD = 300/CONST_SCALE
+TIME_SERVE_SALAD = 120/CONST_SCALE
+
+#TIME_SERVING_DRINKS = 0
+
+#TIME_HOST = 0
+
+TIME_SAYING_GOODBYE = 15.0
 
 class FrankaResearch3(Agent):
     """

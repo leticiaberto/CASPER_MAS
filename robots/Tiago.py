@@ -107,7 +107,38 @@ XYZ        = Tuple[float, float, float]
 NameOrXYZ  = Union[str, XYZ]           # object name  OR  explicit (x,y,z)
 ObjectPair = Tuple[NameOrXYZ, NameOrXYZ]  # (pick, place) — each can be a name or XYZ
 
-TIME_DOING_THE_DISHES = 60.0  # seconds to "do the dishes" (simulate with sleep)
+CONST_SCALE = 10
+
+TIME_PICK_THE_DISHES = 600/CONST_SCALE  
+TIME_DOING_THE_DISHES = 600/CONST_SCALE    # seconds to "do the dishes" (simulate with sleep)
+TIME_PUTTING_AWAY_DISHES = 300/CONST_SCALE    # seconds to "put away dishes" (simulate with sleep)
+
+TIME_PICKING_RICE = 330/CONST_SCALE     # seconds to "pick" the rice (simulate with sleep)
+TIME_COOKING_RICE = 2400/CONST_SCALE    # seconds to "cook" the rice (simulate with sleep)
+#TIME_SERVE_MAIN_DISH = 0
+
+TIME_WELCOMING_GUESTS = 5#15.0  # seconds to "welcome guests" (simulate with sleep)
+
+TIME_PICK_FOOD_GRILL = 300/CONST_SCALE
+TIME_GRILL_FOOD = 5000/CONST_SCALE    # seconds
+TIME_PICK_GRILLED_FOOD = 300/CONST_SCALE
+TIME_SERVE_GRILLED_FOOD = 120/CONST_SCALE
+
+TIME_PICK_VEGETABLE = 300/CONST_SCALE
+TIME_CHOP_VEGETABLES = 1200/CONST_SCALE    # seconds
+TIME_PICK_CHOPPED_VEGETABLE = 300/CONST_SCALE
+TIME_SERVE_SIDES = 120/CONST_SCALE
+
+TIME_PICK_SALAD = 300/CONST_SCALE
+TIME_CHOP_SALAD_INGREDIENTS = 1200/CONST_SCALE    # seconds
+TIME_PICK_CHOPPED_SALAD = 300/CONST_SCALE
+TIME_SERVE_SALAD = 120/CONST_SCALE
+
+#TIME_SERVING_DRINKS = 0
+
+#TIME_HOST = 0
+
+TIME_SAYING_GOODBYE = 15.0
 
 locations = {
     "DiningTable":    {"x": -0.77, "y": -1.54, "yaw": 3.14},
@@ -386,7 +417,7 @@ class Tiago(Agent):
                 "drinks": {
                     "placements": {
                         "drink_1":  {"place_guests": (-2.68, -0.72, 0.30)}, # Dinning table, guest 1
-                        "drink_2":  {"place_guests": (-1.11, -0.72, 0.30)}, # Dinning table, guest 2
+                        #"drink_2":  {"place_guests": (-1.11, -0.72, 0.30)}, # Dinning table, guest 2
                         #"drink_3":  {"place_guests": (-2.92, -0.72, 0.30)}, # Dinning table, guest 3
                         #"drink_4":  {"place_guests": (-1.34, -0.60, 0.30)}, # Dinning table, guest 4
 
@@ -670,9 +701,173 @@ class Tiago(Agent):
             sequence = [
                 {"action": "navigate_to", "target_name": "house"}
             ]
+            time.sleep(TIME_PICK_THE_DISHES)
         elif action == "DoTheDishes":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
             print("Doing the Dishes... (not implemented)")
             time.sleep(TIME_DOING_THE_DISHES)  # Simulate doing the dishes
+        elif action == "PickRice":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PICKING_RICE})
+        elif action == "CookRice":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_COOKING_RICE})
+        elif action == "ServeMainDish":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": 5})
+            sequence = [
+                {"action": "navigate_to", "target_name": "DiningTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 10})
+        elif action == "ServeSides":
+            sequence = [
+                {"action": "navigate_to", "target_name": "MainPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 5})
+            sequence = [
+                {"action": "navigate_to", "target_name": "DiningTable"}
+            ]
+        elif action == "ServeSalad":
+            sequence = [
+                {"action": "navigate_to", "target_name": "MainPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 5})
+            sequence = [
+                {"action": "navigate_to", "target_name": "DiningTable"}
+            ]
+        elif action == "ServeGrilledFood":
+            sequence = [
+                {"action": "navigate_to", "target_name": "GrillPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 5})
+            sequence = [
+                {"action": "navigate_to", "target_name": "DiningTable"}
+            ]
+        elif action == "WelcomeGuests":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": 120})
+            sequence = [
+                {"action": "navigate_to", "target_name": "GroupOfGuests_1"}
+            ]
+            sequence.append({"action": "sleep", "time": 15})
+            sequence = [
+                {"action": "navigate_to", "target_name": "GroupOfGuests_2"}
+            ]
+            sequence.append({"action": "sleep", "time": 15})
+            sequence = [
+                {"action": "navigate_to", "target_name": "DiningTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 15})
+        elif action == "PickDishes":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PICK_THE_DISHES})
+        elif action == "DoTheDishes":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_DOING_THE_DISHES})
+        elif action == "PutTheDishesAway":
+            sequence = [
+                {"action": "navigate_to", "target_name": "house"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PUTTING_AWAY_DISHES})
+        elif action == "Host":
+            sequence.append({"action": "sleep", "time": 20})
+            sequence = [
+                {"action": "navigate_to", "target_name": "GrillPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 25})
+
+            sequence = [
+                {"action": "navigate_to", "target_name": "MainPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 20})
+
+            sequence = [
+                {"action": "navigate_to", "target_name": "GroupOfGuests_2"}
+            ]
+            sequence.append({"action": "sleep", "time": 120})
+
+            sequence = [
+                {"action": "navigate_to", "target_name": "DrinksTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 20})
+
+            sequence = [
+                {"action": "navigate_to", "target_name": "GroupOfGuests_1"}
+            ]
+            sequence.append({"action": "sleep", "time": 120})
+            
+            sequence = [
+                {"action": "navigate_to", "target_name": "DiningTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 60})
+
+        # Vegetables
+        elif action == "PickVegetables":
+            sequence = [
+                {"action": "navigate_to", "target_name": "MainPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PICK_VEGETABLE})
+        elif action == "ChopVegetables":
+            sequence = [
+                {"action": "navigate_to", "target_name": "MainPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_CHOP_VEGETABLES})
+            print("Chopping vegetables... (not implemented)")
+        elif action == "PickChoppedVegetables":
+            sequence = [
+                {"action": "navigate_to", "target_name": "MainPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PICK_CHOPPED_VEGETABLE})
+
+        # Salad
+        elif action == "PickSaladIngredients":
+            sequence = [
+                {"action": "navigate_to", "target_name": "MainPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PICK_SALAD})
+        elif action == "ChopSaladIngredients":
+            sequence = [
+                {"action": "navigate_to", "target_name": "MainPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_CHOP_SALAD_INGREDIENTS})
+            print("Chopping salad ingredients... (not implemented)")
+        elif action == "PickChoppedSaladIngredients":
+            sequence = [
+                {"action": "navigate_to", "target_name": "MainPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PICK_CHOPPED_SALAD})
+
+        # Meat + Garlic Bread
+        elif action == "PickFoodIngredientsGrill":
+            sequence = [
+                {"action": "navigate_to", "target_name": "GrillPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PICK_FOOD_GRILL})
+        elif action == "GrillFood":
+            sequence = [
+                {"action": "navigate_to", "target_name": "GrillPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_GRILL_FOOD})
+            print("Grilling food... (not implemented)")
+        elif action == "PickGrilledFood":
+            sequence = [
+                {"action": "navigate_to", "target_name": "GrillPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PICK_GRILLED_FOOD})
         else:
             print(f"Action '{action}' not recognized.")
 
@@ -715,9 +910,10 @@ class Tiago(Agent):
                         log.info(f"[Tiago] navigate result: {msg}")
                     else:
                         log.error(f"[Tiago] navigate result: {msg}")
+            elif action == "sleep":
+                time.sleep(subtask.get("time"))
             else:
                 print(f"[Tiago] Unknown task action: '{action}'")
-
 
     def shutdown(self) -> None:
         """Cleanly shut down ROS2 executor and nodes."""

@@ -177,7 +177,7 @@ def main():
     # baseline_contested already has a genuine 3-way contest on
     # PickSaladIngredients / PickChoppedSaladIngredients / PickVegetables /
     # PickChoppedVegetables (req. manipulation 0.6): fr3_arm_1 (1.0),
-    # fr3_arm_2 (0.85), host (0.9) are ALL eligible there, with fr3_arm_1
+    # fr3_arm_2 (0.85), host (0.8) are ALL eligible there, with fr3_arm_1
     # currently the raw-skill leader. This sweep moves fr3_arm_2's
     # manipulation level through that contest to see the ranking shift
     # under "skill" mode without ever touching workspace or chopping.
@@ -189,13 +189,13 @@ def main():
          "fr3_arm_2 drops out of the PickSaladIngredients/"
          "PickChoppedSaladIngredients/PickVegetables/PickChoppedVegetables "
          "contest entirely (skill_ok fails on manipulation), leaving "
-         "fr3_arm_1 (1.0) and host (0.9) to contest those tasks alone."),
+         "fr3_arm_1 (1.0) and host (0.8) to contest those tasks alone."),
         ("exp_skill_mid", 0.6, "Exactly at the Pick-task threshold: fr3_arm_2 stays "
          "eligible but is now the weakest of the three contestants on raw "
-         "skill (0.6 vs fr3_arm_1's 1.0 and host's 0.9). In 'skill' mode "
+         "skill (0.6 vs fr3_arm_1's 1.0 and host's 0.8). In 'skill' mode "
          "fr3_arm_1 should win every contested Pick task."),
         ("exp_skill_high", 1.0, "Tied with fr3_arm_1 at the ceiling (1.0), both "
-         "above host's 0.9. In 'skill' mode this should produce a fr3_arm_1 / "
+         "above host's 0.8. In 'skill' mode this should produce a fr3_arm_1 / "
          "fr3_arm_2 tie on every contested Pick task, broken only by "
          "get_selected_agent's workload tie-break (fewest tasks assigned so "
          "far, then ranking order) -- a useful demonstration of the tie-break "
@@ -320,7 +320,7 @@ def main():
     # fr3_arm_1 and fr3_arm_2 are fixed-base arms that cannot physically
     # share a workspace, so this set does not vary the arms' workspace.
     # tiago_robot_1 is mobile and starts with ALL 9 workspaces in
-    # baseline_contested (17 of 21 tasks are tiago-eligible there), so the
+    # baseline_contested (18 of 21 tasks are tiago-eligible there), so the
     # sweep direction here is RESTRICTING tiago away from that universal
     # baseline, at two different depths, to see how much of its
     # workload-balancing pool depends on each room.
@@ -338,12 +338,10 @@ def main():
         ),
         hypothesis=(
             "Reference point for set D. tiago contests the host (and, on the "
-            "grill/prep tasks, the relevant arm) on 19 of 21 tasks -- only "
-            "CookRice and ServeMainDish stay host-solo, both gated at "
-            "manipulation>=0.9, above tiago's deliberate 0.8 ceiling and "
-            "unreachable by either arm. The arms remain workspace-disjoint "
-            "specialists with no contest between them, by physical "
-            "necessity."
+            "grill/prep tasks, the relevant arm) on 20 of 21 tasks -- only "
+            "CookRice stays host-solo (gated by the host-only 'cook' skill). "
+            "The arms remain workspace-disjoint specialists with no contest "
+            "between them, by physical necessity."
         ),
         changed_files={"exp1.yaml": "optimizeMode -> balance_workload"},
     ))
@@ -683,13 +681,13 @@ def write_manifest(entries):
         "(Prep_Table, Grill_Table, Drinks_Table, House, Garden, "
         "Kitchen_Table, Kitchen_Stove, Kitchen_sink, Kitchen_shelves), so "
         "either can be workspace-eligible for almost any task. In "
-        "`baseline_contested`, tiago is itself eligible for 17 of 21 "
+        "`baseline_contested`, tiago is itself eligible for 18 of 21 "
         "non-end-goal tasks (excluded only from ChopSaladIngredients/"
         "ChopVegetables, where its chopping skill level falls below the "
-        "task floor, and CookRice, gated by the host-only `cook` skill; "
-        "ServeMainDish remains gated above tiago's manipulation level), "
-        "and 19 of 21 tasks overall have >=2 eligible agents once the "
-        "relevant arm and/or host are counted.",
+        "task floor, and CookRice, gated by the host-only `cook` skill), "
+        "and 20 of 21 tasks overall have >=2 eligible agents once the "
+        "relevant arm and/or host are counted -- only CookRice remains "
+        "host-solo.",
         "- Four new skills were added beyond the original `manipulation`/"
         "`transport`/`communication`/`openDoor`: `chopping` (gates "
         "`ChopSaladIngredients`/`ChopVegetables`, alongside a lowered "
@@ -704,7 +702,7 @@ def write_manifest(entries):
         "since any of them could in principle be designated supervisor "
         "in exp1.yaml. As of this revision, `host` is the default "
         "designated supervisor (changed from the original fr3_arm_1); "
-        "host clears the gate with a wide margin (manipulation 0.9, "
+        "host clears the gate with a wide margin (manipulation 0.8, "
         "supervise 0.8, both well above the 0.4/0.5 floors). Set F "
         "specifically designates OTHER agents (fr3_arm_2) or lowers "
         "host's own supervise level, to exercise the FAILURE path of "
@@ -723,20 +721,41 @@ def write_manifest(entries):
         "- Each task family now has a 2-3 deep candidate pool with a "
         "deliberate skill gradient, so 'skill' mode, 'preference' mode, "
         "and 'balance_workload' mode can each pick a DIFFERENT winner: "
-        "manipulation ranks fr3_arm_1 (1.0) > host (0.9) > fr3_arm_2 "
-        "(0.85) > tiago (0.8, deliberately below the 0.9 floor used by "
-        "ServeMainDish); chopping ranks fr3_arm_2 (0.9, RANK 1 of 3 -- "
-        "strong preference) > host (0.4) > fr3_arm_1 (0.45, a fallback "
-        "value in case workspaces are ever swapped) > tiago (0.3, RANK 7 "
-        "of 7 -- least interest); grill ranks fr3_arm_1 (1.0, RANK 2 of "
-        "4, just behind its top manipulation preference) > tiago (0.55, "
-        "a real but clearly second-place candidate); supervise ranks "
+        "manipulation ranks fr3_arm_1 (1.0) > fr3_arm_2 (0.85) > host "
+        "(0.8) = tiago (0.8, tied). host and tiago are DELIBERATELY tied "
+        "on manipulation (both 0.8): host's manipulation was originally "
+        "0.9 -- higher than both robot arms -- which meant host won "
+        "every manipulation-gated contested task in 'skill' mode by raw "
+        "level alone, defeating the purpose of having specialist robot "
+        "agents at all. Lowering it to exactly 0.8 (tied with tiago, "
+        "still below fr3_arm_2's 0.85) restores fr3_arm_2 as the clean "
+        "skill-mode winner on every single-skill Pick*/Chop* task, while "
+        "leaving the multi-skill Serve*/Dishes* tasks (where host and "
+        "tiago are ALSO tied on transport, 1.0=1.0) as genuine ties "
+        "resolved by get_selected_agent's workload tie-break rather than "
+        "by either agent's raw skill; chopping ranks fr3_arm_2 (0.9, "
+        "RANK 1 of 3 -- strong preference) > host (0.4) > fr3_arm_1 "
+        "(0.45, a fallback value in case workspaces are ever swapped) > "
+        "tiago (0.3, RANK 7 of 7 -- least interest); grill is the one "
+        "skill DELIBERATELY ranked opposite to its own skill leader: "
+        "fr3_arm_1 has the higher LEVEL (1.0 vs tiago's 0.55), so "
+        "'skill' mode still picks fr3_arm_1 on the grill chain, but "
+        "fr3_arm_1 ranks grill LAST among its own 4 skills (RANK 4 of 4) "
+        "while tiago ranks it RANK 5 of 7 -- just high enough that "
+        "tiago's preference sum (manipulation rank2 + grill rank5 = "
+        "0.857+0.429 = 1.286) edges past fr3_arm_1's (manipulation rank1 "
+        "+ grill rank4 = 1.0+0.25 = 1.25), so 'preference' mode picks "
+        "tiago instead. This is the SECOND of two deliberately-engineered "
+        "skill/preference divergences in this design (the Pick* salad/"
+        "vegetable tasks, fr3_arm_2 vs tiago, are the first) -- without "
+        "this grill-rank choice, fr3_arm_1 dominated the grill chain on "
+        "both axes and no divergence existed there; supervise ranks "
         "host (0.8, RANK 2 of 7 -- second only to its own communication "
         "preference, since 'the human has the stronger preference for "
         "manage' is interpreted as stronger than the OTHER agents' "
         "supervise preference, not stronger than the host's own "
         "expected role of welcoming guests) > tiago (0.6, RANK 4 of 7) > "
-        "fr3_arm_1 (0.55, RANK 3 of 4 -- a valid supervisor candidate by "
+        "fr3_arm_1 (0.55, RANK 2 of 4 -- a valid supervisor candidate by "
         "level if ever designated, but NOT the default as of this "
         "revision) > fr3_arm_2 (0.2, RANK 3 of 3 -- the agent Set F "
         "deliberately designates to demonstrate the gate FAILING, see "
@@ -747,12 +766,18 @@ def write_manifest(entries):
         "agent expected to welcome guests); fr3_arm_1's is manipulation "
         "(RANK 1 of 4); fr3_arm_2's is chopping (RANK 1 of 3) — each set "
         "per explicit design intent, not incidentally.",
-        "- Only `CookRice` and `ServeMainDish` remain host-solo in "
-        "`baseline_contested`: `CookRice` because human_host is the only "
-        "agent with the `cook` skill at all, `ServeMainDish` because it "
-        "is gated at manipulation>=0.9, above tiago's deliberate 0.8 "
-        "ceiling and unreachable by either arm, since neither declares "
-        "Kitchen_Stove workspace.",
+        "- Only `CookRice` remains host-solo in `baseline_contested`: "
+        "human_host is the only agent with the `cook` skill at all. "
+        "`ServeMainDish` was ALSO host-solo in an earlier revision (gated "
+        "at manipulation>=0.9, which only host's manipulation level "
+        "cleared), but became a genuine tiago-vs-host contest once host's "
+        "manipulation was corrected to 0.8 (see the comment above host's "
+        "skill_weights block: host's original 0.9 manipulation value was "
+        "a real bug, since it was HIGHER than both specialist arms and "
+        "made host win every manipulation-gated contest by raw skill "
+        "alone) and ServeMainDish's own requirement was correspondingly "
+        "lowered to manipulation>=0.7 so it no longer silently depended "
+        "on that specific (now-corrected) host value.",
         "- Set F (new) is the only set that changes `exp1.yaml`'s "
         "`supervisor:` field or touches a skill purely for ITS effect on "
         "the end-goal gate rather than on any contested task: "

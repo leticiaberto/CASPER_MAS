@@ -31,7 +31,7 @@ skill_weights:
     - 1.0
     - 2
     manipulation:
-    - 0.9
+    - 0.8
     - 3
     openDoor:
     - 1.0

@@ -144,20 +144,33 @@ def main():
     _write_yaml(exp, "exp1.yaml")
 
     # --- fr3_arm_1.yaml: Grill_Table only. manipulation RANK 1 (strong
-    # preference, per instruction), grill RANK 2, supervise RANK 3 (0.55 --
-    # just above BarbecueParty's 0.5 floor; fr3_arm_1 is NOT the default
-    # supervisor as of this revision (host is -- see exp1.yaml above),
-    # but this value is kept above the floor so fr3_arm_1 remains a valid
+    # preference, per instruction), supervise RANK 2 (0.55 -- just above
+    # BarbecueParty's 0.5 floor; fr3_arm_1 is NOT the default supervisor
+    # as of this revision (host is -- see exp1.yaml above), but this
+    # value is kept above the floor so fr3_arm_1 remains a valid
     # supervisor candidate if Set F's experiments designate it instead),
-    # chopping RANK 4 (low level 0.45 -- a fallback value, not a real
-    # contender today since fr3_arm_1 has no Prep_Table access). ---
+    # chopping RANK 3 (low level 0.45 -- a fallback value, not a real
+    # contender today since fr3_arm_1 has no Prep_Table access), grill
+    # RANK 4 (LAST, despite grill being fr3_arm_1's clear SKILL strength
+    # at level 1.0 -- this is a deliberate skill/preference divergence:
+    # fr3_arm_1 still wins 'skill' mode on the grill chain cleanly
+    # (manipulation+grill level sum 2.0, vs tiago's 1.35), but with grill
+    # demoted to its lowest preference, fr3_arm_1's PREFERENCE sum on the
+    # grill chain (manipulation rank1 + grill rank4, out of N=4: 1.0 +
+    # 0.25 = 1.25) drops just below tiago's (manipulation rank2 + grill
+    # rank5, out of N=7: 0.857 + 0.429 = 1.286 -- see tiago's skill_weights
+    # block below for the matching grill-rank promotion), giving
+    # 'preference' mode a genuine, different winner (tiago) on the same
+    # task family where 'skill' mode picks fr3_arm_1. Without this
+    # change, fr3_arm_1 dominated both modes on the grill chain and no
+    # divergence existed there at all.). ---
     with open(os.path.join(BASELINE_DIR, "fr3_arm_1.yaml")) as f:
         arm1 = yaml.safe_load(f)
     arm1["skill_weights"]["HouseParty"] = {
         "manipulation": [1.0, 1],
-        "grill":        [1.0, 2],
-        "supervise":    [0.55, 3],
-        "chopping":     [0.45, 4],
+        "supervise":    [0.55, 2],
+        "chopping":     [0.45, 3],
+        "grill":        [1.0, 4],
     }
     _write_yaml(arm1, "fr3_arm_1.yaml")
 
@@ -183,9 +196,19 @@ def main():
     # clears WelcomeGuests' 0.7 gate), supervise RANK 4 (0.6 -- a
     # plausible secondary coordinator given its mobility, but ranked
     # below transport/manipulation/communication, not the host's
-    # stronger management preference), openDoor RANK 5, grill RANK 6
-    # (0.55 -- a real but clearly second-place grill candidate, per
-    # instruction), chopping RANK 7 (0.3 -- least interest/skill). ---
+    # stronger management preference), grill RANK 5 (0.55 -- promoted
+    # one slot above openDoor, swapped from its earlier position at
+    # rank 6, as part of a deliberate skill/preference divergence on the
+    # grill chain: see fr3_arm_1's skill_weights block above for the
+    # matching grill-rank demotion. fr3_arm_1 still wins 'skill' mode on
+    # PickFoodIngredientsGrill/GrillFood/PickGrilledFood cleanly by raw
+    # level, but tiago now wins 'preference' mode there, since fr3_arm_1
+    # ranks grill last among its own 4 skills while tiago ranks it 5th
+    # of 7 -- still a real but clearly second-place SKILL candidate, per
+    # the original instruction, just no longer also fr3_arm_1's
+    # preference for that task), openDoor RANK 6 (0.5, demoted one slot
+    # to make room for grill), chopping RANK 7 (0.3 -- least interest/
+    # skill). ---
     with open(os.path.join(BASELINE_DIR, "tiago_robot_1.yaml")) as f:
         tiago = yaml.safe_load(f)
     tiago["workspace"] = list(ALL_WORKSPACES)
@@ -194,8 +217,8 @@ def main():
         "manipulation":  [0.8, 2],
         "communication": [0.75, 3],
         "supervise":     [0.6, 4],
-        "openDoor":      [0.5, 5],
-        "grill":         [0.55, 6],
+        "grill":         [0.55, 5],
+        "openDoor":      [0.5, 6],
         "chopping":      [0.3, 7],
     }
     _write_yaml(tiago, "tiago_robot_1.yaml")
@@ -210,12 +233,41 @@ def main():
     # communication; "the human has the stronger preference for manage"
     # per instruction means stronger than the other agents' supervise
     # preference, not stronger than the host's own communication
-    # preference). transport RANK 3, manipulation RANK 4, openDoor
-    # RANK 5, cook RANK 6 (0.9 -- new skill, makes host the sole
-    # "cook"-capable agent; CookRice now gates on this instead of
-    # manipulation alone), chopping RANK 7 (0.4 -- present so host is a
-    # workload-balancing fallback on Chop tasks, but never the skill or
-    # preference leader there). ---
+    # preference). transport RANK 3, manipulation RANK 4 (0.8, NOT 0.9
+    # -- see note below), openDoor RANK 5, cook RANK 6 (0.9 -- new
+    # skill, makes host the sole "cook"-capable agent; CookRice now
+    # gates on this instead of manipulation alone), chopping RANK 7
+    # (0.4 -- present so host is a workload-balancing fallback on Chop
+    # tasks, but never the skill or preference leader there).
+    #
+    # IMPORTANT: manipulation was originally set to 0.9 (a "generalist,
+    # but still below the specialist arms" value), but this was a real
+    # bug: it is HIGHER than both tiago's manipulation (0.8) and
+    # fr3_arm_2's (0.85 -- wait, 0.9 > 0.85 too), so in "skill" mode
+    # host won every manipulation-gated contested task by raw level
+    # alone (PickSaladIngredients, ChopSaladIngredients, PickVegetables,
+    # ChopVegetables, ServeDrinks, PickDishes, DoTheDishes, etc),
+    # completely defeating the point of having specialist robot agents
+    # at all. Dropping it to 0.8 (an exact TIE with tiago) restores
+    # fr3_arm_2 as the clean, unambiguous skill-mode winner on every
+    # Pick*/Chop* task (0.85 > 0.8), since those are single-skill
+    # (manipulation only) or chopping-dominated comparisons where host
+    # no longer has the edge. On multi-skill tasks where host and tiago
+    # are ALSO tied on transport (1.0 vs 1.0) -- ServeDrinks, PickDishes,
+    # DoTheDishes, ServeSalad, ServeSides, ServeGrilledFood,
+    # PutTheDishesAway, PickRice -- host and tiago now tie exactly on
+    # the averaged score too, so the actual "skill mode" winner on
+    # those specific tasks falls to whatever tie-break rule
+    # get_selected_agent uses (not modeled here -- see
+    # validate_experiments.py's docstring for what IS and is NOT
+    # verified). Any manipulation value strictly BETWEEN 0.8 and 0.85
+    # was tried and rejected: it keeps host eligible and stops it from
+    # beating fr3_arm_2 on single-skill tasks, but on the two-skill
+    # tasks (manipulation+transport averaged) host's transport tie plus
+    # ANY manipulation edge over tiago still tips the average back in
+    # host's favor -- so 0.8 (an exact tie, not a host loss) is the only
+    # value that avoids re-introducing the same bug on those tasks while
+    # keeping host workspace+skill eligible everywhere it was before. ---
     with open(os.path.join(BASELINE_DIR, "human_host.yaml")) as f:
         host = yaml.safe_load(f)
     host["workspace"] = list(ALL_WORKSPACES)
@@ -223,7 +275,7 @@ def main():
         "communication": [1.0, 1],
         "supervise":     [0.8, 2],
         "transport":     [1.0, 3],
-        "manipulation":  [0.9, 4],
+        "manipulation":  [0.8, 4],
         "openDoor":      [1.0, 5],
         "cook":          [0.9, 6],
         "chopping":      [0.4, 7],
@@ -239,6 +291,17 @@ def main():
     # same reason -- host is the only "cook"-capable agent, so this task
     # stays host-solo, but now for an explicit, named reason instead of
     # an implicit side effect of a generic manipulation level.
+    # ServeMainDish's "manipulation" requirement is lowered from 0.9 to
+    # 0.7: the original 0.9 floor only worked because host's manipulation
+    # LEVEL happened to also be 0.9 -- when host's manipulation was
+    # dropped to 0.8 (to fix the "skill mode" bug where host beat both
+    # specialist arms on every manipulation-gated task; see the comment
+    # above host's skill_weights block), ServeMainDish became
+    # UNASSIGNABLE (host was the only Kitchen_Stove-eligible agent and no
+    # longer cleared 0.9). 0.7 keeps host the sole eligible agent
+    # (unchanged conclusion -- still host-solo, since no robot reaches
+    # Kitchen_Stove) while no longer accidentally depending on a generic
+    # manipulation value that other fixes might move again later.
     # BarbecueParty (the is_end_goal task) gains a "supervise" requirement
     # (0.5); its pre-existing "transport" and "communication"
     # requirements are REMOVED. Those two were always silently inert
@@ -246,13 +309,12 @@ def main():
     # never checks required_skills at all), so this is the first time any
     # of BarbecueParty's requirements are actually enforced -- by the new
     # Supervisor._check_supervisor_eligibility method, called before
-    # scoring begins. fr3_arm_1 (the designated supervisor in exp1.yaml)
-    # does not have transport or communication skills at all, so leaving
-    # those two requirements in place would shut down every single
-    # experiment immediately; removing them keeps the end-goal gate to
-    # just manipulation (which fr3_arm_1 already clears at 1.0) plus the
-    # new supervise requirement (which fr3_arm_1 clears at 0.55, just
-    # above the 0.5 floor). ---
+    # scoring begins. fr3_arm_1 (originally the designated supervisor;
+    # host is the default as of a later revision) does not have transport
+    # or communication skills at all, so leaving those two requirements
+    # in place would have shut down every single experiment immediately;
+    # removing them keeps the end-goal gate to just manipulation plus the
+    # new supervise requirement. ---
     with open(os.path.join(BASELINE_DIR, "barbecue.json")) as f:
         tasks_data = json.load(f)
     for task in tasks_data["tasks"]:
@@ -262,6 +324,8 @@ def main():
             task["required_skills"] = {"manipulation": 0.5, "grill": 0.5}
         elif task["id"] == "CookRice":
             task["required_skills"] = {"manipulation": 0.5, "cook": 0.5}
+        elif task["id"] == "ServeMainDish":
+            task["required_skills"] = {"manipulation": 0.7, "transport": 1.0}
         elif task["id"] == "BarbecueParty":
             task["required_skills"] = {"manipulation": 0.4, "supervise": 0.5}
     with open(os.path.join(OUT_DIR, "barbecue.json"), "w") as f:

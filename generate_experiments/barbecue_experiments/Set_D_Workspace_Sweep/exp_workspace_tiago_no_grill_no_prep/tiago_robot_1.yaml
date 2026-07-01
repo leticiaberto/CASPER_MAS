@@ -29,11 +29,11 @@ skill_weights:
     supervise:
     - 0.6
     - 4
-    openDoor:
-    - 0.5
-    - 5
     grill:
     - 0.55
+    - 5
+    openDoor:
+    - 0.5
     - 6
     chopping:
     - 0.3

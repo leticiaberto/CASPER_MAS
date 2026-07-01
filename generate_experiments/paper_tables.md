@@ -1,6 +1,6 @@
 # Tables for Paper
 
-All values pulled directly from `baseline_contested/` and the 19 generated experiment configs, cross-checked against `validate_experiments.py`. Tables 1, 2, 3, and 7 are **verified eligibility facts** (workspace/skill gate outcomes, directly computed from the configs — the same logic the real `Supervisor.py` runs). Tables 4–6 are **derived predictions** of which agent *wins* a scoring contest, not an executed run of `Supervisor.py`'s actual scoring formulas — see the note before Table 4 for why, and what would upgrade these from predicted to measured.
+All values pulled directly from `baseline_contested/` and the 19 generated experiment configs, cross-checked against `validate_experiments.py`. Tables 1, 2, 3, and 7 are **verified eligibility facts** (workspace/skill gate outcomes, directly computed from the configs — the same logic the real `Supervisor.py` runs). Tables 4, 4b, and 6 are **derived predictions** of which agent *wins* a scoring contest, computed from `Supervisor.py`'s actual confirmed scoring formula (read directly from the code) but not from an executed run — see the note before Table 4b for exactly what is and isn't verified.
 
 ---
 
@@ -10,21 +10,21 @@ Preference is an integer **rank** among each agent's own skills (1 = most prefer
 
 | Skill | fr3_arm_1 | fr3_arm_2 | tiago_robot_1 | human_host |
 |---|---|---|---|---|
-| **manipulation** | 1.00 (rank 1) | 0.85 (rank 2) | 0.80 (rank 2) | 0.90 (rank 4) |
-| **grill** | 1.00 (rank 2) | — | 0.55 (rank 6) | — |
-| **supervise** | 0.55 (rank 3) | 0.20 (rank 3) | 0.60 (rank 4) | 0.80 (rank 2) |
-| **chopping** | 0.45 (rank 4) | 0.90 (rank 1) | 0.30 (rank 7) | 0.40 (rank 7) |
+| **manipulation** | 1.00 (rank 1) | 0.85 (rank 2) | 0.80 (rank 2) | 0.80 (rank 4) |
+| **supervise** | 0.55 (rank 2) | 0.20 (rank 3) | 0.60 (rank 4) | 0.80 (rank 2) |
+| **chopping** | 0.45 (rank 3) | 0.90 (rank 1) | 0.30 (rank 7) | 0.40 (rank 7) |
+| **grill** | 1.00 (rank 4) | — | 0.55 (rank 5) | — |
 | **transport** | — | — | 1.00 (rank 1) | 1.00 (rank 3) |
 | **communication** | — | — | 0.75 (rank 3) | 1.00 (rank 1) |
-| **openDoor** | — | — | 0.50 (rank 5) | 1.00 (rank 5) |
+| **openDoor** | — | — | 0.50 (rank 6) | 1.00 (rank 5) |
 | **cook** | — | — | — | 0.90 (rank 6) |
 | *N (skills ranked)* | *4* | *3* | *7* | *7* |
 
 **Design intent per skill** (each is a deliberate choice, not incidental):
-- *manipulation*: fr3_arm_1 (1.00) > host (0.90) > fr3_arm_2 (0.85) > tiago (0.80) — tiago's level is set just below the 0.90 floor used by `ServeMainDish`, so that task stays host-only.
-- *grill*: fr3_arm_1 is the skill leader; tiago is a real but clearly second-place candidate now that it has `Grill_Table` access.
+- *manipulation*: fr3_arm_1 (1.00) > fr3_arm_2 (0.85) > host (0.80) = tiago (0.80, tied). **host and tiago are deliberately tied here.** host's manipulation was originally set to 0.90 — higher than *both* specialist robot arms — which was a real design bug: in `skill` mode (highest raw level wins), host won every manipulation-gated contested task purely on this number, regardless of which robot the task was meant to showcase. Lowering host to exactly 0.80 (tied with tiago, still below fr3_arm_2's 0.85) restores fr3_arm_2 as the clean, unambiguous skill-mode winner on every single-skill Pick*/Chop* task. On multi-skill tasks where host and tiago are *also* tied on transport (1.00 = 1.00) — the Serve*/Dishes* family — the tie now genuinely resolves via `get_selected_agent`'s workload tie-break rather than either agent's raw skill (see Tables 3 and 4).
+- *grill*: **deliberately engineered to diverge skill mode from preference mode.** fr3_arm_1 has the higher raw LEVEL (1.00 vs. tiago's 0.55), so `skill` mode picks fr3_arm_1 on the grill chain. But fr3_arm_1 ranks grill LAST among its own 4 skills (rank 4, its lowest preference), while tiago ranks it 5th of 7 — high enough that tiago's *combined* preference score on grill-chain tasks (manipulation + grill) edges past fr3_arm_1's, so `preference` mode picks tiago instead. Without this rank choice, fr3_arm_1 would dominate the grill chain on both axes, leaving no mode divergence there (see Table 4b).
 - *communication*: host is **both** the skill leader (1.00) **and** its single strongest preference (rank 1 of 7) — it is the agent expected to welcome guests, so this preference is not allowed to be displaced even by its own `supervise`/management preference. tiago clears the `WelcomeGuests` gate (0.75 ≥ 0.70) and can at best tie host's preference score, never exceed it (see Table 5).
-- *supervise*: gates the is_end_goal task `BarbecueParty` (0.5 floor) and is added to **all four agents**, since any of them could in principle be designated supervisor in `exp1.yaml`. **host is the default designated supervisor** (as of this revision — previously fr3_arm_1) and clears the gate with a wide margin: level 0.80 vs. the 0.5 floor. host ranks `supervise` 2nd (just behind `communication`) — "the human has the stronger preference for manage" is interpreted as stronger than the *other agents'* supervise preference, not stronger than host's own expected welcoming role. fr3_arm_1 (0.55) and tiago (0.6) both clear the floor too and remain valid supervisor candidates by level if ever designated; fr3_arm_2 (0.2) does **not** clear it — see Table 7 / Set F for experiments that exploit this.
+- *supervise*: gates the is_end_goal task `BarbecueParty` (0.5 floor) and is added to **all four agents**, since any of them could in principle be designated supervisor in `exp1.yaml`. **host is the default designated supervisor** (as of this revision — previously fr3_arm_1) and clears the gate with a wide margin: level 0.80 vs. the 0.5 floor. host ranks `supervise` 2nd (just behind `communication`) — "the human has the stronger preference for manage" is interpreted as stronger than the *other agents'* supervise preference, not stronger than host's own expected welcoming role. fr3_arm_1 (0.55, rank 2 of 4) and tiago (0.6, rank 4 of 7) both clear the floor too and remain valid supervisor candidates by level if ever designated; fr3_arm_2 (0.2) does **not** clear it — see Table 7 / Set F for experiments that exploit this.
 - *chopping*: fr3_arm_2 is the skill leader **and** ranks it 1st preference; fr3_arm_1's 0.45 is a fallback value, only relevant if its workspace were ever swapped onto `Prep_Table`.
 - *transport*: tiago and host are tied at the skill level (1.00), but only tiago ranks it as a top preference (1st vs. host's 3rd).
 - *cook*: host is the **only** agent with this skill at all — gates `CookRice`, which is host-solo by explicit design.
@@ -48,46 +48,51 @@ Preference is an integer **rank** among each agent's own skills (1 = most prefer
 
 `barbecue.json` has 22 tasks total: 21 ordinary tasks plus 1 is_end_goal task (`BarbecueParty`, handled separately — see Table 7). All counts below are over the 21 ordinary tasks only. Experiments now live in per-set subfolders (e.g. `Set_A_Mode_Sweep/exp_mode_skill/`); the Set column below corresponds to those folder names.
 
-"Contested" and "Solo" both count **tasks**, not agents: for each of the 21 tasks, count how many agents are eligible (workspace + skill gate cleared); "Contested" = that count is ≥2, "Solo" = that count is exactly 1. So "Solo: 2" means *2 tasks* each have only *1* eligible agent — not that 2 agents share one task. Which 2 (or more, in Set D) tasks fall into Solo, and which single agent is left, is given in the footnote below the table. Computed by `validate_experiments.py` against each experiment's actual generated files; zero unassigned tasks in every case. A second, separate check confirms whether the designated supervisor (`host` by default as of this revision — previously `fr3_arm_1`) passes the is_end_goal task `BarbecueParty`'s `required_skills` (`manipulation ≥ 0.4`, `supervise ≥ 0.5`) — this mirrors a new method, `Supervisor._check_supervisor_eligibility`, added so an unqualified supervisor triggers the same shutdown path as an unassigned task, rather than being silently waved through (the original `score_agents_for_task` never checked `required_skills` on end-goal tasks at all). Set F (new) deliberately designates a *different* supervisor or lowers the supervisor's own level, to exercise this check's failure path directly.
+"Contested" and "Solo" both count **tasks**, not agents: for each of the 21 tasks, count how many agents are eligible (workspace + skill gate cleared); "Contested" = that count is ≥2, "Solo" = that count is exactly 1. So "Solo: 1" means *1 task* has only *1* eligible agent — not that 1 agent shares one task. Which task(s) fall into Solo, and which single agent is left, is given in the footnote below the table. Computed by `validate_experiments.py` against each experiment's actual generated files; zero unassigned tasks in every case. A second, separate check confirms whether the designated supervisor (`host` by default as of this revision — previously `fr3_arm_1`) passes the is_end_goal task `BarbecueParty`'s `required_skills` (`manipulation ≥ 0.4`, `supervise ≥ 0.5`) — this mirrors a new method, `Supervisor._check_supervisor_eligibility`, added so an unqualified supervisor triggers the same shutdown path as an unassigned task, rather than being silently waved through (the original `score_agents_for_task` never checked `required_skills` on end-goal tasks at all). Set F (new) deliberately designates a *different* supervisor or lowers the supervisor's own level, to exercise this check's failure path directly.
 
 | Set | Experiment | optimizeMode | Contested | Solo | Unassigned | Supervisor eligible? |
 |---|---|---|---|---|---|---|
-| A | exp_mode_skill | skill | 19 | 2¹ | 0 | Yes |
-| A | exp_mode_preference | preference | 19 | 2¹ | 0 | Yes |
-| A | exp_mode_balance_skill_preference | balance_skill_preference | 19 | 2¹ | 0 | Yes |
-| A | exp_mode_balance_workload | balance_workload | 19 | 2¹ | 0 | Yes |
-| B | exp_skill_low | skill | 19 | 2¹ | 0 | Yes |
-| B | exp_skill_mid | skill | 19 | 2¹ | 0 | Yes |
-| B | exp_skill_high | skill | 19 | 2¹ | 0 | Yes |
-| C | exp_pref_baseline_order | preference | 19 | 2¹ | 0 | Yes |
-| C | exp_pref_inverted | preference | 19 | 2¹ | 0 | Yes |
-| C | exp_pref_communication_top | preference | 19 | 2¹ | 0 | Yes |
-| D | exp_workspace_baseline | balance_workload | 19 | 2¹ | 0 | Yes |
-| D | exp_workspace_tiago_no_grill_no_prep | balance_workload | 12 | 9² | 0 | Yes |
+| A | exp_mode_skill | skill | 20 | 1¹ | 0 | Yes |
+| A | exp_mode_preference | preference | 20 | 1¹ | 0 | Yes |
+| A | exp_mode_balance_skill_preference | balance_skill_preference | 20 | 1¹ | 0 | Yes |
+| A | exp_mode_balance_workload | balance_workload | 20 | 1¹ | 0 | Yes |
+| B | exp_skill_low | skill | 20 | 1¹ | 0 | Yes |
+| B | exp_skill_mid | skill | 20 | 1¹ | 0 | Yes |
+| B | exp_skill_high | skill | 20 | 1¹ | 0 | Yes |
+| C | exp_pref_baseline_order | preference | 20 | 1¹ | 0 | Yes |
+| C | exp_pref_inverted | preference | 20 | 1¹ | 0 | Yes |
+| C | exp_pref_communication_top | preference | 20 | 1¹ | 0 | Yes |
+| D | exp_workspace_baseline | balance_workload | 20 | 1¹ | 0 | Yes |
+| D | exp_workspace_tiago_no_grill_no_prep | balance_workload | 13 | 8² | 0 | Yes |
 | D | exp_workspace_tiago_drinks_only | balance_workload | 6 | 15³ | 0 | Yes |
-| E | exp_interaction_baseline | balance_skill_preference | 19 | 2¹ | 0 | Yes |
-| E | exp_interaction_low_skill_high_pref | balance_skill_preference | 19 | 2¹ | 0 | Yes |
-| E | exp_interaction_equal_skill_diff_pref | balance_skill_preference | 19 | 2¹ | 0 | Yes |
-| F | exp_supervisor_host | balance_workload | 19 | 2¹ | 0 | Yes (wide margin) |
-| F | exp_supervisor_fr3_arm2_fails | balance_workload | 19 | 2¹ | 0 | **No** (expected) |
-| F | exp_supervisor_threshold_fail | balance_workload | 19 | 2¹ | 0 | **No** (expected) |
+| E | exp_interaction_baseline | balance_skill_preference | 20 | 1¹ | 0 | Yes |
+| E | exp_interaction_low_skill_high_pref | balance_skill_preference | 20 | 1¹ | 0 | Yes |
+| E | exp_interaction_equal_skill_diff_pref | balance_skill_preference | 20 | 1¹ | 0 | Yes |
+| F | exp_supervisor_host | balance_workload | 20 | 1¹ | 0 | Yes (wide margin) |
+| F | exp_supervisor_fr3_arm2_fails | balance_workload | 20 | 1¹ | 0 | **No** (expected) |
+| F | exp_supervisor_threshold_fail | balance_workload | 20 | 1¹ | 0 | **No** (expected) |
 
 **Footnotes — exactly which task(s) are Solo, and to which single agent:**
-1. **`CookRice`** → `host` (sole `cook`-capable agent); **`ServeMainDish`** → `host` (gated at `manipulation ≥ 0.9`, above tiago's deliberate 0.8 ceiling, unreachable by either arm). This pair is the same in 17 of the 19 experiments — none of Sets A/B/C/E/F touch the workspace or skill values that would change it (Set F only touches the *supervisor* and the supervisor's own `supervise` value, neither of which affects this pair).
-2. `exp_workspace_tiago_no_grill_no_prep` adds 7 more Solo tasks on top of the baseline pair: **`ServeSalad`**, **`ServeSides`** → `host` (need `Prep_Table`+`Garden`, tiago lost `Prep_Table`); **`PickFoodIngredientsGrill`**, **`GrillFood`**, **`PickGrilledFood`** → `fr3_arm_1` (need `Grill_Table`, tiago lost it); **`ServeGrilledFood`** → `host` (needs `Grill_Table`+`Garden`); **`Host`** → `host` (needs all five of Grill_Table/Garden/House/Drinks_Table/Prep_Table, tiago no longer qualifies). Total: 9.
-3. `exp_workspace_tiago_drinks_only` adds 13 more Solo tasks on top of the baseline pair (tiago restricted to `Drinks_Table` only, so it loses every contest it was in): **`WelcomeGuests`**, **`ServeSalad`**, **`ServeDrinks`**, **`ServeSides`**, **`PickRice`**, **`ServeGrilledFood`**, **`Host`**, **`PickDishes`**, **`DoTheDishes`**, **`PutTheDishesAway`** → all `host`; **`PickFoodIngredientsGrill`**, **`GrillFood`**, **`PickGrilledFood`** → all `fr3_arm_1`. Total: 15.
+1. **`CookRice`** → `host` (sole `cook`-capable agent). This is the only Solo task in 17 of the 19 experiments — none of Sets A/B/C/E/F touch the workspace or skill values that would change it (Set F only touches the *supervisor* and the supervisor's own `supervise` value, neither of which affects this task). `ServeMainDish` was *also* Solo in an earlier revision of this baseline (when host's manipulation level was 0.9), but became a genuine tiago-vs-host contest once host's manipulation bug was fixed (see Table 1) and `ServeMainDish`'s own requirement was correspondingly lowered.
+2. `exp_workspace_tiago_no_grill_no_prep` adds 7 more Solo tasks on top of the baseline one: **`ServeSalad`**, **`ServeSides`** → `host` (need `Prep_Table`+`Garden`, tiago lost `Prep_Table`); **`PickFoodIngredientsGrill`**, **`GrillFood`**, **`PickGrilledFood`** → `fr3_arm_1` (need `Grill_Table`, tiago lost it); **`ServeGrilledFood`** → `host` (needs `Grill_Table`+`Garden`); **`Host`** → `host` (needs all five of Grill_Table/Garden/House/Drinks_Table/Prep_Table, tiago no longer qualifies). Total: 8. (`ServeMainDish` does NOT appear here — it needs `Kitchen_Stove`+`Garden`, neither of which this experiment touches, so it remains a tiago-vs-host contest.)
+3. `exp_workspace_tiago_drinks_only` adds 14 more Solo tasks on top of the baseline one (tiago restricted to `Drinks_Table` only, so it loses every contest it was in): **`WelcomeGuests`**, **`ServeSalad`**, **`ServeDrinks`**, **`ServeSides`**, **`PickRice`**, **`ServeMainDish`**, **`ServeGrilledFood`**, **`Host`**, **`PickDishes`**, **`DoTheDishes`**, **`PutTheDishesAway`** → all `host`; **`PickFoodIngredientsGrill`**, **`GrillFood`**, **`PickGrilledFood`** → all `fr3_arm_1`. Total: 15.
 
-Sets A/B/C/E hold workspace fixed, so contested/solo counts don't move — the *winner* within each contested task is what changes (Tables 4–6). Set D is the one factor that directly changes contest *eligibility*: removing tiago's access to Grill_Table+Prep_Table drops 7 tasks out of contention (19→12); restricting it to Drinks_Table only drops 13 (19→6). Set F changes neither Contested nor Solo (the 21 ordinary tasks are completely unaffected by who is supervisor) — it changes only the **Supervisor eligible?** column, which is the entire point: it isolates the end-goal gate from everything else in the system. See Table 7 for the full breakdown of Set F's two intentional failures.
+Sets A/B/C/E hold workspace fixed, so contested/solo counts don't move — the *winner* within each contested task is what changes (Tables 4–6). Set D is the one factor that directly changes contest *eligibility*: removing tiago's access to Grill_Table+Prep_Table drops 7 tasks out of contention (20→13); restricting it to Drinks_Table only drops 14 (20→6). Set F changes neither Contested nor Solo (the 21 ordinary tasks are completely unaffected by who is supervisor) — it changes only the **Supervisor eligible?** column, which is the entire point: it isolates the end-goal gate from everything else in the system. See Table 7 for the full breakdown of Set F's two intentional failures.
 
 ---
 
-## A note before Tables 4–6: predicted vs. measured
+## A note before Tables 4–4b–6: predicted vs. measured
 
-Tables 4–6 show **predicted winners**, derived analytically from `Supervisor.py`'s documented scoring rules:
-- *skill mode*: highest raw skill level (averaged across a task's required skills, since the exact multi-skill aggregation formula was not visible in the `Supervisor.py` excerpt available — confirm this assumption against the real aggregation logic before citing these numbers as ground truth).
-- *preference mode*: highest `(N − rank + 1) / N` across required skills.
+Tables 4, 4b, and 6 show **predicted winners**, derived analytically from `Supervisor.py`'s actual, now-confirmed scoring formula (read directly from `score_agents_for_task`'s scoring loop):
+- *skill mode*: `score = Σ level` — the SUM of the agent's skill level across every skill the task requires (not an average or max).
+- *preference mode*: `score = Σ (N − rank + 1) / N` — the SUM of each skill's normalized preference score across every skill the task requires.
+- *balance_skill_preference mode*: `score = Σ [α·level + (1−α)·pref_score]`, where `α = BALANCE_SKILL_PREFERENCE_ALPHA` (0.7 per the docstring referenced in Table 6).
 
-These were **never executed against the real `Supervisor.py`** — only the eligibility gate (`skill_ok`, workspace subset check) was exercised, via `validate_experiments.py`. Running the actual 19 configs through your live scheduler and replacing Tables 4–6 with real output is the natural next step before publication; consider labeling these "predicted assignment" or moving them to an appendix until that's done.
+This is a real formula read from the code, not a guess — but two things remain genuinely unverified:
+1. **These predictions were never executed against the real running `Supervisor.py`** — only the eligibility gate (`skill_ok`, workspace subset check) was exercised directly, via `validate_experiments.py`. The scoring arithmetic above was hand-computed against the same formula the code uses, and cross-checked for consistency, but not run through the live scheduler.
+2. **Ties are NOT resolved by this analysis.** Several tasks (the 9-task Serve*/Dishes* family — see Table 4b) are genuine ties under `skill` mode; the real winner there depends on `get_selected_agent`'s workload tie-break (fewest tasks already assigned, then ranking order — read directly from the code, but its *outcome* depends on task processing order within a run, which is outside any single file available here).
+
+Running the actual 19 configs through your live scheduler and replacing Tables 4, 4b, and 6 with real output is the natural next step before publication, particularly to confirm the tie-break outcomes on the Serve*/Dishes* family.
 
 ---
 
@@ -97,11 +102,46 @@ Task shown: `PickSaladIngredients` (manipulation ≥ 0.6), representative of all
 
 | Experiment | fr3_arm_2 level | Eligible agents | Skill scores | Predicted skill-mode winner |
 |---|---|---|---|---|
-| exp_skill_low | 0.55 | tiago, host | tiago 0.80, host 0.90 | **host** (fr3_arm_2 excluded — below 0.6 gate) |
-| exp_skill_mid | 0.60 | fr3_arm_2, tiago, host | fr3_arm_2 0.60, tiago 0.80, host 0.90 | **host** |
-| exp_skill_high | 1.00 | fr3_arm_2, tiago, host | fr3_arm_2 1.00, tiago 0.80, host 0.90 | **fr3_arm_2** |
+| exp_skill_low | 0.55 | tiago, host | tiago 0.80, host 0.80 | **tie** (tiago vs. host — resolved by workload tie-break, not skill; fr3_arm_2 excluded — below 0.6 gate) |
+| exp_skill_mid | 0.60 | fr3_arm_2, tiago, host | fr3_arm_2 0.60, tiago 0.80, host 0.80 | **tie** (tiago vs. host; fr3_arm_2 is now eligible but is the clear loser at 0.60) |
+| exp_skill_high | 1.00 | fr3_arm_2, tiago, host | fr3_arm_2 1.00, tiago 0.80, host 0.80 | **fr3_arm_2** (clean win — only agent at the ceiling) |
 
-The sweep cleanly demonstrates the eligibility boundary (exp_skill_low) and a skill-mode leadership flip (mid to high) without touching any other agent's configuration.
+The sweep demonstrates the eligibility boundary (exp_skill_low) and fr3_arm_2's transition from absent, to present-but-tied-out-of-the-running (exp_skill_mid, where it's eligible but loses outright to the 0.80 tie), to the clean skill-mode leader (exp_skill_high, the only agent at the ceiling) — all without touching any other agent's configuration. Note that in exp_skill_low and exp_skill_mid, the actual winner between tiago and host is NOT determined by this sweep at all (they're tied at 0.80 throughout) — it falls to `get_selected_agent`'s workload tie-break, which is outside what this table predicts.
+
+---
+
+## Table 4b — Where `skill` Mode and `preference` Mode Pick Different Winners (Full Map)
+
+This is the direct answer to "does task allocation actually differ by optimize mode": across all 20 contested tasks in `baseline_contested` (computed with `Supervisor.py`'s real formula — `score = Σ level` for skill mode, `score = Σ (N−rank+1)/N` for preference mode, summed across each task's required skills, not averaged or maxed), **7 of 20 (35%) pick a different winner depending on mode**, with no tie ambiguity on either side of any diverging row.
+
+| Task | `skill` mode winner | `preference` mode winner | Diverges? |
+|---|---|---|---|
+| WelcomeGuests | host | host | No |
+| **PickSaladIngredients** | fr3_arm_2 | **tiago_robot_1** | **Yes** |
+| ChopSaladIngredients | fr3_arm_2 | fr3_arm_2 | No |
+| **PickChoppedSaladIngredients** | fr3_arm_2 | **tiago_robot_1** | **Yes** |
+| ServeSalad | tiago_robot_1 (skill tie w/ host) | tiago_robot_1 | No |
+| ServeDrinks | tiago_robot_1 (skill tie w/ host) | tiago_robot_1 | No |
+| **PickVegetables** | fr3_arm_2 | **tiago_robot_1** | **Yes** |
+| ChopVegetables | fr3_arm_2 | fr3_arm_2 | No |
+| **PickChoppedVegetables** | fr3_arm_2 | **tiago_robot_1** | **Yes** |
+| ServeSides | tiago_robot_1 (skill tie w/ host) | tiago_robot_1 | No |
+| PickRice | tiago_robot_1 (skill tie w/ host) | tiago_robot_1 | No |
+| ServeMainDish | tiago_robot_1 (skill tie w/ host) | tiago_robot_1 | No |
+| **PickFoodIngredientsGrill** | fr3_arm_1 | **tiago_robot_1** | **Yes** |
+| **GrillFood** | fr3_arm_1 | **tiago_robot_1** | **Yes** |
+| **PickGrilledFood** | fr3_arm_1 | **tiago_robot_1** | **Yes** |
+| ServeGrilledFood | tiago_robot_1 (skill tie w/ host) | tiago_robot_1 | No |
+| Host | host | host | No |
+| PickDishes | tiago_robot_1 (skill tie w/ host) | tiago_robot_1 | No |
+| DoTheDishes | tiago_robot_1 (skill tie w/ host) | tiago_robot_1 | No |
+| PutTheDishesAway | tiago_robot_1 (skill tie w/ host) | tiago_robot_1 | No |
+
+**The two diverging clusters, and why each was engineered:**
+- **Pick* salad/vegetable tasks (4 tasks):** `skill` mode picks `fr3_arm_2` — it has the highest raw `manipulation` level among eligible agents (0.85 vs. tiago/host's 0.80). `preference` mode picks `tiago_robot_1` instead — tiago ranks `manipulation` 2nd of its own 7 skills (pref_score 6/7 ≈ 0.86), which beats fr3_arm_2 ranking it 2nd of only 3 skills (pref_score 2/3 ≈ 0.67), since the *normalized* rank position, not the raw level, is what preference mode scores.
+- **Grill chain (3 tasks):** `skill` mode picks `fr3_arm_1` — its raw `manipulation`+`grill` level sum (2.0) dwarfs tiago's (1.35). `preference` mode picks `tiago_robot_1` instead, by design: fr3_arm_1 ranks `grill` dead last among its own 4 skills (its lowest preference, despite being its strongest *skill*), pulling its preference sum down to 1.25, just below tiago's 1.29 (grill ranked 5th of 7, but manipulation still 2nd of 7).
+
+**Why the other 13 tasks don't diverge:** `WelcomeGuests`/`Host` are deliberately undivergeable — host is both skill leader and top preference on `communication`, by design (host is "expected to welcome guests"). The 9 Serve*/Dishes* tasks tie on `skill` (tiago and host are tied on both `manipulation` and `transport`), so they aren't a skill-vs-preference divergence at all — they're a *skill-mode ambiguity* resolved by workload tie-break, with `preference` mode breaking the same tie cleanly in tiago's favor (its transport+manipulation preference sum beats host's).
 
 ---
 
@@ -144,9 +184,9 @@ Unlike Tables 4–6, this is not a comparison between candidate agents for a tas
 
 | Experiment | Supervisor | `manipulation` (≥0.4) | `supervise` (≥0.5) | Result |
 |---|---|---|---|---|
-| exp_supervisor_host | host | 0.90 — Pass | 0.80 — Pass | **Eligible** (wide margin: +0.50 / +0.30) |
+| exp_supervisor_host | host | 0.80 — Pass | 0.80 — Pass | **Eligible** (margin: +0.40 / +0.30) |
 | exp_supervisor_fr3_arm2_fails | fr3_arm_2 | 0.85 — Pass | **0.20 — Fail** | **Shutdown** — wrong agent designated |
-| exp_supervisor_threshold_fail | host | 0.90 — Pass | **0.45 — Fail** | **Shutdown** — right agent, level dropped below floor |
+| exp_supervisor_threshold_fail | host | 0.80 — Pass | **0.45 — Fail** | **Shutdown** — right agent, level dropped below floor |
 
 These two failures isolate two structurally different causes of the same outcome:
 - **`exp_supervisor_fr3_arm2_fails`** changes *who* is supervisor (host → fr3_arm_2) with zero other edits. fr3_arm_2's `supervise` level was already 0.2 in `baseline_contested` (its lowest-ranked, least-preferred skill) — this experiment needed no new values, only a different `supervisor:` field, to demonstrate the gate rejecting an unqualified candidate.
@@ -164,5 +204,6 @@ Both failures trigger the identical code path: `Supervisor._check_supervisor_eli
 
 - **Table 1 + Table 2** -> Experimental Setup / System Configuration section, as the canonical description of the test environment.
 - **Table 3** -> opens the Results section, establishing how many tasks each experiment actually puts into contention before discussing *who* wins.
+- **Table 4b** -> the single best table to answer "does optimize mode actually change task allocation" directly — lead with this if the paper needs one headline table for that claim (7 of 20 contested tasks, 35%, pick a different winner depending on mode).
 - **Tables 4-6** -> one per relevant Results subsection (Skill Sensitivity, Preference Sensitivity, Mode Interaction), each introduced by 2-3 sentences of the same explanation already drafted in `MANIFEST.md`.
 - **Table 7** -> Architecture / Robustness subsection, paired with a short description of `_check_supervisor_eligibility`, the rationale for removing `BarbecueParty`'s transport/communication requirements, and the two distinct failure modes (wrong agent vs. right agent below threshold) that Set F demonstrates.

@@ -234,7 +234,7 @@
       "id": "ServeMainDish",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 0.9,
+        "manipulation": 0.7,
         "transport": 1.0
       },
       "required_constraints": {

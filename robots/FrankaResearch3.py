@@ -438,19 +438,19 @@ class FrankaResearch3(Agent):
 
         elif action == "Reception":
             print("[FR3]: receiving guests...")
-            sequence.append({"action": "sleep", "time": 5})
+            sequence = [{"action": "sleep", "time": 5}]
         elif action == "PrepareDrinks":
             print("[FR3]: Preparing drinks...")
-            sequence.append({"action": "sleep", "time": 5})
+            sequence = [{"action": "sleep", "time": 5}]
         elif action == "SuperviseParty":
             print("[FR3]: Supervising party...")
-            sequence.append({"action": "sleep", "time": 5})
+            sequence = [{"action": "sleep", "time": 5}]
         elif action == "Clean":
             print("[FR3]: Cleaning...")
-            sequence.append({"action": "sleep", "time": 5})
+            sequence = [{"action": "sleep", "time": 5}]
         elif action == "PrepareFood":
             print("[FR3]: Preparing food...")
-            sequence.append({"action": "sleep", "time": 5})
+            sequence = [{"action": "sleep", "time": 5}]
 
         return sequence
     

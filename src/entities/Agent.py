@@ -382,7 +382,7 @@ class Agent:
         if assignment.selected_agent != self.id:
             self.supervisor.release_task(task_id, assignment.selected_agent)
         else:
-            self.task_update_status_and_publish(task_id, TaskStatus.READY, ignore=True)# Do not need to update local because get_ready_tasks() does
+            self.task_update_status_and_publish(task_id, TaskStatus.PENDING)
             time.sleep(5)
 
     def _on_party_ending(self):

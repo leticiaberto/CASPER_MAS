@@ -497,7 +497,7 @@ def main() -> None:
     subprocess.run(["pkill", "-f", "actor_controller"], capture_output=True)
     time.sleep(1.0)
 
-    with open("configs/exps/" + args.exp) as f:
+    with open("configs/exps/" + args.exp + ".yaml") as f:
         exp_cfg = yaml.safe_load(f)
 
     guests = exp_cfg.get("guests", 0)

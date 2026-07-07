@@ -5,15 +5,17 @@
       "context": "HouseParty",
       "required_skills": {
         "communication": 0.4,
-        "supervise": 0.5
+        "supervise": 0.3,
+        "planning": 0.5
       },
       "required_constraints": {
         "can_move": true,
         "can_manipulate": false,
         "can_transport_objects": false,
-        "max_payload_kg": 1,
+        "max_payload_kg": 0.5,
         "workspace": [
-          "global"
+          "House",
+          "Garden"
         ]
       },
       "duration": 800,
@@ -24,15 +26,14 @@
       "id": "WelcomeGuests",
       "context": "HouseParty",
       "required_skills": {
-        "communication": 0.7,
+        "communication": 0.6,
         "openDoor": 0.3
       },
       "required_constraints": {
         "can_move": true,
         "can_manipulate": false,
         "can_transport_objects": false,
-        "can_communicate": true,
-        "max_payload_kg": 3,
+        "max_payload_kg": 1,
         "workspace": [
           "House",
           "Garden"
@@ -45,7 +46,7 @@
       "id": "PickSaladIngredients",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 0.6
+        "manipulation": 0.4
       },
       "required_constraints": {
         "can_move": false,
@@ -101,7 +102,7 @@
       "context": "HouseParty",
       "required_skills": {
         "manipulation": 0.5,
-        "transport": 0.5
+        "transport": 0.7
       },
       "required_constraints": {
         "can_move": true,
@@ -121,19 +122,21 @@
       "context": "HouseParty",
       "required_skills": {
         "communication": 0.4,
-        "supervise": 0.5
+        "supervise": 0.3,
+        "planning": 0.4
       },
       "required_constraints": {
         "can_move": true,
         "can_manipulate": false,
         "can_transport_objects": false,
-        "max_payload_kg": 1,
+        "max_payload_kg": 0.5,
         "workspace": [
-          "global"
+          "Drinks_Table",
+          "Garden"
         ]
       },
       "duration": 9000,
-      "priority": 24,
+      "priority": 21,
       "subgoal_level": 1
     },
     {
@@ -141,7 +144,7 @@
       "context": "HouseParty",
       "required_skills": {
         "manipulation": 0.8,
-        "transport": 0.6
+        "transport": 0.5
       },
       "required_constraints": {
         "can_move": true,
@@ -160,7 +163,7 @@
       "id": "PickVegetables",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 0.6
+        "manipulation": 0.4
       },
       "required_constraints": {
         "can_move": false,
@@ -216,7 +219,7 @@
       "context": "HouseParty",
       "required_skills": {
         "manipulation": 0.5,
-        "transport": 0.5
+        "transport": 0.7
       },
       "required_constraints": {
         "can_move": true,
@@ -240,8 +243,8 @@
       "required_constraints": {
         "can_move": false,
         "can_manipulate": true,
-        "can_transport_objects": true,
-        "max_payload_kg": 2,
+        "can_transport_objects": false,
+        "max_payload_kg": 1,
         "workspace": [
           "Kitchen_Table",
           "Kitchen_Stove"
@@ -261,7 +264,7 @@
         "can_move": false,
         "can_manipulate": true,
         "can_transport_objects": false,
-        "max_payload_kg": 2,
+        "max_payload_kg": 1,
         "workspace": [
           "Kitchen_Table",
           "Kitchen_Stove"
@@ -281,7 +284,7 @@
         "can_move": true,
         "can_manipulate": true,
         "can_transport_objects": true,
-        "max_payload_kg": 3,
+        "max_payload_kg": 1.5,
         "workspace": [
           "Kitchen_Stove",
           "Garden"
@@ -294,16 +297,16 @@
       "id": "PickFoodIngredientsGrill",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 0.5,
-        "grill": 0.5
+        "manipulation": 0.5
       },
       "required_constraints": {
         "can_move": false,
         "can_manipulate": true,
         "can_transport_objects": false,
-        "max_payload_kg": 1,
+        "max_payload_kg": 1.5,
         "workspace": [
-          "Grill_Table"
+          "Grill_Table",
+          "Grill"
         ]
       },
       "duration": 300,
@@ -320,9 +323,9 @@
         "can_move": false,
         "can_manipulate": true,
         "can_transport_objects": false,
-        "max_payload_kg": 1,
+        "max_payload_kg": 1.5,
         "workspace": [
-          "Grill_Table"
+          "Grill"
         ]
       },
       "duration": 5000,
@@ -332,16 +335,16 @@
       "id": "PickGrilledFood",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 0.5,
-        "grill": 0.5
+        "manipulation": 0.5
       },
       "required_constraints": {
         "can_move": false,
         "can_manipulate": true,
         "can_transport_objects": false,
-        "max_payload_kg": 1,
+        "max_payload_kg": 1.5,
         "workspace": [
-          "Grill_Table"
+          "Grill_Table",
+          "Grill"
         ]
       },
       "duration": 300,
@@ -371,15 +374,21 @@
       "id": "PrepareFood",
       "context": "HouseParty",
       "required_skills": {
-        "communication": 0.5
+        "communication": 0.5,
+        "supervise": 0.5,
+        "planning": 0.5
       },
       "required_constraints": {
-        "can_move": false,
+        "can_move": true,
         "can_manipulate": false,
         "can_transport_objects": false,
-        "max_payload_kg": 1,
+        "max_payload_kg": 0.5,
         "workspace": [
-          "global"
+          "Garden",
+          "Prep_Table",
+          "Grill_Table",
+          "Kitchen_Table",
+          "Kitchen_Stove"
         ]
       },
       "duration": 8000,
@@ -390,16 +399,23 @@
       "id": "SuperviseParty",
       "context": "HouseParty",
       "required_skills": {
-        "communication": 0.7,
-        "supervise": 0.7
+        "communication": 0.6,
+        "supervise": 0.6,
+        "planning": 0.6
       },
       "required_constraints": {
         "can_move": true,
         "can_manipulate": false,
         "can_transport_objects": false,
-        "max_payload_kg": 5,
+        "max_payload_kg": 0.5,
         "workspace": [
-          "global"
+          "Grill_Table",
+          "Garden",
+          "House",
+          "Drinks_Table",
+          "Prep_Table",
+          "Kitchen_Table",
+          "Kitchen_Stove"
         ]
       },
       "duration": 14000,
@@ -410,19 +426,22 @@
       "id": "Host",
       "context": "HouseParty",
       "required_skills": {
-        "communication": 0.2
+        "communication": 0.5,
+        "planning": 0.3
       },
       "required_constraints": {
         "can_move": true,
         "can_manipulate": false,
         "can_transport_objects": false,
-        "max_payload_kg": 0,
+        "max_payload_kg": 0.5,
         "workspace": [
           "Grill_Table",
           "Garden",
           "House",
           "Drinks_Table",
-          "Prep_Table"
+          "Prep_Table",
+          "Kitchen_Table",
+          "Kitchen_Stove"
         ]
       },
       "duration": 300,
@@ -432,15 +451,20 @@
       "id": "Clean",
       "context": "HouseParty",
       "required_skills": {
-        "communication": 0.3
+        "communication": 0.3,
+        "supervise": 0.3,
+        "planning": 0.2
       },
       "required_constraints": {
-        "can_move": false,
+        "can_move": true,
         "can_manipulate": false,
         "can_transport_objects": false,
-        "max_payload_kg": 1,
+        "max_payload_kg": 0.5,
         "workspace": [
-          "global"
+          "Kitchen_Dishwasher",
+          "Garden",
+          "Kitchen_Table",
+          "Kitchen_Shelves"
         ]
       },
       "duration": 500,
@@ -459,10 +483,11 @@
         "can_move": true,
         "can_manipulate": true,
         "can_transport_objects": true,
-        "max_payload_kg": 3,
+        "max_payload_kg": 2,
         "workspace": [
-          "Kitchen_sink",
-          "Garden"
+          "Kitchen_Dishwasher",
+          "Garden",
+          "Kitchen_Table"
         ]
       },
       "duration": 600,
@@ -473,7 +498,7 @@
       "id": "DoTheDishes",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 0.7
+        "manipulation": 0.5
       },
       "required_constraints": {
         "can_move": false,
@@ -481,7 +506,8 @@
         "can_transport_objects": false,
         "max_payload_kg": 1,
         "workspace": [
-          "Kitchen_sink"
+          "Kitchen_Dishwasher",
+          "Kitchen_Table"
         ]
       },
       "duration": 600,
@@ -492,7 +518,7 @@
       "id": "PutTheDishesAway",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 0.6,
+        "manipulation": 0.7,
         "transport": 1.0
       },
       "required_constraints": {
@@ -501,8 +527,8 @@
         "can_transport_objects": true,
         "max_payload_kg": 1,
         "workspace": [
-          "Kitchen_sink",
-          "Kitchen_shelves"
+          "Kitchen_Dishwasher",
+          "Kitchen_Shelves"
         ]
       },
       "duration": 300,
@@ -513,16 +539,26 @@
       "id": "BarbecueParty",
       "context": "HouseParty",
       "required_skills": {
-        "manipulation": 0.4,
-        "supervise": 0.5
+        "communication": 0.7,
+        "supervise": 0.8,
+        "planning": 0.7
       },
       "required_constraints": {
         "can_move": true,
-        "can_manipulate": true,
+        "can_manipulate": false,
         "can_transport_objects": false,
-        "max_payload_kg": 5,
+        "max_payload_kg": 0.5,
         "workspace": [
-          "global"
+          "Grill_Table",
+          "Grill",
+          "Garden",
+          "House",
+          "Drinks_Table",
+          "Prep_Table",
+          "Kitchen_Table",
+          "Kitchen_Stove",
+          "Kitchen_Dishwasher",
+          "Kitchen_Shelves"
         ]
       },
       "duration": 14400,
@@ -627,7 +663,8 @@
       "Host",
       "SuperviseParty"
     ],
-    ["SuperviseParty",
+    [
+      "SuperviseParty",
       "BarbecueParty"
     ],
     [

@@ -280,9 +280,9 @@ class Tiago(Agent):
         constraints = {
             "can_move":               True,
             "can_manipulate":         True,
-            "max_size_object_cm":     10,
-            "max_payload_kg":         3,
-            "max_reach_cm":           85,
+            "max_size_object_cm":     4.4,
+            "max_payload_kg":         2.1,
+            "max_reach_cm":           92,
             "can_transport_objects":  True,
             "workspace":              workspace,
         }
@@ -858,19 +858,19 @@ class Tiago(Agent):
             print("[Tiago] Pick grilled food sequence created.")
         elif action == "Reception":
             print("[Tiago] Checking subgoal Reception task completeness... (not implemented)")
-            sequence = [{"action": "sleep", "time": 5}]
+            sequence = [{"action": "sleep", "time": 25}]
         elif action == "PrepareDrinks":
             print("[Tiago] Checking subgoal Preparing drinks completeness... (not implemented)")
-            sequence = [{"action": "sleep", "time": 5}]
+            sequence = [{"action": "sleep", "time": 25}]
         elif action == "SuperviseParty":
             print("[Tiago] Checking subgoal Supervising party completeness... (not implemented)")
-            sequence = [{"action": "sleep", "time": 5}]
+            sequence = [{"action": "sleep", "time": 25}]
         elif action == "Clean":
             print("[Tiago] Checking subgoal Cleaning completeness... (not implemented)")
-            sequence = [{"action": "sleep", "time": 5}]
+            sequence = [{"action": "sleep", "time": 25}]
         elif action == "PrepareFood":
             print("[Tiago] Checking subgoal Preparing food completeness... (not implemented)")
-            sequence = [{"action": "sleep", "time": 5}]
+            sequence = [{"action": "sleep", "time": 25}]
         else:
             print(f"[Tiago] Action '{action}' not recognized.")
 

@@ -156,9 +156,9 @@ class Human(Agent):
         constraints = {
             "can_move":               True,
             "can_manipulate":         True,
-            "max_size_object_cm":     10,
-            "max_payload_kg":         3,
-            "max_reach_cm":           85,
+            "max_size_object_cm":     50,
+            "max_payload_kg":         5,
+            "max_reach_cm":           100,
             "can_transport_objects":  True,
             "workspace":              workspace,
         }
@@ -496,19 +496,19 @@ class Human(Agent):
             time.sleep(TIME_PICK_GRILLED_FOOD)
         elif action == "Reception":
             print("[Human] Host the party.")
-            time.sleep(5)
+            time.sleep(25)
         elif action == "PrepareDrinks":
             print("[Human] Prepare drinks.")
-            time.sleep(5)
+            time.sleep(25)
         elif action == "SuperviseParty":
             print("[Human] Supervise party.")
-            time.sleep(5)
+            time.sleep(25)
         elif action == "Clean":
             print("[Human] Clean up after party.")
-            time.sleep(5)
+            time.sleep(25)
         elif action == "PrepareFood":
             print("[Human] Prepare food.")
-            time.sleep(5)
+            time.sleep(25)
         else:
             print(f"[Human] Unknown task action: {action}")
 

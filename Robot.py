@@ -135,7 +135,7 @@ def _launch_human(robot_id, world_name, actor_type, color, x_pos, y_pos, yaw):
 # Agent instantiation (no spawn logic here — spawn is done above)
 # ---------------------------------------------------------------------------
 
-def _make_agent(robot_model, AgentClass, robot_id, world_name,
+def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
                 skill_weights, contexts, agent_role, teamsize,
                 use_sim, result_timeout, workspace, party_duration, guests, run_id):
     """Instantiate the correct agent class with its specific parameters."""
@@ -143,6 +143,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
     if robot_model == "Pepper":
         return AgentClass(
             robot_name    = robot_id,
+            constraints    = constraints,
             skill_weights = skill_weights,
             contexts      = contexts,
             role          = agent_role,
@@ -158,6 +159,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
         return AgentClass(
             robot_name    = robot_id,
             world_name    = world_name,
+            constraints    = constraints,
             skill_weights = skill_weights,
             contexts      = contexts,
             role          = agent_role,
@@ -173,6 +175,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
         return AgentClass(
             robot_name    = robot_id,
             world_name    = world_name,
+            constraints    = constraints,
             skill_weights = skill_weights,
             contexts      = contexts,
             role          = agent_role,
@@ -187,6 +190,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name,
     if robot_model == "Human":
         return AgentClass(
             actor_name    = robot_id,
+            constraints    = constraints,
             skill_weights = skill_weights,
             contexts      = contexts,
             role          = agent_role,
@@ -341,8 +345,10 @@ def main():
 
     # ── Load configs ─────────────────────────────────────────────────────────
     with open('configs/robots/' + args.robot + ".yaml") as f:
+    #with open('generate_experiments/barbecue_experiments_v2/Set_B_Skill_Level_Sweep/exp_skill_tie/' + args.robot + ".yaml") as f:
         robot_config = yaml.safe_load(f)
     with open('configs/exps/' + args.exp + ".yaml") as f:
+    #with open('generate_experiments/barbecue_experiments_v2/Set_B_Skill_Level_Sweep/exp_skill_tie/' + args.exp + ".yaml") as f:
         exp_config = yaml.safe_load(f)
 
     print(f"[Robot] Loaded robot config : {args.robot}")
@@ -360,14 +366,15 @@ def main():
     spawn_delay  = float(robot_config.get("spawn_delay", 12.0))
 
     workspace    = robot_config.get("workspace", None)
+    
+    constraints   = robot_config["constraints"]
+    
+    skill_weights = robot_config["skill_weights"]
+    contexts      = list(skill_weights.keys())
 
     # Human-specific (ignored by other models)
     actor_type   = robot_config.get("actor_type", "WalkingActor")
     actor_color  = robot_config.get("color",      "")
-
-    skill_weights = robot_config["skill_weights"]
-    contexts      = list(skill_weights.keys())
-
     result_timeout = float(robot_config.get("result_timeout", 120.0))
 
     # ── Exp config ───────────────────────────────────────────────────────────
@@ -439,6 +446,7 @@ def main():
         AgentClass    = AgentClass,
         robot_id      = robot_id,
         world_name    = world_name,
+        constraints    = constraints,
         skill_weights = skill_weights,
         contexts      = contexts,
         agent_role    = agent_role,
@@ -508,6 +516,7 @@ def main():
                     agent.allocate_task(all_agents, optimizeMode, top_k, debug)
                     time.sleep(5)
                     ready = True
+                    agent.export_data()
             else:
                 time.sleep(5)
                 agent.step()
@@ -519,6 +528,7 @@ def main():
         print("[Robot] KeyboardInterrupt — stopping agent.")
 
     finally:
+        agent.export_data()
         agent.closeComm()
         agent.shutdown()
         if launch_process is not None:

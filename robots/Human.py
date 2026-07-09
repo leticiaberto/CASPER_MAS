@@ -56,7 +56,7 @@ from __future__ import annotations
 import json
 import threading
 import time
-from typing import Callable, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
@@ -140,30 +140,33 @@ class Human(Agent):
     def __init__(
         self,
         actor_name:     str,
-        skill_weights,
-        contexts,
-        role,
-        teamsize:     int,
-        run_id:               str           = "test",
-        result_timeout: float         = 120.0,
-        sync_timeout:    float         = 60,
-        node_name:     Optional[str] = None,
-        use_sim       = True,
-        workspace:    str           = None,
-        party_duration:       float         = 3600.0, #1h default
-        guests:               int           = 0,
+        constraints:    dict            = None,
+        skill_weights:  dict            = None,
+        contexts:       List[str]       = None,
+        role:           str             = "member",
+        teamsize:       int             = 1,
+        run_id:         str             = "test",
+        result_timeout: float           = 120.0,
+        sync_timeout:   float           = 60,
+        node_name:      Optional[str]   = None,
+        use_sim:        bool            = True,
+        workspace:      List[str]       = None,
+        party_duration: float           = 3600.0, #1h default
+        guests:         int             = 0,
     ) -> None:
-        constraints = {
-            "can_move":               True,
-            "can_manipulate":         True,
-            "max_size_object_cm":     50,
-            "max_payload_kg":         5,
-            "max_reach_cm":           100,
-            "can_transport_objects":  True,
-            "workspace":              workspace,
-        }
 
-        super().__init__(actor_name, constraints, skill_weights, contexts, role, teamsize, party_duration, guests, run_id)
+        super().__init__(
+            actor_name, 
+            constraints or {},
+            workspace or [], 
+            skill_weights or {}, 
+            contexts or [], 
+            role, 
+            teamsize, 
+            party_duration, 
+            guests, 
+            run_id
+        )
 
         self._actor_name = actor_name
         self._sync_timeout  = sync_timeout

@@ -33,7 +33,8 @@ class CommunicationHandler:
         self.publish("skills_update", {
             "skill_weights": self.agent.skills.export_skill_weights(),
             "role": self.agent.role.value,
-            "constraints": self.agent.constraints
+            "constraints": self.agent.constraints,
+            "workspace": self.agent.workspace
         }, target=target)
         
     def send_constraints(self, target=None):
@@ -103,8 +104,9 @@ class CommunicationHandler:
                 role = Roles(role)  # deserialize back to enum
 
             constraints = msg["data"].get("constraints", {})
+            workspace   = msg["data"].get("workspace", [])
 
-            self.agent.partners_skills_update(sender, received_weights, contexts, role, constraints)
+            self.agent.partners_skills_update(sender, received_weights, contexts, role, constraints, workspace)
 
         elif msg_type == "task_assignment_batch":
             self.agent.get_task_assignment_batch(msg)

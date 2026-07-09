@@ -261,32 +261,36 @@ class Tiago(Agent):
 
     def __init__(
         self,
-        robot_name:   str,
-        world_name:   str,
-        skill_weights,
-        contexts,
-        role,
-        teamsize:     int,
-        run_id:               str           = "test",
-        use_sim:              bool          = True,
-        workspace:    str           = None,
-        party_duration:       float         = 3600.0, #1h default
-        guests:               int           = 0,
-        arm_base_z:   Optional[float] = None,
-        pose_timeout: float           = 15.0,
-        table_standoff  = 0.10,
-        nav_timeout:  float           = 120.0,
+        robot_name:     str,
+        world_name:     str,
+        constraints:    dict            = None,
+        skill_weights:  dict            = None,
+        contexts:       List[str]       = None,
+        role:           str             = "member",
+        teamsize:       int             = 1,
+        run_id:         str             = "test",
+        use_sim:        bool            = True,
+        workspace:      List[str]       = None,
+        party_duration: float           = 3600.0, #1h default
+        guests:         int             = 0,
+        arm_base_z:     Optional[float] = None,
+        pose_timeout:   float           = 15.0,
+        table_standoff                  = 0.10,
+        nav_timeout:    float           = 120.0,
     ) -> None:
-        constraints = {
-            "can_move":               True,
-            "can_manipulate":         True,
-            "max_size_object_cm":     4.4,
-            "max_payload_kg":         2.1,
-            "max_reach_cm":           92,
-            "can_transport_objects":  True,
-            "workspace":              workspace,
-        }
-        super().__init__(robot_name, constraints, skill_weights, contexts, role, teamsize, party_duration, guests, run_id)
+        
+        super().__init__(
+            robot_name, 
+            constraints or {},
+            workspace or [], 
+            skill_weights or {}, 
+            contexts or [], 
+            role, 
+            teamsize, 
+            party_duration, 
+            guests, 
+            run_id
+        )
 
         if use_sim:
             mode = RobotMode.SIMULATION

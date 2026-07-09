@@ -87,14 +87,14 @@ class Supervisor:
                     if hasattr(agent_obj, "skills"):
                         # PartnerAgent case
                         skill_model = agent_obj.skills
-                        constraints = getattr(agent_obj, "constraints", {})
+                        constraints = agent_obj.constraints
                     else:
                         # ContextualSkillModel case (supervisor's own entry)
                         skill_model = self.skill_model
                         constraints = self.constraints
     
                     # workspace lives inside the constraints dict (loaded from YAML)
-                    agent_workspaces = constraints.get("workspace")
+                    agent_workspaces = agent_obj.workspace  
     
                     # --- 1. Context check ---
                     agent_contexts = set()

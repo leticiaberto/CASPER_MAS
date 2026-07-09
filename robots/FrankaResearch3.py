@@ -15,6 +15,7 @@ Usage (from Robot.py)
 ---------------------
     agent = FrankaResearch3(
         robot_name    = robot_id,
+        constraints    = constraints,
         skill_weights = skill_weights,
         contexts      = contexts,
         role          = agent_role,
@@ -87,6 +88,7 @@ class FrankaResearch3(Agent):
     ----------
     robot_name : str
         ROS2 namespace of the robot (e.g. "fr3_robot1").
+    constraints : dict
     skill_weights : dict
     contexts : list
     role : str
@@ -110,13 +112,14 @@ class FrankaResearch3(Agent):
     def __init__(
         self,
         robot_name:           str,
+        constraints:          dict          = None,
         skill_weights:        dict          = None,
         contexts:             List[str]     = None,
         role:                 str           = "member",
         teamsize:             int           = 1,
         run_id:               str           = "test",
         use_sim:              bool          = True,
-        workspace:            str           = None,
+        workspace:            List[str]     = None,
         party_duration:       float         = 3600.0, #1h default
         guests:               int           = 0,
         franky_ip:            Optional[str] = None,
@@ -129,18 +132,10 @@ class FrankaResearch3(Agent):
         pose_timeout:         float         = 15.0,
     ) -> None:
 
-        constraints = {
-            "can_move":              False,
-            "can_manipulate":        True,
-            "max_size_object_cm":    8,
-            "max_payload_kg":        3,
-            "max_reach_cm":          85,
-            "can_transport_objects": False,
-            "workspace":             workspace,
-        }
         super().__init__(
             robot_name,
-            constraints,
+            constraints or {},
+            workspace or [],
             skill_weights or {},
             contexts or list((skill_weights or {}).keys()),
             role,

@@ -6,17 +6,32 @@ class PartnerAgent:
         self.skills = ContextualSkillModel(skills, contexts)
         self.trust = {c: init_trust for c in contexts}
         self.constraints = {} 
+        self.workspace = []
         self.role = role
     
     def print_partner_info(self):
         self.skills.print_skills_preferences()
-        print("Trust Levels:")
+        print("\nTrust Levels:")
         for context, trust_level in self.trust.items():
             print(f"  Context: {context}, Trust Level: {trust_level}")
 
-        print("Constraints:")
+        print("\nConstraints:")
         for constraint in self.constraints.items():
             print(constraint)
+
+        print("\nWorkspace:")
+        for item in self.workspace:
+            print(f"  {item}")
+
+    def get_partner_info(self):
+        info = {
+            "skills": self.skills.export_skill_weights(),
+            "trust": self.trust,
+            "constraints": self.constraints,
+            "workspace": self.workspace,
+            "role": self.role
+        }
+        return info
             
     def update_trust_level(self, context, reward, lr=0.05):
         """

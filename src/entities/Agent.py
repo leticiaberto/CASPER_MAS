@@ -1,3 +1,4 @@
+import os
 import queue
 from src.graph.RealTimeGraphVisualizer import RealTimeGraphVisualizer
 from src.entities.ContextualSkill import ContextualSkillModel
@@ -13,11 +14,14 @@ from src.analysis.ExperimentLogger import ExperimentLogger
 from abc import abstractmethod
 from utils import Roles
 import time
+import csv
+from datetime import datetime
 
 class Agent:
-    def __init__(self, id, constraints, skills, contexts, role, teamsize, party_duration, guests, run_id, log_dir="experiment_logs"):
+    def __init__(self, id, constraints, workspace, skills, contexts, role, teamsize, party_duration, guests, run_id, log_dir="experiment_logs"):
         self.id = id
         self.constraints = constraints  # Task independent      
+        self.workspace = workspace
         self.skills = ContextualSkillModel(skills, contexts)
         self.supervisor_id = None
         self.role = Roles(role)
@@ -69,25 +73,55 @@ class Agent:
         self.partners[partner_id] = PartnerAgent(skills, contexts, role)
 
     def print_partners(self):
-        print("------\n Partners of ", self.id)
+        print("# --------------------------------------------------------")
+        print("# Partners of ", self.id)
+        print("# --------------------------------------------------------")
         for pid, partner in self.partners.items():
             print(f"\nPartner_ID: {pid}")
             partner.print_partner_info()
-        print("------")
+            print("------------------------------------")
 
     # ----------------------------
     # Load/Save data
     # ----------------------------
-    def export_data(self):
-        filename = "skills_preferences_" + self.id + ".csv"
-        self.skills.export_skills_preferences_to_CSV(self.id, filename)# Export my own skills
-        for pid, partner in self.partners.items():# Export partners skills
-            partner.skills.export_skills_preferences_to_CSV(pid, filename)
-    
     def load_goal(self, task_file):
         # All agents know the task graph, but only the supervisor will score agents
         self.global_graph = GlobalGraph() # full DAG (read-only knowledge)
         self.global_graph.load_task_graph(task_file)
+
+    def export_data(self):
+        filename = "experiment_logs/skills_preferences_" + self.id + ".csv"
+        filename_const = "experiment_logs/constraints_workspace_" + self.id + ".csv"
+        
+        self.skills.export_skills_preferences_to_CSV(self.id, filename)# Export my own skills
+        self.export_constraints_workspace(self.id, self.constraints, self.workspace, filename_const)# Export my own constraints and workspace
+
+        for pid, partner in self.partners.items():# Export partners skills, constraints and workspace
+            partner.skills.export_skills_preferences_to_CSV(pid, filename)
+            self.export_constraints_workspace(pid, partner.get_partner_info()["constraints"], partner.get_partner_info()["workspace"], filename_const)
+
+    def export_constraints_workspace(self, pid, constraints, workspace, filename="constraints_workspace.csv"):
+        # Check if file already exists (to decide whether to write header)
+        file_exists = os.path.isfile(filename)
+
+        # Current timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        with open(filename, mode="a", newline="") as file:
+            writer = csv.writer(file)
+            # Write header only if file is new
+            if not file_exists:
+                writer.writerow([
+                    "Timestamp", "AgentID", "Constraints", "Workspace"
+                ])
+
+            # Append data rows
+            writer.writerow([
+                timestamp,
+                pid,
+                constraints,
+                workspace
+            ])
 
     # ----------------------------
     # Task allocation/execution
@@ -276,7 +310,7 @@ class Agent:
     # ----------------------------
     # Used in the message protocol
     # ----------------------------
-    def partners_skills_update(self, sender, received_weights, contexts, role, constraints):
+    def partners_skills_update(self, sender, received_weights, contexts, role, constraints, workspace):
         # Add partner if not already present
         if sender not in self.partners:
             self.add_partner(sender, received_weights, contexts, role)
@@ -286,6 +320,8 @@ class Agent:
             print(f"Updated partner {sender} skills!")
         
         self.partners[sender].constraints = constraints  # <-- always apply
+        self.partners[sender].workspace = workspace  # <-- always apply
+
         print(f"[{self.id}] Partner table updated: {list(self.partners.keys())}")
 
         self.partners[sender].skills.print_skills_preferences()

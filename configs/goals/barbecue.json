@@ -14,7 +14,7 @@
         "can_transport_objects": false,
         "max_payload_kg": 0.5,
         "workspace": [
-          "House",
+          "House_Entrance",
           "Garden"
         ]
       },
@@ -35,7 +35,7 @@
         "can_transport_objects": false,
         "max_payload_kg": 1,
         "workspace": [
-          "House",
+          "House_Entrance",
           "Garden"
         ]
       },
@@ -411,7 +411,7 @@
         "workspace": [
           "Grill_Table",
           "Garden",
-          "House",
+          "House_Entrance",
           "Drinks_Table",
           "Prep_Table",
           "Kitchen_Table",
@@ -437,7 +437,7 @@
         "workspace": [
           "Grill_Table",
           "Garden",
-          "House",
+          "House_Entrance",
           "Drinks_Table",
           "Prep_Table",
           "Kitchen_Table",
@@ -552,7 +552,7 @@
           "Grill_Table",
           "Grill",
           "Garden",
-          "House",
+          "House_Entrance",
           "Drinks_Table",
           "Prep_Table",
           "Kitchen_Table",

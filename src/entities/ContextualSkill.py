@@ -109,7 +109,7 @@ class ContextualSkillModel:
         # Current timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        with open("data/" + filename, mode="a", newline="") as file:
+        with open(filename, mode="a", newline="") as file:
             writer = csv.writer(file)
 
             # Write header only if file is new

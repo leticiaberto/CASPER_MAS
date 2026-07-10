@@ -1,6 +1,7 @@
 from src.graph.GraphVisualizer import GraphVisualizer
 from src.graph.TaskAssignment import TaskAssignment, TaskStatus
 from src.analysis.ExperimentLogger import ExperimentLogger
+from utils import Roles
     
 class Supervisor:
     def __init__(self, name, agent, publish_fn, run_id=None, log_dir="experiment_logs"):
@@ -24,6 +25,10 @@ class Supervisor:
     @property
     def skill_model(self):
         return self.agent.skills
+    
+    @property
+    def workspace(self):
+        return self.agent.workspace
 
     # Weight given to skill (vs. preference) inside the balance_skill_preference
     # combined score. alpha=0.7 -> skill counts 70%, preference 30%.
@@ -66,20 +71,25 @@ class Supervisor:
 
             scored_agents = []
 
-            # If is the main goal (or a subgoal, e.g. subgoal_level == 1), set everyone as part of
-            # the team, but the one responsible for checking/executing it is the supervisor
+            # If this is the main goal (or a subgoal, e.g. subgoal_level == 1),
+            # only supervisor-role agents may compete for it (the supervisor
+            # itself, plus any partner also holding the SUPERVISOR role) —
+            # but they still have to pass the exact same skill/constraint/
+            # workspace checks as everyone else does for a normal task.
             if((task.get("is_end_goal", False) or task.get("subgoal_level") == 1) and supervisor_id is not None):
-                # Skip end goals for all agents except the one who owns the supervisor
-                scored_agents.append((supervisor_id, 1.0))
+                candidates = [(supervisor_id, self.skill_model, self.constraints, self.workspace)]
                 for agent_id, agent_obj in agents.items():
-                    if agent_id != supervisor_id:
-                        scored_agents.append((agent_id, 0.0))
- 
+                    if getattr(agent_obj, "role", None) == Roles.SUPERVISOR:
+                        candidates.append((agent_id, agent_obj.skills, agent_obj.constraints, agent_obj.workspace))
+
+                for agent_id, skill_model, constraints, agent_workspaces in candidates:
+                    qualifies, score = self._agent_qualifies_for_task(task, skill_model, constraints, agent_workspaces, mode)
+                    if qualifies:
+                        scored_agents.append((agent_id, score))
+
+                scored_agents.sort(key=lambda x: x[1], reverse=True)
+
             else:# Not end goal, normal process of checking skills and constraints to assign the best agent(s).
-                context = task.get("context")
-                required_skills = task.get("required_skills", {})
-                required_constraints = task.get("required_constraints", {})
-    
                 # Iterate over dictionary
                 for agent_id, agent_obj in agents.items():
     
@@ -88,138 +98,147 @@ class Supervisor:
                         # PartnerAgent case
                         skill_model = agent_obj.skills
                         constraints = agent_obj.constraints
+                        agent_workspaces = agent_obj.workspace
                     else:
                         # ContextualSkillModel case (supervisor's own entry)
                         skill_model = self.skill_model
                         constraints = self.constraints
-    
-                    # workspace lives inside the constraints dict (loaded from YAML)
-                    agent_workspaces = agent_obj.workspace  
-    
-                    # --- 1. Context check ---
-                    agent_contexts = set()
-                    for s in skill_model.skill_level:
-                        agent_contexts.update(skill_model.skill_level[s].keys())
-    
-                    if context not in agent_contexts:
-                        continue
-    
-                    # --- 1.5. Workspace check ---
-                    # The agent must be able to access ALL workspaces required by the task.
-                    # If the task declares workspaces but the agent declares none → reject.
-                    task_workspaces = task.get("required_constraints", {}).get("workspace")
-    
-                    if task_workspaces is not None:
-                        if agent_workspaces is None:
-                            continue  # task requires specific workspaces; agent declares none → skip
-                        task_ws_set = (
-                            {w.lower() for w in task_workspaces}
-                            if isinstance(task_workspaces, list)
-                            else {task_workspaces.lower()}
-                        )
-                        agent_ws_set = (
-                            {w.lower() for w in agent_workspaces}
-                            if isinstance(agent_workspaces, list)
-                            else {agent_workspaces.lower()}
-                        )
-                        if not task_ws_set.issubset(agent_ws_set):
-                            continue  # agent missing at least one required workspace → skip
-    
-                    # --- 2. Skill & preference scoring ---
-                    # NOTE: "preference" here is a RANK (1 = most preferred),
-                    # so we convert it into a normalized 0-1 score before
-                    # using it in any formula — that way "higher score =
-                    # better" holds uniformly across all modes, and an
-                    # agent's preference scores are spread across their own
-                    # ranked list rather than collapsing toward 0 for
-                    # anything past their first couple of picks.
-                    #
-                    # Normalization is per-agent, per-context: N = how many
-                    # skills THIS agent has ranked within THIS task's
-                    # context (not the candidate pool, not other contexts).
-                    # preference_score = (N - rank + 1) / N, so rank 1 of N
-                    # -> 1.0 and rank N of N -> 1/N (never hits 0).
-                    skills_ranked_in_context = sum(
-                        1
-                        for prefs_by_context in skill_model.skill_preference.values()
-                        if context in prefs_by_context
-                    )
+                        agent_workspaces = self.workspace                      
 
-                    skill_ok = True
-                    score = 0.0
+                    qualifies, score = self._agent_qualifies_for_task(task, skill_model, constraints, agent_workspaces, mode)
+                    if qualifies:
+                        scored_agents.append((agent_id, score))
     
-                    for skill, min_level in required_skills.items():
-                        level = skill_model.skill_level.get(skill, {}).get(context, 0.0)
-                        rank = skill_model.skill_preference.get(skill, {}).get(context)
-    
-                        if level < min_level:
-                            skill_ok = False
-                            break
-    
-                        # Normalization only makes sense for rank >= 1 and
-                        # N >= 1; treat a missing/non-positive rank, or no
-                        # ranked skills in this context, as "no preference"
-                        # (0.0 contribution) rather than dividing by zero.
-                        if rank and rank > 0 and skills_ranked_in_context > 0:
-                            pref_score = (skills_ranked_in_context - rank + 1) / skills_ranked_in_context
-                        else:
-                            pref_score = 0.0
-    
-                        if mode == "skill":
-                            score += level
-                        elif mode == "preference":
-                            score += pref_score
-                        elif mode == "balance_skill_preference":
-                            score += (
-                                self.BALANCE_SKILL_PREFERENCE_ALPHA * level
-                                + (1 - self.BALANCE_SKILL_PREFERENCE_ALPHA) * pref_score
-                            )
-                        elif mode == "balance_workload":
-                            # Eligibility-only mode: skill/preference don't
-                            # contribute to score here, they only gate
-                            # skill_ok above. Real selection happens by
-                            # workload in get_selected_agent.
-                            pass
-    
-                    if not skill_ok:
-                        continue
-    
-                    # --- 3. Constraint check ---
-                    constraint_ok = True
-                    for key, value in required_constraints.items():
-    
-                        if key == "workspace":
-                            continue  # already enforced by step 1.5 — skip here
-    
-                        if key not in constraints:
-                            continue  # unknown ≠ forbidden
-    
-                        agent_value = constraints[key]
-    
-                        if isinstance(value, (int, float)):
-                            if agent_value < value:
-                                constraint_ok = False
-                                break
-                        else:
-                            if agent_value != value:
-                                constraint_ok = False
-                                break
-    
-                    if not constraint_ok:
-                        continue
-
-                    # Normalizing fixes cross-task comparison within a mode, not cross-mode comparison.
-                    if required_skills:
-                        score /= len(required_skills)#  every task's score lands in roughly the same [0,1] range regardless of how many skills it requires.
-    
-                    scored_agents.append((agent_id, score))
-    
-                # --- 4. Sort descending ---
+                # --- Sort descending ---
                 scored_agents.sort(key=lambda x: x[1], reverse=True)
                 
             task_rankings[node_id] = scored_agents
  
         return task_rankings
+
+    def _agent_qualifies_for_task(self, task, skill_model, constraints, agent_workspaces, mode):
+        """
+        Shared eligibility + scoring check used for EVERY task — regular
+        tasks and subgoal/end-goal tasks alike. An agent (or the supervisor
+        itself) only ever gets into the candidate pool for a task if it
+        passes all three of:
+          1. Context check — agent must know something about this context.
+          2. Workspace check — agent must cover every workspace the task needs.
+          3. Skill + constraint check — agent must meet every required_skill
+             minimum and every required_constraint.
+
+        Returns (qualifies: bool, score: float). score is only meaningful
+        when qualifies is True; in "balance_workload" mode it is always 0.0
+        (a placeholder — see score_agents_for_task's mode docstring), since
+        real selection there happens by workload, not score.
+        """
+        context = task.get("context")
+        required_skills = task.get("required_skills", {})
+        required_constraints = task.get("required_constraints", {})
+
+        # --- 1. Context check ---
+        agent_contexts = set()
+        for s in skill_model.skill_level:
+            agent_contexts.update(skill_model.skill_level[s].keys())
+
+        if context not in agent_contexts:
+            return False, 0.0
+
+        # --- 1.5. Workspace check ---
+        # The agent must be able to access ALL workspaces required by the task.
+        # If the task declares workspaces but the agent declares none → reject.
+        task_workspaces = required_constraints.get("workspace")
+
+        if task_workspaces is not None:
+            if agent_workspaces is None:
+                return False, 0.0  # task requires specific workspaces; agent declares none → reject
+            task_ws_set = (
+                {w.lower() for w in task_workspaces}
+                if isinstance(task_workspaces, list)
+                else {task_workspaces.lower()}
+            )
+            agent_ws_set = (
+                {w.lower() for w in agent_workspaces}
+                if isinstance(agent_workspaces, list)
+                else {agent_workspaces.lower()}
+            )
+            if not task_ws_set.issubset(agent_ws_set):
+                return False, 0.0  # agent missing at least one required workspace → reject
+
+        # --- 2. Skill & preference scoring ---
+        # NOTE: "preference" here is a RANK (1 = most preferred), so we
+        # convert it into a normalized 0-1 score before using it in any
+        # formula — that way "higher score = better" holds uniformly across
+        # all modes, and an agent's preference scores are spread across
+        # their own ranked list rather than collapsing toward 0 for
+        # anything past their first couple of picks.
+        #
+        # Normalization is per-agent, per-context: N = how many skills THIS
+        # agent has ranked within THIS task's context (not the candidate
+        # pool, not other contexts). preference_score = (N - rank + 1) / N,
+        # so rank 1 of N -> 1.0 and rank N of N -> 1/N (never hits 0).
+        skills_ranked_in_context = sum(
+            1
+            for prefs_by_context in skill_model.skill_preference.values()
+            if context in prefs_by_context
+        )
+
+        score = 0.0
+
+        for skill, min_level in required_skills.items():
+            level = skill_model.skill_level.get(skill, {}).get(context, 0.0)
+            rank = skill_model.skill_preference.get(skill, {}).get(context)
+
+            if level < min_level:
+                return False, 0.0
+
+            # Normalization only makes sense for rank >= 1 and N >= 1; treat
+            # a missing/non-positive rank, or no ranked skills in this
+            # context, as "no preference" (0.0 contribution) rather than
+            # dividing by zero.
+            if rank and rank > 0 and skills_ranked_in_context > 0:
+                pref_score = (skills_ranked_in_context - rank + 1) / skills_ranked_in_context
+            else:
+                pref_score = 0.0
+
+            if mode == "skill":
+                score += level
+            elif mode == "preference":
+                score += pref_score
+            elif mode == "balance_skill_preference":
+                score += (
+                    self.BALANCE_SKILL_PREFERENCE_ALPHA * level
+                    + (1 - self.BALANCE_SKILL_PREFERENCE_ALPHA) * pref_score
+                )
+            elif mode == "balance_workload":
+                # Eligibility-only mode: skill/preference don't contribute
+                # to score here, they only gate qualification above. Real
+                # selection happens by workload in get_selected_agent.
+                pass
+
+        # --- 3. Constraint check ---
+        for key, value in required_constraints.items():
+
+            if key == "workspace":
+                continue  # already enforced by step 1.5 — skip here
+
+            if key not in constraints:
+                continue  # unknown ≠ forbidden
+
+            agent_value = constraints[key]
+
+            if isinstance(value, (int, float)):
+                if agent_value < value:
+                    return False, 0.0
+            else:
+                if agent_value != value:
+                    return False, 0.0
+
+        # Normalizing fixes cross-task comparison within a mode, not cross-mode comparison.
+        if required_skills:
+            score /= len(required_skills)  # every task's score lands in roughly the same [0,1] range regardless of how many skills it requires.
+
+        return True, score
 
     def get_top_candidates(self, task, scored, selected_agent_id, top_k=3):
         """
@@ -394,85 +413,16 @@ class Supervisor:
             workload[busiest_agent] -= 1
             workload[target_agent] = workload.get(target_agent, 0) + 1
 
-    def _check_supervisor_eligibility(self, G, supervisor_id):
-        """
-        Verifies that the agent designated as supervisor_id actually meets
-        the required_skills of the end-goal task (is_end_goal=True, e.g.
-        BarbecueParty's "supervise"/management requirement) BEFORE any
-        scoring runs.
-
-        score_agents_for_task's is_end_goal branch (see above) never checks
-        required_skills for the end-goal task -- it unconditionally hands
-        the supervisor a score of 1.0. That is fine for selecting *which
-        node* represents the end goal, but it means an unqualified
-        supervisor would otherwise sail through with no eligibility check
-        at all. This method closes that gap, using the supervisor's own
-        skill model (self.skill_model / self.constraints, the same
-        "ContextualSkillModel case (supervisor's own entry)" used
-        elsewhere in this file) rather than looking the supervisor up in
-        the `agents` dict, since the supervisor's own entry is tracked on
-        `self`, not in that dict.
-
-        Returns True if eligible (or if there is no end-goal task / no
-        required_skills on it -- nothing to check). Returns False and
-        triggers the same shutdown path used for unassigned_tasks if the
-        supervisor fails its own end-goal's required_skills.
-        """
-        end_goal_node = None
-        end_goal_task = None
-        for node_id in G.nodes:
-            task = G.nodes[node_id]
-            if task.get("is_end_goal", False) or task.get("subgoal_level") == 1:
-                end_goal_node = node_id
-                end_goal_task = task
-                break
-
-        if end_goal_task is None:
-            return True  # no end-goal task in this graph; nothing to check
-
-        required_skills = end_goal_task.get("required_skills", {})
-        if not required_skills:
-            return True  # end-goal task declares no skill requirements
-
-        context = end_goal_task.get("context")
-        missing = {}
-        for skill, min_level in required_skills.items():
-            level = self.skill_model.skill_level.get(skill, {}).get(context, 0.0)
-            if level < min_level:
-                missing[skill] = {"required": min_level, "actual": level}
-
-        if not missing:
-            return True
-
-        print(
-            f"[{self.name}] Supervisor '{supervisor_id}' does not meet the "
-            f"required_skills for end-goal task '{end_goal_node}': {missing}. "
-            f"Shutting down."
-        )
-        self.publish(
-            "shutdown",
-            {
-                "reason": "supervisor_unqualified",
-                "supervisor_id": supervisor_id,
-                "end_goal_task": end_goal_node,
-                "missing_skills": missing,
-            },
-        )
-        # Broadcasts aren't delivered back to the sender (same convention
-        # as the unassigned_tasks shutdown below), so also fire the hook
-        # locally.
-        self.agent.handle_shutdown("supervisor_unqualified", missing)
-        return False
-
     def assign_agents_to_tasks(self, G, agents, mode, top_k, debug, supervisor_id):
-        # Verify the supervisor itself is qualified for the end-goal task
-        # BEFORE scoring anything -- score_agents_for_task's is_end_goal
-        # branch always gives the supervisor a 1.0 regardless of skill, so
-        # this check has to happen here, not inside scoring.
-        if not self._check_supervisor_eligibility(G, supervisor_id):
-            return
-
-        # Score all agents for all tasks
+        # Score all agents for all tasks. score_agents_for_task now runs the
+        # full skill/constraint/workspace check for subgoal/end-goal tasks
+        # too (restricted to the supervisor-role candidate pool), so any
+        # task -- subgoal, end-goal, or regular -- that nobody qualifies for
+        # simply comes back with an empty candidate list here, and is caught
+        # by the generic "unassigned_tasks" shutdown path below. A dedicated
+        # pre-check is no longer needed (the old one only ever validated the
+        # first end-goal/subgoal task it found in node order, silently
+        # skipping the rest).
         capable_agents = self.score_agents_for_task(G, agents, mode, supervisor_id) 
 
         if(debug):

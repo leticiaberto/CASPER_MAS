@@ -1,0 +1,164 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <!--
+    Composition (all primitives, single link "link"):
+      mantle       : cylinder, radius 0.02 m, length 0.12 m, axis along Y
+      head_cap     : sphere rounding off the +Y end of the mantle
+      fin_l/r      : thin angled boxes near the -Y (rear) end
+      eye_l/r      : small dark spheres on the head
+      tentacle_1-4 : thin cylinders splayed out from the +Y (front) end
+
+    Body length axis = Y (mirrors the "meat"/fish convention), matching the
+    fish model so both can share a scene frame.
+
+    Collision is a single box covering the mantle's bounding volume
+    (fins/head/tentacles are visual-only) to keep physics cheap.
+    A box is used instead of a cylinder-on-its-side so the model rests
+    stably and doesn't roll like a pin when it lands or gets bumped.
+    Visual != Collision here, same simplification approach as the fish model.
+
+    Inertia from the mantle bounding box (X=0.04,Y=0.12,Z=0.04), mass=0.04 kg:
+      ixx = (1/12)*m*(Y^2+Z^2), iyy = (1/12)*m*(X^2+Z^2), izz = (1/12)*m*(X^2+Y^2)
+  -->
+  <model name="squid">
+    <link name="link">
+
+      <inertial>
+        <mass>0.04</mass>
+        <inertia>
+          <ixx>0.0000533</ixx>  <!-- (1/12)*0.04*(0.12^2+0.04^2) -->
+          <iyy>0.00001067</iyy> <!-- (1/12)*0.04*(0.04^2+0.04^2) -->
+          <izz>0.0000533</izz>  <!-- (1/12)*0.04*(0.04^2+0.12^2) -->
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box><size>0.04 0.12 0.04</size></box>
+        </geometry>
+        <surface>
+          <friction><ode><mu>0.6</mu><mu2>0.6</mu2></ode></friction>
+        </surface>
+      </collision>
+
+      <!-- mantle (main body tube) -->
+      <visual name="mantle">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry>
+          <cylinder><radius>0.02</radius><length>0.12</length></cylinder>
+        </geometry>
+        <material>
+          <ambient>0.82 0.68 0.72 0.85</ambient>
+          <diffuse>0.90 0.78 0.82 0.85</diffuse>
+          <specular>0.4 0.4 0.4 1</specular>
+        </material>
+      </visual>
+
+      <!-- rounded head cap, front (+Y) end -->
+      <visual name="head_cap">
+        <pose>0 0.06 0 0 0 0</pose>
+        <geometry>
+          <sphere><radius>0.02</radius></sphere>
+        </geometry>
+        <material>
+          <ambient>0.82 0.68 0.72 0.85</ambient>
+          <diffuse>0.90 0.78 0.82 0.85</diffuse>
+        </material>
+      </visual>
+
+      <!-- two angled fins near the rear (-Y) end -->
+      <visual name="fin_left">
+        <pose>0.025 -0.04 0 0 0 0.5</pose>
+        <geometry>
+          <box><size>0.002 0.055 0.035</size></box>
+        </geometry>
+        <material>
+          <ambient>0.70 0.50 0.56 0.85</ambient>
+          <diffuse>0.78 0.58 0.64 0.85</diffuse>
+        </material>
+      </visual>
+
+      <visual name="fin_right">
+        <pose>-0.025 -0.04 0 0 0 -0.5</pose>
+        <geometry>
+          <box><size>0.002 0.055 0.035</size></box>
+        </geometry>
+        <material>
+          <ambient>0.70 0.50 0.56 0.85</ambient>
+          <diffuse>0.78 0.58 0.64 0.85</diffuse>
+        </material>
+      </visual>
+
+      <!-- eyes on the head -->
+      <visual name="eye_left">
+        <pose>0.017 0.065 0.006 0 0 0</pose>
+        <geometry>
+          <sphere><radius>0.005</radius></sphere>
+        </geometry>
+        <material>
+          <ambient>0.03 0.03 0.03 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="eye_right">
+        <pose>-0.017 0.065 0.006 0 0 0</pose>
+        <geometry>
+          <sphere><radius>0.005</radius></sphere>
+        </geometry>
+        <material>
+          <ambient>0.03 0.03 0.03 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- tentacles, splayed from the front end -->
+      <visual name="tentacle_1">
+        <pose>0.014 0.10 -0.005 1.0 0 0.2</pose>
+        <geometry>
+          <cylinder><radius>0.003</radius><length>0.06</length></cylinder>
+        </geometry>
+        <material>
+          <ambient>0.78 0.62 0.68 0.9</ambient>
+          <diffuse>0.85 0.70 0.75 0.9</diffuse>
+        </material>
+      </visual>
+
+      <visual name="tentacle_2">
+        <pose>-0.014 0.10 -0.005 1.0 0 -0.2</pose>
+        <geometry>
+          <cylinder><radius>0.003</radius><length>0.06</length></cylinder>
+        </geometry>
+        <material>
+          <ambient>0.78 0.62 0.68 0.9</ambient>
+          <diffuse>0.85 0.70 0.75 0.9</diffuse>
+        </material>
+      </visual>
+
+      <visual name="tentacle_3">
+        <pose>0.006 0.10 -0.012 1.15 0 0.05</pose>
+        <geometry>
+          <cylinder><radius>0.0025</radius><length>0.05</length></cylinder>
+        </geometry>
+        <material>
+          <ambient>0.78 0.62 0.68 0.9</ambient>
+          <diffuse>0.85 0.70 0.75 0.9</diffuse>
+        </material>
+      </visual>
+
+      <visual name="tentacle_4">
+        <pose>-0.006 0.10 -0.012 1.15 0 -0.05</pose>
+        <geometry>
+          <cylinder><radius>0.0025</radius><length>0.05</length></cylinder>
+        </geometry>
+        <material>
+          <ambient>0.78 0.62 0.68 0.9</ambient>
+          <diffuse>0.85 0.70 0.75 0.9</diffuse>
+        </material>
+      </visual>
+
+    </link>
+  </model>
+</sdf>

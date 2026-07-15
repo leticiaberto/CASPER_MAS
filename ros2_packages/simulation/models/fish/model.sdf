@@ -1,0 +1,119 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <!--
+    Composition (all primitives, single link "link"):
+      body       : box  0.03 (X) x 0.12 (Y) x 0.06 (Z), flattened streamlined torso
+      belly      : thin box, lighter colour, offset toward -Z
+      tail_fin   : thin box at -Y end, semi-transparent
+      dorsal_fin : thin box on top, semi-transparent
+      eye_l/r    : small spheres near the +Y (front) end
+
+    Body length axis = Y, height = Z, width (thickness) = X, matching the
+    "meat" reference model's convention.
+
+    Collision is simplified to a single bounding box the size of the body
+    (fins/eyes are visual-only) to keep physics cheap.
+    Visual != Collision here (unlike the meat model) because of the added
+    fin/eye detail primitives.
+
+    Inertia is computed from the main body bounding box, mass = 0.05 kg:
+      ixx = (1/12)*m*(Y^2+Z^2), iyy = (1/12)*m*(X^2+Z^2), izz = (1/12)*m*(X^2+Y^2)
+  -->
+  <model name="fish">
+    <link name="link">
+
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.000075</ixx>    <!-- (1/12)*0.05*(0.12^2+0.06^2) -->
+          <iyy>0.00001875</iyy>  <!-- (1/12)*0.05*(0.03^2+0.06^2) -->
+          <izz>0.00006375</izz>  <!-- (1/12)*0.05*(0.03^2+0.12^2) -->
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box><size>0.03 0.12 0.06</size></box>
+        </geometry>
+        <surface>
+          <friction><ode><mu>0.8</mu><mu2>0.8</mu2></ode></friction>
+        </surface>
+      </collision>
+
+      <!-- main torso -->
+      <visual name="body">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box><size>0.03 0.12 0.06</size></box>
+        </geometry>
+        <material>
+          <ambient>0.25 0.45 0.55 1</ambient>
+          <diffuse>0.35 0.58 0.68 1</diffuse>
+          <specular>0.3 0.3 0.3 1</specular>
+        </material>
+      </visual>
+
+      <!-- pale belly stripe -->
+      <visual name="belly">
+        <pose>0 0 -0.021 0 0 0</pose>
+        <geometry>
+          <box><size>0.031 0.095 0.018</size></box>
+        </geometry>
+        <material>
+          <ambient>0.85 0.85 0.82 1</ambient>
+          <diffuse>0.92 0.92 0.90 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- tail fin, back (-Y) end -->
+      <visual name="tail_fin">
+        <pose>0 -0.09 0 0 0 0</pose>
+        <geometry>
+          <box><size>0.004 0.06 0.08</size></box>
+        </geometry>
+        <material>
+          <ambient>0.15 0.30 0.40 0.85</ambient>
+          <diffuse>0.20 0.38 0.48 0.85</diffuse>
+        </material>
+      </visual>
+
+      <!-- dorsal fin, top -->
+      <visual name="dorsal_fin">
+        <pose>0 0.005 0.045 0 0 0</pose>
+        <geometry>
+          <box><size>0.004 0.05 0.03</size></box>
+        </geometry>
+        <material>
+          <ambient>0.15 0.30 0.40 0.85</ambient>
+          <diffuse>0.20 0.38 0.48 0.85</diffuse>
+        </material>
+      </visual>
+
+      <!-- eyes, near front (+Y) end -->
+      <visual name="eye_left">
+        <pose>0.016 0.045 0.015 0 0 0</pose>
+        <geometry>
+          <sphere><radius>0.006</radius></sphere>
+        </geometry>
+        <material>
+          <ambient>0.02 0.02 0.02 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+        </material>
+      </visual>
+
+      <visual name="eye_right">
+        <pose>-0.016 0.045 0.015 0 0 0</pose>
+        <geometry>
+          <sphere><radius>0.006</radius></sphere>
+        </geometry>
+        <material>
+          <ambient>0.02 0.02 0.02 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+        </material>
+      </visual>
+
+    </link>
+  </model>
+</sdf>

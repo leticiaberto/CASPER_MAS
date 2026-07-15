@@ -1,0 +1,730 @@
+<?xml version='1.0'?>
+<!--
+  Coordinate convention (ROS2 / SDFormat)
+      X  =  forward (into screen at yaw=0, robot facing +X)
+      Y  =  left
+      Z  =  up
+
+  Model pose convention
+  ─────────────────────
+  Every <model><pose> z places the model's GEOMETRIC CENTRE in world Z.
+  Child visual/collision poses are relative to the link origin.
+
+  Surface world-Z values
+  ──────────────────────
+  All table tops (0.10 m thick box, model-centre at z=0.80):
+      top surface = 0.80 + 0.05 = 0.85 m
+
+  Grill top slab (0.06 m thick, link-centre at z=0.83 above grill model origin):
+      top surface = 0.83 + 0.03 = 0.86 m
+
+  Object world-Z (= surface_z + half_height)
+  ──────────────────────────────────────────
+  Model        Origin      half-height   surface   world-z
+  ─────────────────────────────────────────────────────────
+  meat         centre       0.025         0.86      0.885
+  garlic_bread centre       0.040         0.86      0.900
+  plate        bottom       0.000         0.85      0.850
+  tomato       centre       0.025         0.85      0.875
+  purple_onion centre       0.025         0.85      0.875
+  carrot       centre*      0.020         0.85      0.870  (*pitch=π/2, lies flat)
+  cucumber     centre*      0.020         0.85      0.870
+  bowl         bottom       0.000         0.85      0.850
+  drink        centre       0.060         0.85      0.910
+
+  ── Redesign notes ─────────────────────────────────────────────────
+  This scenario is a re-skinned variant of the original backyard.sdf:
+    * House rebuilt as an L-shaped structure wrapping the top (north)
+      and right (east) sides of the yard, in a new colour, replacing
+      fence_back / fence_right (the house itself now forms those walls).
+    * Ground changed from grass to a rectangular concrete patio.
+    * One large dining table split into two smaller two-seat tables.
+    * A second grill station ("fish_grill" + "fish_table") added,
+      mirrored on the opposite side of the yard from the original grill.
+    * Every item that used to sit on a piece of furniture keeps the same
+      position *relative* to that furniture, so plates/veg/drinks/meat
+      all moved together with their tables (positions re-derived after
+      the grills/tables were relocated; the two rotated prep tables had
+      their items' offsets rotated along with them).
+    * The old single "prep" table (veg + salad combined) is now two
+      tables: "prep" holds the salad items (tomato, purple_onion,
+      chop_board, one bowl) and "prep_veg" holds the raw veg (carrot,
+      cucumber, one bowl).
+-->
+
+<sdf version="1.7">
+  <world name="backyard">
+
+    <!-- ── Physics ─────────────────────────────────────────────────── -->
+    <physics name="default_physics" type="dart">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+
+    <plugin name="gz::sim::systems::Physics"          filename="ignition-gazebo-physics-system"/>
+    <plugin name="gz::sim::systems::UserCommands"     filename="ignition-gazebo-user-commands-system"/>
+    <plugin name="gz::sim::systems::SceneBroadcaster" filename="ignition-gazebo-scene-broadcaster-system"/>
+    <plugin name="gz::sim::systems::Contact"          filename="ignition-gazebo-contact-system"/>
+
+    <gravity>0 0 -9.8</gravity>
+    <atmosphere type="adiabatic"/>
+
+    <!-- ── Scene ───────────────────────────────────────────────────── -->
+    <scene>
+      <ambient>0.6 0.6 0.6 1</ambient>
+      <background>0.8 0.9 1 1</background>
+      <shadows>false</shadows>
+    </scene>
+
+    <!-- ── Sun ─────────────────────────────────────────────────────── -->
+    <light name="sun" type="directional">
+      <cast_shadows>false</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>1 1 1 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.5 -1</direction>
+    </light>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         GROUND PLANE — infinite half-space collision, rectangular
+         concrete-patio visual (was a 14×14 grass square). Spans the
+         full depth of the yard so the grey floor reaches from the
+         house door (y=6) all the way down to the south gate (y=-6).
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="ground">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>100 100</size></plane>
+          </geometry>
+          <surface>
+            <friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.001</min_depth></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <plane><normal>0 0 1</normal><size>13 12</size></plane>
+          </geometry>
+          <material>
+            <ambient>0.55 0.55 0.55 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         PERIMETER FENCE  (visual only)
+         West side is a plain fence. North and east sides are formed by
+         the L-shaped house below. South side (previously left fully
+         open) is now a matching fence-style wall split around a
+         centred gate.
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="fence_left">
+      <static>true</static>
+      <pose>-6 0 1 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>0.2 12 2</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- South fence — two segments flanking the gate opening (x=-2..2) -->
+    <model name="fence_south_left">
+      <static>true</static>
+      <pose>-4 -6 1 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>4 0.2 2</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="fence_south_right">
+      <static>true</static>
+      <pose>4 -6 1 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>4 0.2 2</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Gate — same panel shape as the glass door (4 m wide), but an
+         opaque dark-iron material so it clearly reads as a gate rather
+         than the house's glass door. Height matches the fence (2 m). -->
+    <model name="gate">
+      <static>true</static>
+      <pose>0 -6 1 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>4 0.1 2</size></box></geometry>
+          <material><ambient>0.25 0.22 0.2 1</ambient><diffuse>0.3 0.27 0.24 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         HOUSE  (visual only) — new L-shaped footprint, new colour.
+         Wing "top" runs along the north edge (y=6..9), wing "right"
+         runs along the east edge (x=6..9), meeting at the NE corner —
+         together they replace fence_back and fence_right.
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="house">
+      <static>true</static>
+      <link name="wing_top">
+        <pose>0 7.5 1.5 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>12 3 3</size></box></geometry>
+          <material><ambient>0.65 0.75 0.87 1</ambient><diffuse>0.70 0.80 0.92 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Right wing now runs the full length of the top wing, from the
+           south end of the yard (y=-6) up to the far edge of wing_top
+           (y=9), so the two wings form a continuous L with no gap. -->
+      <link name="wing_right">
+        <pose>7.5 1.5 1.5 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>3 15 3</size></box></geometry>
+          <material><ambient>0.65 0.75 0.87 1</ambient><diffuse>0.70 0.80 0.92 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Roof trim over both wings -->
+      <link name="roof_trim_top">
+        <pose>0 7.5 3.05 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>12.4 3.4 0.1</size></box></geometry>
+          <material><ambient>0.68 0.53 0.38 1</ambient><diffuse>0.74 0.58 0.42 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="roof_trim_right">
+        <pose>7.5 1.5 3.05 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>3.4 15.4 0.1</size></box></geometry>
+          <material><ambient>0.68 0.53 0.38 1</ambient><diffuse>0.74 0.58 0.42 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Two square windows flanking the glass door on wing_top -->
+      <link name="window_top_1">
+        <pose>-4 6 1.5 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>1.4 0.1 1.4</size></box></geometry>
+          <material><ambient>0.75 0.88 0.95 0.6</ambient><diffuse>0.75 0.88 0.95 0.6</diffuse></material>
+        </visual>
+      </link>
+      <link name="window_top_2">
+        <pose>4 6 1.5 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>1.4 0.1 1.4</size></box></geometry>
+          <material><ambient>0.75 0.88 0.95 0.6</ambient><diffuse>0.75 0.88 0.95 0.6</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Three square windows along wing_right's yard-facing wall,
+           shifted south (toward the gate) so none of them fall inside
+           the L corner shared with wing_top. -->
+      <link name="window_right_1">
+        <pose>6 -4.5 1.5 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>0.1 1.4 1.4</size></box></geometry>
+          <material><ambient>0.75 0.88 0.95 0.6</ambient><diffuse>0.75 0.88 0.95 0.6</diffuse></material>
+        </visual>
+      </link>
+      <link name="window_right_2">
+        <pose>6 -1.5 1.5 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>0.1 1.4 1.4</size></box></geometry>
+          <material><ambient>0.75 0.88 0.95 0.6</ambient><diffuse>0.75 0.88 0.95 0.6</diffuse></material>
+        </visual>
+      </link>
+      <link name="window_right_3">
+        <pose>6 2.5 1.5 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>0.1 1.4 1.4</size></box></geometry>
+          <material><ambient>0.75 0.88 0.95 0.6</ambient><diffuse>0.75 0.88 0.95 0.6</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Glass door (visual only) — 2.5 m tall, centre z = 1.25.
+         Relocated to the new house wing, opening south into the yard. -->
+    <model name="door">
+      <static>true</static>
+      <pose>0 6 1.25 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>4 0.1 2.5</size></box></geometry>
+          <material><ambient>0.7 0.9 1 0.5</ambient><diffuse>0.7 0.9 1 0.5</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         GRILLS
+         body  : cylinder r=0.4 h=0.80 — link centre at z=0.40 above grill model origin
+         top   : box/cylinder 0.06 m thick — link centre at z=0.83, top face at z=0.86
+         Model origin at grill world XY, z=0 (floor level).
+         The two grills sit on opposite (west / east) sides of the yard.
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="grill">
+      <static>true</static>
+      <pose>-4.77 -4.39 0 0 0 0</pose>
+      <link name="body">
+        <pose>0 0 0.40 0 0 0</pose>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.4</radius><length>0.80</length></cylinder></geometry>
+          <material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.4 0.4 0.4 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="top">
+        <pose>0 0 0.83 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.38</radius><length>0.06</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.38</radius><length>0.06</length></cylinder></geometry>
+          <material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.3 0.3 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- fish_grill — mirror of "grill" on the opposite (east) side -->
+    <model name="fish_grill">
+      <static>true</static>
+      <pose>4.61 -4.4 0 0 0 0</pose>
+      <link name="body">
+        <pose>0 0 0.40 0 0 0</pose>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.4</radius><length>0.80</length></cylinder></geometry>
+          <material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.4 0.4 0.4 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="top">
+        <pose>0 0 0.83 0 0 0</pose>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.38</radius><length>0.06</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.38</radius><length>0.06</length></cylinder></geometry>
+          <material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.3 0.3 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         TABLES
+         All: box 0.10 m thick. Model pose z = 0.80 → top surface z = 0.85 m
+         (except drink_table, whose top sits lower — unchanged from source).
+    ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Grill-prep table ("Prep Table") next to grill — 2.0×1.1 m -->
+    <model name="prep_grill">
+      <static>true</static>
+      <pose>-4.77 -5.34 0.80 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>2.0 1.1 0.10</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 1.1 0.10</size></box></geometry>
+          <material><ambient>0.7 0.5 0.3 1</ambient><diffuse>0.7 0.5 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- fish_table — same dimensions as prep_grill, next to fish_grill -->
+    <model name="fish_table">
+      <static>true</static>
+      <pose>4.61 -5.35 0.80 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>2.0 1.1 0.10</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 1.1 0.10</size></box></geometry>
+          <material><ambient>0.7 0.5 0.3 1</ambient><diffuse>0.7 0.5 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Main prep table ("Salad")  2.0×1.1 m -->
+    <model name="prep">
+      <static>true</static>
+      <pose>-5.34 4.87 0.80 0 0 -1.57</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>2.0 1.1 0.10</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 1.1 0.10</size></box></geometry>
+          <material><ambient>0.7 0.5 0.3 1</ambient><diffuse>0.7 0.5 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Main prep table ("Veg")  2.0×1.1 m -->
+    <model name="prep_veg">
+      <static>true</static>
+      <pose>-5.34 1.93 0.80 0 0 -1.57</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>2.0 1.1 0.10</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 1.1 0.10</size></box></geometry>
+          <material><ambient>0.7 0.5 0.3 1</ambient><diffuse>0.7 0.5 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Dining table 1 (north) — replaces half of the old single 4.0×1.0 m table -->
+    <model name="table_right_1">
+      <static>true</static>
+      <pose>3.2 4.5 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>2.0 1.0 0.10</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 1.0 0.10</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Dining table 2 (south) — the other half -->
+    <model name="table_right_2">
+      <static>true</static>
+      <pose>3.2 1.0 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>2.0 1.0 0.10</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 1.0 0.10</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Drinks table  0.5×0.5 m -->
+    <model name="drink_table">
+      <static>true</static>
+      <pose>-2.89 5.74 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.5 0.5 0.10</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.5 0.5 0.10</size></box></geometry>
+          <material><ambient>0.7 0.5 0.3 1</ambient><diffuse>0.7 0.5 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         BENCHES  (visual only)
+         Seat top at z=0.55 → box 0.10 m thick → centre z=0.50
+         One bench per small dining table (2 seats each).
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="bench_1">
+      <static>true</static>
+      <pose>3.2 5.3 0.2 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>2.0 0.4 0.10</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="bench_2">
+      <static>true</static>
+      <pose>3.25 3.78 0.2 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>2.0 0.4 0.10</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="bench_3">
+      <static>true</static>
+      <pose>3.24 1.74 0.2 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>2.0 0.4 0.10</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="bench_4">
+      <static>true</static>
+      <pose>3.2 0.2 0.19 0 0 0</pose>
+      <link name="link">
+       <collision name="collision">
+          <geometry><box><size>2.0 0.4 0.10</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 0.4 0.10</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient><diffuse>0.6 0.4 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         PICKABLE OBJECTS
+         Positions are transplanted from the original scenario keeping
+         the same offset from their parent piece of furniture, so every
+         item stays visually "on" its table/grill after the move.
+    ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Grill items, next to "grill"  (surface z = 0.86) ─────────── -->
+    <include>
+      <uri>model://meat</uri>
+      <name>meat_1</name>
+      <pose>-5.44 -5.04 0.90 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://meat</uri>
+      <name>meat_2</name>
+      <pose>-5.51 -5.17 0.90 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://meat</uri>
+      <name>meat_3</name>
+      <pose>-5.56 -5.03 0.90 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://garlic_bread</uri>
+      <name>garlic_bread_1</name>
+      <pose>-4.29 -5.02 0.92 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://garlic_bread</uri>
+      <name>garlic_bread_2</name>
+      <pose>-4.20 -5.01 0.92 0 0 0</pose>
+    </include>
+
+    <!-- Grill-prep table items, on "prep_grill"  (surface z = 0.85) -->
+    <include>
+      <uri>model://plate</uri>
+      <name>plate_1</name>
+      <pose>-4.22 -5.03 0.850 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://plate</uri>
+      <name>plate_2</name>
+      <pose>-5.15 -5.07 0.850 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://plate</uri>
+      <name>plate_3</name>
+      <pose>-5.52 -5.08 0.850 0 0 0</pose>
+    </include>
+
+    <!-- fish_grill items — mirrors the grill cluster onto the east side -->
+    <include>
+      <uri>model://fish</uri>
+      <name>fish_1</name>
+      <pose>5.34 -4.96 0.91 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://fish</uri>
+      <name>fish_2</name>
+      <pose>5.41 -5.10 0.91 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://fish</uri>
+      <name>fish_3</name>
+      <pose>5.50 -5.03 0.91 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://squid</uri>
+      <name>squid_1</name>
+      <pose>4.97 -5.09 0.90 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://squid</uri>
+      <name>squid_2</name>
+      <pose>5.07 -5.03 0.90 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://squid</uri>
+      <name>squid_3</name>
+      <pose>5.15 -5.13 0.90 0 0 0</pose>
+    </include>
+
+    <!-- fish_table items -->
+    <include>
+      <uri>model://plate</uri>
+      <name>plate_4</name>
+      <pose>4.03 -5.05 0.850 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://plate</uri>
+      <name>plate_5</name>
+      <pose>5.06 -5.07 0.850 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://plate</uri>
+      <name>plate_6</name>
+      <pose>5.43 -5.04 0.850 0 0 0</pose>
+    </include>
+
+    <!-- Salad table items, on "prep"  (surface z = 0.85) ──────────
+         tomato + purple_onion + chop_board + bowl for tossing the salad -->
+    <include>
+      <uri>model://tomato</uri>
+      <name>tomato_1</name>
+      <pose>-5.26 5.60 0.875 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://tomato</uri>
+      <name>tomato_2</name>
+      <pose>-5.26 4.84 0.87 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://tomato</uri>
+      <name>tomato_3</name>
+      <pose>-5.23 5.42 0.875 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://chop_board</uri>
+      <name>chop_board_1</name>
+      <pose>-5.03 5.27 0.86 0 0 1.57</pose>
+    </include>
+
+    <include>
+      <uri>model://purple_onion</uri>
+      <name>purple_onion_1</name>
+      <pose>-5.31 4.74 0.87 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://bowl</uri>
+      <name>bowl_1</name>
+      <pose>-5.04 4.73 0.850 0 0 0</pose>
+    </include>
+
+    <!-- Veg table items, on "prep_veg"  (surface z = 0.85) ─────────
+         carrot + cucumber + bowl -->
+    <include>
+      <uri>model://chop_board</uri>
+      <name>chop_board_2</name>
+      <pose>-5.02 2.08 0.86 0 0 1.56</pose>
+    </include>
+    <include>
+      <uri>model://carrot</uri>
+      <name>carrot_1</name>
+      <pose>-5.35 2.35 0.870 0 0 1.56</pose>
+    </include>
+    <include>
+      <uri>model://carrot</uri>
+      <name>carrot_2</name>
+      <pose>-5.27 2.48 0.870 0 0 1.56</pose>
+    </include>
+
+    <include>
+      <uri>model://cucumber</uri>
+      <name>cucumber_1</name>
+      <pose>-5.35 1.66 0.870 0 0 1.56</pose>
+    </include>
+    <include>
+      <uri>model://cucumber</uri>
+      <name>cucumber_2</name>
+      <pose>-5.36 1.52 0.870 0 0 1.56</pose>
+    </include>
+
+    <include>
+      <uri>model://bowl</uri>
+      <name>bowl_2</name>
+      <pose>-5.03 1.56 0.850 0 0 0</pose>
+    </include>
+
+    <!-- Drinks table items, on "drink_table"  (surface z = 0.85) ── -->
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_1</name>
+      <pose>-3.09 5.55 0.410 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_2</name>
+      <pose>-2.97 5.54 0.410 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_3</name>
+      <pose>-2.83 5.54 0.410 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_4</name>
+      <pose>-2.70 5.59 0.410 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_5</name>
+      <pose>-2.70 5.74 0.410 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_6</name>
+      <pose>-2.72 5.89 0.410 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://drink</uri>
+      <name>drink_7</name>
+      <pose>-2.89 5.74 0.410 0 0 0</pose>
+    </include>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Humans sit at the two dining tables (table_right_1 / _2) and
+         interact with the grills and prep tables, same as the source
+         scenario — split 2-and-2 across the two smaller tables.
+    ═══════════════════════════════════════════════════════════════════ -->
+    <include>
+      <uri>model://FemaleVisitorSit</uri>
+      <name>WomanSit_1</name>
+      <pose>3.26 5.38 -0.18 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://MaleVisitorSit_white</uri>
+      <name>ManSit_1</name>
+      <pose>3.82 5.38 -0.15 0 0 0</pose>
+    </include>
+
+    <include>
+        <uri>model://MaleVisitorSit</uri>
+        <name>ManSit_2</name>
+        <pose>3.05 0.11 -0.15 0 0 3.14</pose>
+      </include>
+
+    <include>
+      <uri>model://FemaleVisitorSit_pink</uri>
+      <name>WomanSit_2</name>
+      <pose>2.49 0.11 -0.18 0 0 3.14</pose>
+    </include>
+
+
+  </world>
+</sdf>

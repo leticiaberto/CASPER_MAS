@@ -216,7 +216,7 @@ def _build_spawn_args(xacro_file, controllers_file, robot_name,
 
 def generate_launch_description():
     return LaunchDescription([
-        DeclareLaunchArgument('robot_name', default_value='fr3_robot1'),
+        DeclareLaunchArgument('robot_name', default_value='fr3_arm_1'),
         DeclareLaunchArgument('x_pos',      default_value='0.0'),
         DeclareLaunchArgument('y_pos',      default_value='0.0'),
         DeclareLaunchArgument('z_pos',      default_value='1.03'),

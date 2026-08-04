@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import threading
 import time
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import rclpy
 from rclpy.executors import MultiThreadedExecutor
@@ -44,6 +44,7 @@ from fr3_adapters.FrankaAdapter import FrankaAdapter, RobotMode
 from robot_common.object_world_to_robot import ObjectToRobot
 from robot_common.sdf_surface_resolver import SdfSurfaceResolver
 from utils import ROSUtils
+from locations import get_scene
 
 
 ResultCallback = Callable[[bool, str], None]
@@ -81,6 +82,15 @@ TIME_SERVE_SALAD = 120/CONST_SCALE
 #TIME_HOST = 0
 
 TIME_SAYING_GOODBYE = 15.0
+
+# ---------------------------------------------------------------------------
+# Scenes
+# ---------------------------------------------------------------------------
+# DEFAULT_SCENES now lives in locations.py (shared with Human/Tiago's
+# navigation waypoints, same world_name keys) and is looked up via
+# get_scene(world_name), which falls back to the "backyard" layout if
+# world_name is unset or unrecognized.
+
 
 class FrankaResearch3(Agent):
     """
@@ -217,34 +227,11 @@ class FrankaResearch3(Agent):
             f"[FrankaResearch3] Agent '{robot_name}' ready ({mode.value.upper()}). "
             f"Name resolution: {'enabled' if self._otr else 'disabled (no world_name)'}."
         )
-
-        self.scene = {
-            "food_grill": {
-                "placements": {
-                    "meat_1":         {"place_grill": (5.0, 4.65, 0.885), "place_plate": (4.30, 5.26, 0.90)},
-                    "meat_2":         {"place_grill": (5.2, 4.65, 0.885), "place_plate": (4.20, 5.18, 0.90)},
-                    "meat_3":         {"place_grill": (4.8, 4.65, 0.885), "place_plate": (4.38, 5.15, 0.90)},
-                    "garlic_bread_1": {"place_grill": (5.1, 4.47, 0.900), "place_plate": (4.25, 5.21, 0.92)},
-                    "garlic_bread_2": {"place_grill": (4.9, 4.47, 0.900), "place_plate": (4.34, 5.21, 0.92)},
-                }
-            },
-            "vegetables_side": {
-                "placements": {
-                    "carrot_1":       {"place_chop": (1.12, 4.90, 0.91), "place_bowl": (1.47, 4.90, 0.89)},
-                    #"carrot_2":       {"place_chop": (1.04, 4.90, 0.91), "place_bowl": (1.54, 4.90, 0.89)},
-                    #"cucumber_1":     {"place_chop": (0.94, 4.90, 0.91), "place_bowl": (1.50, 4.90, 0.89)},
-                    "cucumber_2":     {"place_chop": (0.86, 4.90, 0.91), "place_bowl": (1.59, 4.90, 0.89)},
-                }
-            },
-            "salads_side": {
-                "placements": {
-                    "tomato_1":       {"place_chop": (0.9, 4.85, 0.91), "place_bowl": (0.52, 4.84, 0.89)},
-                    #"tomato_2":       {"place_chop": (1.11, 4.84, 0.91), "place_bowl": (0.53, 4.96, 0.89)},
-                    #"tomato_3":       {"place_chop": (1.07, 4.97, 0.91), "place_bowl": (0.64, 4.84, 0.89)},
-                    "purple_onion_1": {"place_chop": (0.95, 4.95, 0.91), "place_bowl": (0.64, 4.96, 0.89)},
-                }
-            }
-        }
+        # FR3 can get it automatically, but it gets the center of the objects.
+        # Here I define some specific places just to look better in the video.
+        # Selected from DEFAULT_SCENES (locations.py) by world_name — falls
+        # back to the "backyard" layout if world_name is unset or unrecognized.
+        self.scene = get_scene(world_name)
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -431,6 +418,23 @@ class FrankaResearch3(Agent):
             )
             print("[FR3]: Picking grilled food...")
 
+        # Fish + Squid
+        elif action == "PickSeafoodIngredientsGrill":
+            sequence = self.create_tasks_sequence(
+                "pick_place", "seafood_grill", "place_grill" if not use_names else "fish_grill",
+                use_names=use_names,
+            )
+            print("[FR3]: Picking seafood ingredients for the grill...")
+        elif action == "GrillSeafood":
+            sequence = [{"action": "sleep", "time": TIME_GRILL_FOOD}]  # Simulate grilling time
+            print("[FR3]: Grilling seafood...")
+        elif action == "PickGrilledSeafood":
+            sequence = self.create_tasks_sequence(
+                "pick_place", "seafood_grill", "place_plate" if not use_names else "plate_4",
+                use_names=use_names,
+            )
+            print("[FR3]: Picking grilled seafood...")
+            
         elif action == "Reception":
             print("[FR3]: receiving guests...")
             sequence = [{"action": "sleep", "time": 5}]

@@ -99,6 +99,8 @@ from robot_common.object_world_to_robot import ObjectToRobot
 from robot_common.sdf_surface_resolver import SdfSurfaceResolver
 from utils import ROSUtils
 
+from locations import get_locations, get_scene
+
 # ---------------------------------------------------------------------------
 # Types
 # ---------------------------------------------------------------------------
@@ -139,15 +141,6 @@ TIME_SERVE_SALAD = 120/CONST_SCALE
 #TIME_HOST = 0
 
 TIME_SAYING_GOODBYE = 15.0
-
-locations = {
-    "DiningTable":    {"x": -0.77, "y": -1.54, "yaw": 3.14},
-    "House":          {"x": -0.19, "y": -6.76, "yaw": 1.57},
-    "GroupOfGuests_1":{"x":  3.25, "y": -2.82, "yaw": 0.0},
-    "GroupOfGuests_2":{"x": -2.07, "y":  3.33,  "yaw": 2.39},
-    "MainPrepTable":  {"x":  0.95, "y":  4.30, "yaw": 1.57},
-    "GrillPrepTable": {"x":  4.14, "y":  4.24, "yaw": 0.8},
-}
 
 # ---------------------------------------------------------------------------
 # TF-based arm height lookup
@@ -299,6 +292,7 @@ class Tiago(Agent):
 
         self._robot_name = robot_name
         self._world_name = world_name
+        self._locations = get_locations(world_name)
 
         # ── Auto-resolve SDF path and models dir ──────────────────────
         # Mirror the test script (tiago_pick_and_place.py): use ROSUtils to
@@ -417,27 +411,11 @@ class Tiago(Agent):
             f"robot='{robot_name}'  world='{world_name}'"
         )
 
-        self.scene = {
-                "drinks": {
-                    "placements": {
-                        "drink_1":  {"place_guests": (-2.68, -0.72, 0.30)}, # Dinning table, guest 1
-                        #"drink_2":  {"place_guests": (-1.11, -0.72, 0.30)}, # Dinning table, guest 2
-                        #"drink_3":  {"place_guests": (-2.92, -0.72, 0.30)}, # Dinning table, guest 3
-                        #"drink_4":  {"place_guests": (-1.34, -0.60, 0.30)}, # Dinning table, guest 4
-
-                        "drink_5":  {"place_guests": (4.74, -3.31, 0.30)}, # GroupOfGuests1, guests 5
-                        #"drink_6":  {"place_guests": (3.8, -2.36, 0.30)}, # GroupOfGuests1, guests 6
-                        #"drink_7":  {"place_guests": (3.54, -3.62, 0.30)}, # GroupOfGuests1, guests 7
-
-                        "drink_7":  {"place_guests": (-1.90, 4.66, 0.30)}, # GroupOfGuests2, troquei pra ir em todos os grupos -- dps remover essa linha
-
-                        # Removed from Gazebo to improve performance
-                        #"drink_8":  {"place_guests": (-1.90, 4.66, 0.30)}, # GroupOfGuests2, guests 8
-                        #"drink_9":  {"place_guests": (-1.30, 4.11, 0.30)}, # GroupOfGuests2, guests 9
-                        #"drink_10": {"place_guests": (-3.14, -0.72, 0.30)}, # Dinning Table, guests 10
-                    }
-                }
-            }
+        # Tiago can get it automatically, but it gets the center of the objects.
+        # Here I define some specific places just to look better in the video.
+        # Selected from DEFAULT_SCENES (locations.py) by world_name — falls
+        # back to the "backyard" layout if world_name is unset or unrecognized.
+        self.scene = get_scene(world_name)
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -583,7 +561,7 @@ class Tiago(Agent):
     ) -> Tuple[bool, str]:
         """
         Drive the robot to a named location or explicit world-frame coordinates.
-
+ 
         Parameters
         ----------
         target : str or (x, y, z)
@@ -594,18 +572,18 @@ class Tiago(Agent):
             * ``(x, y, z)`` tuple — explicit world-frame target.  The z value
               is passed to the navigator as ``target_z`` (used for approach
               pose height; navigation is planar).
-
+ 
         timeout : float, optional
             Override the instance-level ``nav_timeout``.
-
+ 
         Returns
         -------
         (success, message)
         """
         # ── Resolve target XYZ ──────────────────────────────────────────
         if isinstance(target, str):
-            if target in locations:
-                loc = locations[target]
+            if target in self._locations:
+                loc = self._locations[target]
                 target_xyz = (loc["x"], loc["y"], 0.0)
                 self._adapter.get_logger().info(
                     f"[Tiago] navigate_to: '{target}' → "
@@ -627,9 +605,9 @@ class Tiago(Agent):
             self._adapter.get_logger().info(
                 f"[Tiago] navigate_to: XYZ={_fmt(target_xyz)}"
             )
-
+ 
         tx, ty, tz = target_xyz
-
+ 
         # ── Dispatch via TiagoNavigator ──────────────────────────────────
         self._nav_done_event.clear()
 
@@ -688,9 +666,10 @@ class Tiago(Agent):
         sequence = None
 
         if action == "ServeDrinks":
+            place = "table_right" if self._world_name == "backyard" else "table_right_1"
             sequence = self.create_tasks_sequence(
                 "pick_place", "drinks",
-                "place_guests" if not use_names else "dining_table_1",
+                "place_guests" if not use_names else place,
                 use_names=use_names,
             )
             sequence.append({"action": "navigate_to", "target_xyz": (0, 0, 0)})
@@ -704,92 +683,145 @@ class Tiago(Agent):
         elif action == "PickDishes":
             # Drive to the House location first, then simulate collecting dishes.
             sequence = [
-                {"action": "navigate_to", "target_name": "house"}
+                {"action": "navigate_to", "target_name": "House"}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_THE_DISHES})
             print("[Tiago] Pick dishes sequence created.")
         elif action == "DoTheDishes":
             sequence = [
-                {"action": "navigate_to", "target_name": "house"}
+                {"action": "navigate_to", "target_name": "House"}
             ]
             sequence.append({"action": "sleep", "time": TIME_DOING_THE_DISHES})
             print("[Tiago] Do the dishes sequence created.")
         elif action == "PickRice":
             sequence = [
-                {"action": "navigate_to", "target_name": "house"}
+                {"action": "navigate_to", "target_name": "House"}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICKING_RICE})
             print("[Tiago] Pick rice sequence created.")
         elif action == "CookRice":
             sequence = [
-                {"action": "navigate_to", "target_name": "house"}
+                {"action": "navigate_to", "target_name": "House"}
             ]
             sequence.append({"action": "sleep", "time": TIME_COOKING_RICE})
             print("[Tiago] Cook rice sequence created.")
         elif action == "ServeMainDish":
             sequence = [
-                {"action": "navigate_to", "target_name": "house"}
+                {"action": "navigate_to", "target_name": "House"}
             ]
             sequence.append({"action": "sleep", "time": 5})
-            sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
-            sequence.append({"action": "sleep", "time": 10})
+            if self._world_name == "backyard":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            elif self._world_name == "backyard_b":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_1"})
+                sequence.append({"action": "sleep", "time": 5})
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_2"})
+                sequence.append({"action": "sleep", "time": 5})
             print("[Tiago] Serve main dish sequence created.")
         elif action == "ServeSides":
+            target = "VegetablePrepTable" if self._world_name == "backyard_b" else "MainPrepTable"
             sequence = [
-                {"action": "navigate_to", "target_name": "MainPrepTable"}
+                {"action": "navigate_to", "target_name": target}
             ]
             sequence.append({"action": "sleep", "time": 5})
-            sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            if self._world_name == "backyard":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            elif self._world_name == "backyard_b":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_1"})
+                sequence.append({"action": "sleep", "time": 5})
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_2"})
+                sequence.append({"action": "sleep", "time": 5})
             print("[Tiago] Serve sides sequence created.")
         elif action == "ServeSalad":
+            target = "SaladPrepTable" if self._world_name == "backyard_b" else "MainPrepTable"
             sequence = [
-                {"action": "navigate_to", "target_name": "MainPrepTable"}
+                {"action": "navigate_to", "target_name": target}
             ]
             sequence.append({"action": "sleep", "time": 5})
-            sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            if self._world_name == "backyard":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            elif self._world_name == "backyard_b":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_1"})
+                sequence.append({"action": "sleep", "time": 5})
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_2"})
+                sequence.append({"action": "sleep", "time": 5})
             print("[Tiago] Serve salad sequence created.")
         elif action == "ServeGrilledFood":
+            target = "FoodGrillPrepTable" if self._world_name == "backyard_b" else "GrillPrepTable"
             sequence = [
-                {"action": "navigate_to", "target_name": "GrillPrepTable"}
+                {"action": "navigate_to", "target_name": target}
             ]
             sequence.append({"action": "sleep", "time": 5})
-            sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            if self._world_name == "backyard":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            elif self._world_name == "backyard_b":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_1"})
+                sequence.append({"action": "sleep", "time": 5})
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_2"})
+                sequence.append({"action": "sleep", "time": 5})
             print("[Tiago] Serve grilled food sequence created.")
+
+        elif action == "ServeGrilledSeafood":
+            sequence = [
+                {"action": "navigate_to", "target_name": "FishGrillPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": 5})
+            if self._world_name == "backyard":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            elif self._world_name == "backyard_b":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_1"})
+                sequence.append({"action": "sleep", "time": 5})
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_2"})
+                sequence.append({"action": "sleep", "time": 5})
+            print("[Tiago] Serve grilled seafood sequence created.")
+
         elif action == "WelcomeGuests":
             sequence = [
-                {"action": "navigate_to", "target_name": "house"}
+                {"action": "navigate_to", "target_name": "MainEntrance"}
             ]
             sequence.append({"action": "sleep", "time": 120})
             sequence.append({"action": "navigate_to", "target_name": "GroupOfGuests_1"})
             sequence.append({"action": "sleep", "time": 15})
             sequence.append({"action": "navigate_to", "target_name": "GroupOfGuests_2"})
             sequence.append({"action": "sleep", "time": 15})
-            sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
-            sequence.append({"action": "sleep", "time": 15})
+            if self._world_name == "backyard":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+            elif self._world_name == "backyard_b":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_1"})
+                sequence.append({"action": "sleep", "time": 5})
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_2"})
+                sequence.append({"action": "sleep", "time": 5})
             print("[Tiago] Welcome guests sequence created.")
         elif action == "PickDishes":
             sequence = [
-                {"action": "navigate_to", "target_name": "house"}
+                {"action": "navigate_to", "target_name": "House"}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_THE_DISHES})
             print("[Tiago] Pick dishes sequence created.")
         elif action == "DoTheDishes":
             sequence = [
-                {"action": "navigate_to", "target_name": "house"}
+                {"action": "navigate_to", "target_name": "House"}
             ]
             sequence.append({"action": "sleep", "time": TIME_DOING_THE_DISHES})
             print("[Tiago] Do the dishes sequence created.")
         elif action == "PutTheDishesAway":
             sequence = [
-                {"action": "navigate_to", "target_name": "house"}
+                {"action": "navigate_to", "target_name": "House"}
             ]
             sequence.append({"action": "sleep", "time": TIME_PUTTING_AWAY_DISHES})
             print("[Tiago] Put the dishes away sequence created.")
         elif action == "Host":
             sequence = [{"action": "sleep", "time": 20}]
-            sequence.append({"action": "navigate_to", "target_name": "GrillPrepTable"})
-            sequence.append({"action": "sleep", "time": 25})
-            sequence.append({"action": "navigate_to", "target_name": "MainPrepTable"})
+            if self._world_name == "backyard":
+                sequence.append({"action": "navigate_to", "target_name": "GrillPrepTable"})
+                sequence.append({"action": "sleep", "time": 25})
+                sequence.append({"action": "navigate_to", "target_name": "MainPrepTable"})
+            elif self._world_name == "backyard_b":
+                sequence.append({"action": "navigate_to", "target_name": "FoodGrillPrepTable"})
+                sequence.append({"action": "sleep", "time": 25})
+                sequence.append({"action": "navigate_to", "target_name": "SaladPrepTable"})
+                sequence.append({"action": "sleep", "time": 15})
+                sequence.append({"action": "navigate_to", "target_name": "VegetablePrepTable"})
             sequence.append({"action": "sleep", "time": 20})
             sequence.append({"action": "navigate_to", "target_name": "GroupOfGuests_2"})
             sequence.append({"action": "sleep", "time": 120})
@@ -797,69 +829,104 @@ class Tiago(Agent):
             sequence.append({"action": "sleep", "time": 20})
             sequence.append({"action": "navigate_to", "target_name": "GroupOfGuests_1"})
             sequence.append({"action": "sleep", "time": 120})
-            sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
-            sequence.append({"action": "sleep", "time": 60})
+            if self._world_name == "backyard":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable"})
+                sequence.append({"action": "sleep", "time": 60})
+            elif self._world_name == "backyard_b":
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_1"})
+                sequence.append({"action": "sleep", "time": 30})
+                sequence.append({"action": "navigate_to", "target_name": "DiningTable_2"})
+                sequence.append({"action": "sleep", "time": 30})
+            
             print("[Tiago] Host sequence created.")
 
         # Vegetables
         elif action == "PickVegetables":
+            target = "VegetablePrepTable" if self._world_name == "backyard_b" else "MainPrepTable"
             sequence = [
-                {"action": "navigate_to", "target_name": "MainPrepTable"}
+                {"action": "navigate_to", "target_name": target}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_VEGETABLE})
             print("[Tiago] Pick vegetables sequence created.")
         elif action == "ChopVegetables":
+            target = "VegetablePrepTable" if self._world_name == "backyard_b" else "MainPrepTable"
             sequence = [
-                {"action": "navigate_to", "target_name": "MainPrepTable"}
+                {"action": "navigate_to", "target_name": target}
             ]
             sequence.append({"action": "sleep", "time": TIME_CHOP_VEGETABLES})
             print("[Tiago] Chopping vegetables... (not implemented)")
         elif action == "PickChoppedVegetables":
+            target = "VegetablePrepTable" if self._world_name == "backyard_b" else "MainPrepTable"
             sequence = [
-                {"action": "navigate_to", "target_name": "MainPrepTable"}
+                {"action": "navigate_to", "target_name": target}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_CHOPPED_VEGETABLE})
             print("[Tiago] Pick chopped vegetables sequence created.")
 
         # Salad
         elif action == "PickSaladIngredients":
+            target = "SaladPrepTable" if self._world_name == "backyard_b" else "MainPrepTable"
             sequence = [
-                {"action": "navigate_to", "target_name": "MainPrepTable"}
+                {"action": "navigate_to", "target_name": target}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_SALAD})
             print("[Tiago] Pick salad ingredients sequence created.")
         elif action == "ChopSaladIngredients":
+            target = "SaladPrepTable" if self._world_name == "backyard_b" else "MainPrepTable"
             sequence = [
-                {"action": "navigate_to", "target_name": "MainPrepTable"}
+                {"action": "navigate_to", "target_name": target}
             ]
             sequence.append({"action": "sleep", "time": TIME_CHOP_SALAD_INGREDIENTS})
             print("[Tiago] Chopping salad ingredients... (not implemented)")
         elif action == "PickChoppedSaladIngredients":
+            target = "SaladPrepTable" if self._world_name == "backyard_b" else "MainPrepTable"
             sequence = [
-                {"action": "navigate_to", "target_name": "MainPrepTable"}
+                {"action": "navigate_to", "target_name": target}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_CHOPPED_SALAD})
             print("[Tiago] Pick chopped salad ingredients sequence created.")
 
         # Meat + Garlic Bread
         elif action == "PickFoodIngredientsGrill":
+            target = "FoodGrillPrepTable" if self._world_name == "backyard_b" else "GrillPrepTable"
             sequence = [
-                {"action": "navigate_to", "target_name": "GrillPrepTable"}
+                {"action": "navigate_to", "target_name": target}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_FOOD_GRILL})
             print("[Tiago] Pick food ingredients for grill sequence created.")
         elif action == "GrillFood":
+            target = "FoodGrillPrepTable" if self._world_name == "backyard_b" else "GrillPrepTable"
             sequence = [
-                {"action": "navigate_to", "target_name": "GrillPrepTable"}
+                {"action": "navigate_to", "target_name": target}
             ]
             sequence.append({"action": "sleep", "time": TIME_GRILL_FOOD})
             print("[Tiago] Grilling food... (not implemented)")
         elif action == "PickGrilledFood":
+            target = "FoodGrillPrepTable" if self._world_name == "backyard_b" else "GrillPrepTable"
             sequence = [
-                {"action": "navigate_to", "target_name": "GrillPrepTable"}
+                {"action": "navigate_to", "target_name": target}
             ]
             sequence.append({"action": "sleep", "time": TIME_PICK_GRILLED_FOOD})
             print("[Tiago] Pick grilled food sequence created.")
+        # Fish + Squid
+        elif action == "PickSeafoodIngredientsGrill": 
+            sequence = [
+                {"action": "navigate_to", "target_name": "FishGrillPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PICK_FOOD_GRILL})
+            print("[Tiago] Pick seafood ingredients for grill sequence created.")
+        elif action == "GrillSeafood":
+            sequence = [
+                {"action": "navigate_to", "target_name": "FishGrillPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_GRILL_FOOD})
+            print("[Tiago] Grilling seafood... (not implemented)")
+        elif action == "PickGrilledSeafood":
+            sequence = [
+                {"action": "navigate_to", "target_name": "FishGrillPrepTable"}
+            ]
+            sequence.append({"action": "sleep", "time": TIME_PICK_GRILLED_FOOD})
+            print("[Tiago] Pick grilled seafood sequence created.")
         elif action == "Reception":
             print("[Tiago] Checking subgoal Reception task completeness... (not implemented)")
             sequence = [{"action": "sleep", "time": 25}]

@@ -65,15 +65,7 @@ from std_msgs.msg import String
 from human_adapters.HumanAdapter import HumanAdapter
 from src.entities.Agent import Agent
 
-locations = {
-    "DiningTable":    {"x": -0.77, "y": -1.54, "yaw": 3.14},
-    "House":          {"x": -0.19, "y": -6.76, "yaw": 1.57},
-    "GroupOfGuests_1":{"x":  3.25, "y": -2.82, "yaw": 0.0},
-    "GroupOfGuests_2":{"x": -2.21, "y":  3.54,  "yaw": 2.15},
-    "MainPrepTable":  {"x":  0.95, "y":  4.30, "yaw": 1.57},
-    "GrillPrepTable": {"x":  4.14, "y":  4.24, "yaw": 0.8},
-    "DrinksTable":    {"x": -4.50, "y":  4.89, "yaw": -1.55},
-}
+from locations import get_locations
 
 CONST_SCALE = 10
 
@@ -140,6 +132,7 @@ class Human(Agent):
     def __init__(
         self,
         actor_name:     str,
+        world_name:     str,
         constraints:    dict            = None,
         skill_weights:  dict            = None,
         contexts:       List[str]       = None,
@@ -169,6 +162,8 @@ class Human(Agent):
         )
 
         self._actor_name = actor_name
+        self._world_name = world_name
+        self._locations = get_locations(world_name)
         self._sync_timeout  = sync_timeout
 
         # ── ROS2 initialisation ───────────────────────────────────────
@@ -225,24 +220,26 @@ class Human(Agent):
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
-    def get_destionation_coordinates(self, location_name: str) -> Tuple[float, float, float]:
+    def get_destination_coordinates(self, location_name: str) -> Tuple[float, float, float]:
         """
         Get the coordinates of a named location.
-
+ 
         Parameters
         ----------
         location_name : str
             Name of the location, e.g. "DiningTable", "House", etc.
-
+ 
         Returns
         -------
         (x, y, yaw) : Tuple[float, float, float]
             Coordinates of the location in the world frame.
             Raises KeyError if the location name is not found.
         """
-        if location_name not in locations:
-            raise KeyError(f"Location '{location_name}' not found.")
-        loc = locations[location_name]
+        if location_name not in self._locations:
+            raise KeyError(
+                f"Location '{location_name}' not found in world '{self._world_name}'."
+            )
+        loc = self._locations[location_name]
         return loc["x"], loc["y"], loc["yaw"]
 
     def goto(
@@ -274,7 +271,7 @@ class Human(Agent):
         """
          # Option 1: location key
         if location is not None:
-            x, y, final_yaw = self.get_destionation_coordinates(location)
+            x, y, final_yaw = self.get_destination_coordinates(location)
         
         # Option 2: direct coordinates
         else:
@@ -386,23 +383,59 @@ class Human(Agent):
             print("[Human] Serve main dish.")
             ok, msg = self.goto(location="House")
             time.sleep(5)
-            ok, msg = self.goto(location="DiningTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="DiningTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="DiningTable_1")
+                time.sleep(5)
+                ok, msg = self.goto(location="DiningTable_2")
             time.sleep(10)
         elif action == "ServeSides":
             print("[Human] Serve sides.")
-            ok, msg = self.goto(location="MainPrepTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="MainPrepTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="VegetablePrepTable")
             time.sleep(5) # simulate picking sides
-            ok, msg = self.goto(location="DiningTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="DiningTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="DiningTable_1")
+                time.sleep(5)
+                ok, msg = self.goto(location="DiningTable_2")
         elif action == "ServeSalad":
             print("[Human] Serve salad.")
-            ok, msg = self.goto(location="MainPrepTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="MainPrepTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="SaladPrepTable")
             time.sleep(5) # simulate picking salad
-            ok, msg = self.goto(location="DiningTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="DiningTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="DiningTable_1")
+                time.sleep(5)
+                ok, msg = self.goto(location="DiningTable_2")
         elif action == "ServeGrilledFood":
             print("[Human] Serve grilled food.")
-            ok, msg = self.goto(location="GrillPrepTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="GrillPrepTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="FoodGrillPrepTable")
             time.sleep(5) # simulate picking food
-            ok, msg = self.goto(location="DiningTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="DiningTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="DiningTable_1")
+                time.sleep(5)
+                ok, msg = self.goto(location="DiningTable_2")
+        elif action == "ServeGrilledSeafood":
+            print("[Human] Serve grilled seafood.")
+            ok, msg = self.goto(location="FishGrillPrepTable")
+            time.sleep(5) # simulate picking food
+            ok, msg = self.goto(location="DiningTable_1")
+            time.sleep(5)
+            ok, msg = self.goto(location="DiningTable_2")
         elif action == "WelcomeGuests":
             print("[Human] Welcome guests.")
             self._action_welcome_guests()
@@ -411,7 +444,12 @@ class Human(Agent):
             time.sleep(15)  # Brief pause before moving to next group
             ok, msg = self.goto(location="GroupOfGuests_2")
             time.sleep(15)  # Brief pause before moving to next group
-            ok, msg = self.goto(location="DiningTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="DiningTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="DiningTable_1")
+                time.sleep(5)
+                ok, msg = self.goto(location="DiningTable_2")
             time.sleep(15)  # Brief pause before moving to next task
         elif action == "PickDishes":
             print("[Human] Pick dishes.")
@@ -428,23 +466,41 @@ class Human(Agent):
         elif action == "Host":
             print("[Human] Host the party.")
             time.sleep(20)  # Brief pause before going to check on guests
-            ok, msg = self.goto(location="GrillPrepTable")
-            time.sleep(20)
-            ok, msg = self.goto(location="MainPrepTable")
-            time.sleep(25)
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="GrillPrepTable")
+                time.sleep(20)
+                ok, msg = self.goto(location="MainPrepTable")
+                time.sleep(25)
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="FoodGrillPrepTable")
+                time.sleep(20)
+                ok, msg = self.goto(location="VegetablePrepTable")
+                time.sleep(15)
+                ok, msg = self.goto(location="SaladPrepTable")
+                time.sleep(15)
             ok, msg = self.goto(location="GroupOfGuests_2")
             time.sleep(120)
             ok, msg = self.goto(location="DrinksTable")
             time.sleep(20)  # Brief pause before moving to next group
             ok, msg = self.goto(location="GroupOfGuests_1")
             time.sleep(120)  # Brief pause before moving to next group
-            ok, msg = self.goto(location="DiningTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="DiningTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="DiningTable_1")
+                time.sleep(5)
+                ok, msg = self.goto(location="DiningTable_2")
             time.sleep(60)
         elif action == "ServeDrinks":
             print("[Human] Serve drinks.")
             ok, msg = self.goto(location="DrinksTable")
             time.sleep(5) # simulate picking food
-            ok, msg = self.goto(location="DiningTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="DiningTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="DiningTable_1")
+                time.sleep(5)
+                ok, msg = self.goto(location="DiningTable_2")
             time.sleep(10)
             ok, msg = self.goto(location="DrinksTable")
             time.sleep(5) # simulate picking food
@@ -457,45 +513,86 @@ class Human(Agent):
         # Vegetables
         elif action == "PickVegetables":
             print("[Human] Pick vegetables.")
-            ok, msg = self.goto(location="MainPrepTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="MainPrepTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="VegetablePrepTable")
             time.sleep(TIME_PICK_VEGETABLE)
         elif action == "ChopVegetables":
             print("[Human] Chop vegetables.")
-            ok, msg = self.goto(location="MainPrepTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="MainPrepTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="VegetablePrepTable")
             print("Chopping vegetables... (not implemented)")
             time.sleep(TIME_CHOP_VEGETABLES)  # Simulate chopping time
         elif action == "PickChoppedVegetables":
             print("[Human] Pick chopped vegetables.")
-            ok, msg = self.goto(location="MainPrepTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="MainPrepTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="VegetablePrepTable")
             time.sleep(TIME_PICK_CHOPPED_VEGETABLE)
 
         # Salad
         elif action == "PickSaladIngredients":
             print("[Human] Pick salad ingredients.")
-            ok, msg = self.goto(location="MainPrepTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="MainPrepTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="SaladPrepTable")
             time.sleep(TIME_PICK_SALAD)
         elif action == "ChopSaladIngredients":
             print("[Human] Chop salad ingredients.")
-            ok, msg = self.goto(location="MainPrepTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="MainPrepTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="SaladPrepTable")
             time.sleep(TIME_CHOP_SALAD_INGREDIENTS)  # Simulate chopping time
         elif action == "PickChoppedSaladIngredients":
             print("[Human] Pick chopped salad ingredients.")
-            ok, msg = self.goto(location="MainPrepTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="MainPrepTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="SaladPrepTable")
             time.sleep(TIME_PICK_CHOPPED_SALAD)
 
         # Meat + Garlic Bread
         elif action == "PickFoodIngredientsGrill":
             print("[Human] Pick food ingredients for grill.")
-            ok, msg = self.goto(location="GrillPrepTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="GrillPrepTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="FoodGrillPrepTable")
             time.sleep(TIME_PICK_FOOD_GRILL)
         elif action == "GrillFood":
             print("[Human] Grilling food.")
-            ok, msg = self.goto(location="GrillPrepTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="GrillPrepTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="FoodGrillPrepTable")
             print("Grilling food... (not implemented)")
             time.sleep(TIME_GRILL_FOOD)  # Simulate grilling time
         elif action == "PickGrilledFood":
             print("[Human] Pick grilled food.")
-            ok, msg = self.goto(location="GrillPrepTable")
+            if self._world_name == "backyard":
+                ok, msg = self.goto(location="GrillPrepTable")
+            elif self._world_name == "backyard_b":
+                ok, msg = self.goto(location="FoodGrillPrepTable")
+            time.sleep(TIME_PICK_GRILLED_FOOD)
+        # Fish + Squid
+        elif action == "PickSeafoodIngredientsGrill":
+            print("[Human] Pick seafood ingredients for grill.")
+            ok, msg = self.goto(location="FishGrillPrepTable")
+            time.sleep(TIME_PICK_FOOD_GRILL)
+        elif action == "GrillSeafood":
+            print("[Human] Grilling seafood.")
+            ok, msg = self.goto(location="FishGrillPrepTable")
+            print("Grilling seafood... (not implemented)")
+            time.sleep(TIME_GRILL_FOOD)  # Simulate grilling time
+        elif action == "PickGrilledSeafood":
+            print("[Human] Pick grilled seafood.")
+            ok, msg = self.goto(location="FishGrillPrepTable")
             time.sleep(TIME_PICK_GRILLED_FOOD)
         elif action == "Reception":
             print("[Human] Host the party.")
@@ -516,7 +613,7 @@ class Human(Agent):
             print(f"[Human] Unknown task action: {action}")
 
     def _action_welcome_guests(self) -> None:
-        ok, msg = self.goto(location="House")
+        ok, msg = self.goto(location="MainEntrance")
 
         self._publish_state("WelcomeGuests", "start", total_guests=self.guests)
  
@@ -534,9 +631,9 @@ class Human(Agent):
             )
  
             # 2. Walk to door (while guest is being spawned in parallel)
-            ok, msg = self.goto(location="House")
+            ok, msg = self.goto(location="MainEntrance")
             if not ok:
-                print(f"[Human] Could not reach House for guest {guest_number}: {msg}")
+                print(f"[Human] Could not reach MainEntrance for guest {guest_number}: {msg}")
  
             # 3. Wait for GuestManager: guest is spawned and adapter is live
             if not self._wait_for_guest_sync("ready"):
@@ -576,9 +673,9 @@ class Human(Agent):
         FarewellGuests on /<host>/actor_state so GuestManager can walk
         every already-spawned guest back home, then pause to "say goodbye".
         """
-        ok, msg = self.goto(location="House")
+        ok, msg = self.goto(location="MainEntrance")
         if not ok:
-            print(f"[Human] Could not reach House to say goodbye: {msg}")
+            print(f"[Human] Could not reach MainEntrance to say goodbye: {msg}")
 
         self._publish_state("FarewellGuests", "start", total_guests=self.guests)
         self._adapter.get_logger().info("[Human] Saying goodbye to guests …")

@@ -1,0 +1,38 @@
+debug: false
+use_sim: true
+robot_model: FrankaResearch3
+robot_id: fr3_arm_2
+x_pos: -5.55
+y_pos: 1.92
+z_pos: 0.85
+spawn_delay: 15.0
+constraints:
+  can_move: false
+  can_manipulate: true
+  can_transport_objects: false
+  max_payload_kg: 3.0
+  max_size_object_cm: 8
+  max_reach_cm: 85
+workspace:
+- Prep_Vegetables
+skill_weights:
+  HouseParty:
+    manipulation:
+    - 1.0
+    - 1
+    supervise:
+    - 0.55
+    - 2
+    chopping:
+    - 0.45
+    - 3
+    grill:
+    - 1.0
+    - 4
+  quality_check:
+    manipulation:
+    - 1.0
+    - 0.2
+    planning:
+    - 0.3
+    - 0.5

@@ -1,0 +1,16 @@
+task: configs/goals/barbecue_b_fish.json
+party_duration: 1680
+optimizeMode: preference
+world_name: backyard_b
+use_sim: true
+team_size: 5
+top_k: 1
+agents:
+- fr3_arm_1
+- tiago_robot_1
+- fr3_arm_2
+- human_host_1
+- fr3_arm_3
+supervisor: human_host_1
+supervisor_team: true
+guests: 6

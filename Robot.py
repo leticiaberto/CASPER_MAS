@@ -190,6 +190,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
     if robot_model == "Human":
         return AgentClass(
             actor_name    = robot_id,
+            world_name    = world_name,
             constraints    = constraints,
             skill_weights = skill_weights,
             contexts      = contexts,
@@ -344,11 +345,11 @@ def main():
     args = parser.parse_args()
 
     # ── Load configs ─────────────────────────────────────────────────────────
-    with open('configs/robots/' + args.robot + ".yaml") as f:
-    #with open('generate_experiments/barbecue_experiments_v2/Set_B_Skill_Level_Sweep/exp_skill_tie/' + args.robot + ".yaml") as f:
+    with open('configs/robots/backyard_b/' + args.robot + ".yaml") as f:
+    #with open('generate_experiments/barbecue_experiments_v2/Set_G_Agent_Scaling/exp_scale_5_tiago_arm1_host1_arm2_tiago2/' + args.robot + ".yaml") as f:
         robot_config = yaml.safe_load(f)
     with open('configs/exps/' + args.exp + ".yaml") as f:
-    #with open('generate_experiments/barbecue_experiments_v2/Set_B_Skill_Level_Sweep/exp_skill_tie/' + args.exp + ".yaml") as f:
+    #with open('generate_experiments/barbecue_experiments_v2/Set_G_Agent_Scaling/exp_scale_5_tiago_arm1_host1_arm2_tiago2/' + args.exp + ".yaml") as f:
         exp_config = yaml.safe_load(f)
 
     print(f"[Robot] Loaded robot config : {args.robot}")

@@ -27,7 +27,8 @@ Usage
              "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
             ...
         ],
-        # group_positions defaults to DEFAULT_GROUP_POSITIONS (6 spots)
+        # group_positions defaults to DEFAULT_GROUP_POSITIONS[world_name]
+        # (falls back to the "backyard" entry if world_name is unknown)
         world_name      = "backyard",
     )
     manager.spin_forever()   # blocks; Ctrl-C to stop
@@ -58,29 +59,63 @@ from human_adapters.HumanAdapter import HumanAdapter
 # Defaults
 # ---------------------------------------------------------------------------
 
-DEFAULT_GUEST_CONFIGS: List[Dict] = [
-    {"actor_type": "FemaleVisitor",
-     "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
-    {"actor_type": "WalkingActor",  
-     "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
-    {"actor_type": "CasualFemale",  "color": "orange",
-     "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
-    {"actor_type": "FemaleVisitor", "color": "yellow",
-     "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
-     {"actor_type": "CasualFemale",  
-     "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
-    {"actor_type": "WalkingActor",  "color": "orange",
-     "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
-]
+"""
+Both DEFAULT_GUEST_CONFIGS and DEFAULT_GROUP_POSITIONS are keyed by the
+Gazebo ``world_name`` (the value read from the "world_name" field of the
+--exp yaml, e.g. "backyard" or "backyard_b") so a manager launched for a
+given world automatically gets the coordinates that make sense for it.
+Add a new key here for every new world variant.
+"""
 
-DEFAULT_GROUP_POSITIONS: List[Dict] = [
-    {"x":  4.78, "y": -3.31, "yaw": -3.14},  # guest 1
-    {"x":  4.0,  "y": -2.36, "yaw": -1.57},  # guest 2
-    {"x":  3.57, "y": -3.62, "yaw":  0.8 },  # guest 3
-    {"x": -1.94, "y":  4.66, "yaw": -0.42},  # guest 4
-    {"x": -1.30, "y":  4.11, "yaw":  2.55},  # guest 5
-    {"x": -3.37, "y": -2.92, "yaw":  2.73},  # guest 6
-]
+DEFAULT_GUEST_CONFIGS: Dict[str, List[Dict]] = {
+    "backyard": [
+        {"actor_type": "FemaleVisitor",
+         "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
+        {"actor_type": "WalkingActor",
+         "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
+        {"actor_type": "CasualFemale",  "color": "orange",
+         "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
+        {"actor_type": "FemaleVisitor", "color": "yellow",
+         "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
+        {"actor_type": "CasualFemale",
+         "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
+        {"actor_type": "WalkingActor",  "color": "purple",
+         "entry_x": -0.19, "entry_y": -6.76, "entry_yaw": 1.57},
+    ],
+    "backyard_b": [
+        {"actor_type": "FemaleVisitor",
+         "entry_x": 1.56, "entry_y": -6.70, "entry_yaw": 3.14},
+        {"actor_type": "WalkingActor",
+         "entry_x": 1.56, "entry_y": -6.70, "entry_yaw": 3.14},
+        {"actor_type": "CasualFemale",  "color": "orange",
+         "entry_x": 1.56, "entry_y": -6.70, "entry_yaw": 3.14},
+        {"actor_type": "FemaleVisitor", "color": "yellow",
+         "entry_x": 1.56, "entry_y": -6.70, "entry_yaw": 3.14},
+        {"actor_type": "CasualFemale",
+         "entry_x": 1.56, "entry_y": -6.70, "entry_yaw": 3.14},
+        {"actor_type": "WalkingActor",  "color": "purple",
+         "entry_x": 1.56, "entry_y": -6.70, "entry_yaw": 3.14},
+    ],
+}
+
+DEFAULT_GROUP_POSITIONS: Dict[str, List[Dict]] = {
+    "backyard": [
+        {"x":  4.78, "y": -3.31, "yaw": -3.14},  # guest 1
+        {"x":  4.0,  "y": -2.36, "yaw": -1.57},  # guest 2
+        {"x":  3.57, "y": -3.62, "yaw":  0.8 },  # guest 3
+        {"x": -1.94, "y":  4.66, "yaw": -0.42},  # guest 4
+        {"x": -1.30, "y":  4.11, "yaw":  2.55},  # guest 5
+        {"x": -3.37, "y": -2.92, "yaw":  2.73},  # guest 6
+    ],
+    "backyard_b": [
+        {"x": -5.50, "y": -1.05, "yaw":  0.84},  # guest 1
+        {"x": -5.20, "y": -2.02, "yaw": -3.00},  # guest 2
+        {"x":  5.78, "y": -1.56, "yaw": -1.51},  # guest 3
+        {"x":  5.22, "y": -2.28, "yaw": -2.95},  # guest 4
+        {"x":  3.39, "y":  2.51, "yaw": -1.55},  # guest 5
+        {"x":  2.50, "y":  2.48, "yaw":  1.57},  # guest 6
+    ],
+}
 
 
 # ---------------------------------------------------------------------------
@@ -99,10 +134,15 @@ class GuestManager(Node):
     guest_configs : list[dict]
         One entry per guest, in arrival order.
         Required keys: actor_type, entry_x, entry_y, entry_yaw. color is optional.
+        Defaults to DEFAULT_GUEST_CONFIGS[world_name] (falls back to the
+        "backyard" entry if world_name has no matching key).
     group_positions : list[dict]
         Party group coordinates (x, y, yaw).
+        Defaults to DEFAULT_GROUP_POSITIONS[world_name] (same fallback rule
+        as guest_configs).
     world_name : str
-        Gazebo world name passed to actor.launch.py.
+        Gazebo world name passed to actor.launch.py, and the key used to
+        look up guest_configs / group_positions in the DEFAULT_* dicts.
     launch_pkg : str
         ROS2 package containing actor.launch.py.
     controller_ready_delay : float
@@ -131,9 +171,13 @@ class GuestManager(Node):
         super().__init__(node_name)
 
         self._host_name              = host_name
-        self._guest_configs          = guest_configs  or DEFAULT_GUEST_CONFIGS
-        self._group_positions        = group_positions or DEFAULT_GROUP_POSITIONS
         self._world_name             = world_name
+        self._guest_configs          = guest_configs   or DEFAULT_GUEST_CONFIGS.get(
+            world_name, DEFAULT_GUEST_CONFIGS["backyard"]
+        )
+        self._group_positions        = group_positions or DEFAULT_GROUP_POSITIONS.get(
+            world_name, DEFAULT_GROUP_POSITIONS["backyard"]
+        )
         self._launch_pkg             = launch_pkg
         self._controller_ready_delay = controller_ready_delay
         self._result_timeout         = result_timeout
@@ -500,17 +544,33 @@ def main() -> None:
     with open("configs/exps/" + args.exp + ".yaml") as f:
         exp_cfg = yaml.safe_load(f)
 
-    guests = exp_cfg.get("guests", 0)
-    print(f"[GuestManager] Loaded '{args.exp}' — {guests} guest(s).")
+    guests     = exp_cfg.get("guests", 0)
+    # world_name drives which DEFAULT_GUEST_CONFIGS / DEFAULT_GROUP_POSITIONS
+    # variant is used — falls back to --world if the exp file omits it.
+    world_name = exp_cfg.get("world_name", args.world)
+    print(
+        f"[GuestManager] Loaded '{args.exp}' — {guests} guest(s), "
+        f"world '{world_name}'."
+    )
+
+    if world_name not in DEFAULT_GUEST_CONFIGS:
+        print(
+            f"[GuestManager] WARNING: no DEFAULT_GUEST_CONFIGS entry for "
+            f"world '{world_name}' — falling back to 'backyard'."
+        )
+
+    guest_configs = DEFAULT_GUEST_CONFIGS.get(
+        world_name, DEFAULT_GUEST_CONFIGS["backyard"]
+    )[:guests]
 
     if not rclpy.ok():
         rclpy.init()
 
     manager = GuestManager(
         host_name       = args.host,
-        world_name      = args.world,
+        world_name      = world_name,
         result_timeout  = args.timeout,
-        guest_configs   = DEFAULT_GUEST_CONFIGS[:guests],
+        guest_configs   = guest_configs,
     )
     print(f"[GuestManager] Watching /{args.host}/actor_state — Ctrl-C to stop.")
     manager.spin_forever()

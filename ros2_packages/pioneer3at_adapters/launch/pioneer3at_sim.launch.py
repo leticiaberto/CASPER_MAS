@@ -74,11 +74,25 @@ def spawn_pioneer(context, *args, **kwargs):
         output='screen',
     )
 
+    bridge_node = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=[
+            '/model/pioneer3at/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
+            '/model/pioneer3at/odometry@nav_msgs/msg/Odometry[gz.msgs.Odometry',
+        ],
+        remappings=[
+            ('/model/pioneer3at/cmd_vel', '/cmd_vel'),
+            ('/model/pioneer3at/odometry', '/odom'),
+        ],
+        output='screen',
+    )
+
     # ---------------------------------------------------------------
     # Return launch actions
     # ---------------------------------------------------------------
     return [
-        TimerAction(period=5.0, actions=[spawn_node]),
+        TimerAction(period=5.0, actions=[bridge_node, spawn_node]),
     ]
 
 def generate_launch_description():

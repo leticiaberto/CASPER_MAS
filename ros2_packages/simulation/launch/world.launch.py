@@ -50,7 +50,7 @@ def generate_launch_description():
 
         
         SetEnvironmentVariable(
-            name='IGN_GAZEBO_RESOURCE_PATH',
+            name='IGN_GAZEBO_RESOURCE_PATH', # GZ_SIM_RESOURCE_PATH
             value=os.pathsep.join([
                 os.path.dirname(get_package_share_directory('franka_description')),
                 models_path,
@@ -59,7 +59,8 @@ def generate_launch_description():
                 os.path.dirname(get_package_share_directory('pal_gripper_description')),
                 os.path.dirname(get_package_share_directory('pal_urdf_utils')),
                 os.path.join(get_package_share_directory('human_adapters'), 'models'), 
-                os.environ.get('IGN_GAZEBO_RESOURCE_PATH', ''),
+                os.path.join(get_package_share_directory('pioneer3at_adapters'), 'model'),
+                os.environ.get('IGN_GAZEBO_RESOURCE_PATH', ''), # GZ_SIM_RESOURCE_PATH
             ])
         ),
 

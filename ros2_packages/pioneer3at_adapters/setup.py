@@ -28,9 +28,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'),
             glob('launch/*.launch.py')),
-        (os.path.join('share', package_name, 'urdf'), glob('urdf/*')),
-        # Recursively install all files under meshes/ preserving subdirectory
-        *get_data_files_recursive('meshes', os.path.join('share', package_name)),
+        # Recursively install all files under model/ preserving subdirectory
         *get_data_files_recursive('model', os.path.join('share', package_name)),
     ],
     install_requires=['setuptools'],

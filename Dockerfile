@@ -190,6 +190,7 @@ WORKDIR /ros2_ws
 RUN mkdir src
 
 COPY ros2_packages/ ./src
+RUN find /ros2_ws/src -maxdepth 3 -type d \( -name build -o -name install -o -name log \) -exec rm -rf {} +
 
 # ------------------------------
 # franka_description (pinned commit, Gazebo Fortress compatible)

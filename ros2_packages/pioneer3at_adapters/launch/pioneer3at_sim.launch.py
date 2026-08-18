@@ -39,12 +39,7 @@ def spawn_pioneer(context, *args, **kwargs):
     z = LaunchConfiguration('z').perform(context)
     yaw = LaunchConfiguration('yaw').perform(context)
 
-    # ---------------------------------------------------------------
-    # Locate the locally installed Pioneer 3AT model
-    # ---------------------------------------------------------------
-
     pkg_dir = get_package_share_directory('pioneer3at_adapters')
-
     sdf_file = os.path.join(pkg_dir, 'model', 'pioneer3at', 'model.sdf')
 
     if not os.path.isfile(sdf_file):
@@ -59,31 +54,34 @@ def spawn_pioneer(context, *args, **kwargs):
     # ---------------------------------------------------------------
     # Spawn Pioneer 3AT
     # ---------------------------------------------------------------
-
     spawn_node = Node(
         package='ros_gz_sim',
         executable='create',
         arguments=[
             '-file', sdf_file,
             '-name', robot_name,
-            '-x', x,
-            '-y', y,
-            '-z', z,
-            '-yaw', yaw,
+            '-x', x, '-y', y, '-z', z, '-yaw', yaw,
         ],
         output='screen',
     )
 
+    # ---------------------------------------------------------------
+    # Per-robot ROS <-> Gazebo bridge
+    # ---------------------------------------------------------------
+    gz_cmd_vel_topic = f'/model/{robot_name}/cmd_vel'
+    gz_odom_topic = f'/model/{robot_name}/odometry'
+
     bridge_node = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
+        name=f'{robot_name}_bridge',
         arguments=[
-            '/model/pioneer3at/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
-            '/model/pioneer3at/odometry@nav_msgs/msg/Odometry[gz.msgs.Odometry',
+            f'{gz_cmd_vel_topic}@geometry_msgs/msg/Twist]gz.msgs.Twist',
+            f'{gz_odom_topic}@nav_msgs/msg/Odometry[gz.msgs.Odometry',
         ],
         remappings=[
-            ('/model/pioneer3at/cmd_vel', '/cmd_vel'),
-            ('/model/pioneer3at/odometry', '/odom'),
+            (gz_cmd_vel_topic, f'/{robot_name}/cmd_vel'),
+            (gz_odom_topic, f'/{robot_name}/odom'),
         ],
         output='screen',
     )
@@ -92,7 +90,8 @@ def spawn_pioneer(context, *args, **kwargs):
     # Return launch actions
     # ---------------------------------------------------------------
     return [
-        TimerAction(period=5.0, actions=[bridge_node, spawn_node]),
+        TimerAction(period=5.0, actions=[spawn_node]),
+        TimerAction(period=6.0, actions=[bridge_node]),  # after spawn exists
     ]
 
 def generate_launch_description():

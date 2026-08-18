@@ -230,29 +230,23 @@
         <use_parent_model_frame>true</use_parent_model_frame>
       </axis>
     </joint>
-    <plugin name="SkidSteerDrivePlugin" filename="libSkidSteerDrivePlugin.so">
-      <right_front>right_front</right_front>
-      <right_rear>right_rear</right_rear>
-      <left_front>left_front</left_front>
-      <left_rear>left_rear</left_rear>
-      <MaxForce>5.0</MaxForce>
+    <plugin filename="libignition-gazebo-diff-drive-system.so"
+        name="ignition::gazebo::systems::DiffDrive">
+      <left_joint>left_front</left_joint>
+      <left_joint>left_rear</left_joint>
+      <right_joint>right_front</right_joint>
+      <right_joint>right_rear</right_joint>
+
+      <wheel_separation>0.402</wheel_separation>  <!-- 2 * 0.201 from your joint poses -->
+      <wheel_radius>0.110</wheel_radius>
+
+      <max_linear_velocity>0.7</max_linear_velocity>
+      <min_linear_velocity>-0.7</min_linear_velocity>
+      <max_angular_velocity>2.0</max_angular_velocity>
+      <min_angular_velocity>-2.0</min_angular_velocity>
+
+      <topic>/model/pioneer3at/cmd_vel</topic>
+      <odom_publish_frequency>30</odom_publish_frequency>
     </plugin>
-    <!--    
-      <include>
-        <uri>model://hokuyo</uri>
-        <pose>0.2 0 0.13 0 0 0</pose>
-      </include>
-      <joint name="hokuyo_joint" type="revolute">
-        <child>hokuyo::link</child>
-        <parent>chassis</parent>
-        <axis>
-          <xyz>0 0 1</xyz>
-          <limit>
-            <upper>0</upper>
-            <lower>0</lower>
-          </limit>
-        </axis>
-      </joint>
-    -->
   </model>
 </sdf>

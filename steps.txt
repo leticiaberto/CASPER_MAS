@@ -2,14 +2,65 @@ ros2 launch simulation world.launch.py
 
 python3 PubSubProxy/Hub.py
 
-python3 ros2_packages/human_adapters/human_adapters/GuestManager.py --host human_host_1 --world backyard --exp B_exp_skill_mid
+python3 ros2_packages/human_adapters/human_adapters/GuestManager.py --host human_host_1 --world backyard --exp exp1_b
 
-python3 Robot.py --robot human_host_1 --role supervisor --exp B_exp_skill_mid
+python3 Robot.py --robot human_host_1 --role supervisor --exp exp1_b
 
-python3 Robot.py --robot fr3_arm_2 --exp B_exp_skill_mid
+python3 Robot.py --robot fr3_arm_1 --exp exp1_b
 
-python3 Robot.py --robot fr3_arm_1  --exp B_exp_skill_mid
+python3 Robot.py --robot fr3_arm_2  --exp exp1_b
 
-python3 Robot.py --robot tiago_robot_1  --exp B_exp_skill_mid
+python3 Robot.py --robot fr3_arm_3  --exp exp1_b
+
+python3 Robot.py --robot tiago_robot_1 --exp exp1_b
+
+
+---
+
+python3 scripts/plot_gantt.py experiment_logs/task_execution.csv 
 
 ./cleanup.sh
+
+---
+
+docker cp casper_mas-container:/root/.ignition/gui/pictures/ .
+
+docker exec -it casper_mas-container bash
+
+ros2 launch simulation world.launch.py world_name:=backyard_b
+
+# Vegetables
+ros2 launch fr3_adapters fr3_sim.launch.py robot_name:=fr3_arm_1 x_pos:=-5.55 y_pos:=1.92
+
+# Salad
+ros2 launch fr3_adapters fr3_sim.launch.py robot_name:=fr3_arm_3 x_pos:=-5.55 y_pos:=5 z_pos:=0.85
+
+# Meat
+ros2 launch fr3_adapters fr3_sim.launch.py robot_name:=fr3_arm_2 x_pos:=-4.80 y_pos:=-5.3 z_pos:=0.85 yaw:=1.57
+
+# Fish
+ros2 launch fr3_adapters fr3_sim.launch.py robot_name:=fr3_arm_1 x_pos:=4.61 y_pos:=-5.3 z_pos:=0.85 yaw:=1.57
+
+--------------------------------------
+Grill robot:
+python3 FrankaAdapter.py --mode sim --robot fr3_robot1  --pick 0.5 -0.0004 0.06 --place -0.0006 -0.7 0.01
+
+ros2 launch fr3_adapters fr3_sim.launch.py robot_name:=fr3_robot2 x_pos:=5 y_pos:=5.45 z_pos:=0.85 yaw:=-1.57
+
+
+Prep table:
+ros2 launch fr3_adapters fr3_sim.launch.py robot_name:=fr3_robot1  x_pos:=1.1 y_pos:=5.46 z_pos:=0.85 yaw:=-1.57
+
+docker exec -it casper_mas-container bash
+
+ros2 run ros_gz_bridge parameter_bridge \
+                /world/backyard/pose/info@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V \
+                /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock
+
+
+ 
+
+ros2 launch pioneer3at_adapters pioneer3at_sim.launch.py robot_name:=pioneer3at_1 x:=0.0 y:=0.0
+ros2 topic pub /pioneer3at_1/cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.3}}"
+
+python3 Robot.py --robot pioneer3at_1

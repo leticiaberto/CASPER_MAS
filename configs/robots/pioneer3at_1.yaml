@@ -1,0 +1,34 @@
+debug: false
+use_sim: true
+robot_model: Pioneer3AT
+robot_id: pioneer3at_1
+x_pos: 0
+y_pos: 0
+z_pos: 0.17
+yaw: 0.0
+spawn_delay: 15.0
+constraints:
+  can_move: true
+  can_manipulate: false
+  can_transport_objects: true
+  max_payload_kg: 40
+  max_size_object_cm: 40
+workspace:
+- Prep_Table
+- Grill_Table
+- Grill
+- Drinks_Table
+- House_Entrance
+- Garden
+- Kitchen_Table
+- Kitchen_Stove
+- Kitchen_Dishwasher
+- Kitchen_Shelves
+skill_weights:
+  HouseParty:
+    transport:
+    - 1.0
+    - 1
+    navigate:
+    - 1.0
+    - 2

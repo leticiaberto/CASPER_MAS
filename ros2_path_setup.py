@@ -13,6 +13,7 @@ _PACKAGES = [
     "fr3_adapters",
     "robot_common",
     "human_adapters",
+    "pioneer3at_adapters",
 ]
 
 for _pkg in _PACKAGES:

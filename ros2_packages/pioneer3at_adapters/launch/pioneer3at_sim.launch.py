@@ -34,9 +34,9 @@ def spawn_pioneer(context, *args, **kwargs):
 
     robot_name = LaunchConfiguration('robot_name').perform(context)
 
-    x = LaunchConfiguration('x').perform(context)
-    y = LaunchConfiguration('y').perform(context)
-    z = LaunchConfiguration('z').perform(context)
+    x = LaunchConfiguration('x_pos').perform(context)
+    y = LaunchConfiguration('y_pos').perform(context)
+    z = LaunchConfiguration('z_pos').perform(context)
     yaw = LaunchConfiguration('yaw').perform(context)
 
     pkg_dir = get_package_share_directory('pioneer3at_adapters')
@@ -97,9 +97,9 @@ def spawn_pioneer(context, *args, **kwargs):
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('robot_name', default_value='pioneer3at', description='Name of the Pioneer 3AT model in Gazebo'),
-        DeclareLaunchArgument('x',          default_value='0.0', description='Initial X position'),
-        DeclareLaunchArgument('y',          default_value='0.0', description='Initial Y position'),
-        DeclareLaunchArgument('z',          default_value='0.35', description='Initial Z position'),
+        DeclareLaunchArgument('x_pos',          default_value='0.0', description='Initial X position'),
+        DeclareLaunchArgument('y_pos',          default_value='0.0', description='Initial Y position'),
+        DeclareLaunchArgument('z_pos',          default_value='0.17', description='Initial Z position'),
         DeclareLaunchArgument('yaw',        default_value='0.0', description='Initial yaw orientation'),
         OpaqueFunction(function=spawn_pioneer),
     ])

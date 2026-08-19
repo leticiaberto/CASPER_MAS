@@ -1,6 +1,6 @@
 """
 ========
-Unified entry point for all robot agents (Pepper, FrankaResearch3, Tiago, Human).
+Unified entry point for all robot agents (Pioneer3AT, FrankaResearch3, Tiago, Human).
 
 Every robot model follows the same launch pattern:
   1. If use_sim=True → spawn the robot in Gazebo (non-blocking Popen)
@@ -13,7 +13,7 @@ is identical for every model and easy to extend.
 
 Robot yaml keys
 ---------------
-  robot_model   : Pepper | FrankaResearch3 | Tiago | Human
+  robot_model   : | FrankaResearch3 | Tiago | Human | Pioneer3AT 
   robot_id      : unique name / namespace (e.g. "tiago_robot1", "host")
   x_pos         : spawn X  (metres, string)
   y_pos         : spawn Y  (metres, string)
@@ -45,9 +45,6 @@ from utils import Roles  # noqa: F401 — registers all ROS2 adapter packages
 # ---------------------------------------------------------------------------
 
 def _import_agent(robot_model: str):
-    if robot_model == "Pepper":
-        from robots.Pepper import Pepper
-        return Pepper
     if robot_model == "FrankaResearch3":
         from robots.FrankaResearch3 import FrankaResearch3
         return FrankaResearch3
@@ -57,9 +54,12 @@ def _import_agent(robot_model: str):
     if robot_model == "Human":
         from robots.Human import Human
         return Human
+    if robot_model == "Pioneer3AT":
+        from robots.Pioneer3AT import Pioneer3AT
+        return Pioneer3AT
     raise ValueError(
         f"Unknown robot_model '{robot_model}'. "
-        "Valid: Pepper | FrankaResearch3 | Tiago | Human"
+        "Valid: Pioneer3AT | FrankaResearch3 | Tiago | Human"
     )
 
 
@@ -101,20 +101,19 @@ def _launch_tiago(robot_id, world_name, x_pos, y_pos, z_pos, yaw, spawn_delay):
     print(f"[Robot] Launching Tiago: {' '.join(cmd)}")
     return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-
-def _launch_pepper(robot_id, x_pos, y_pos, z_pos, yaw, spawn_delay):
+def _launch_pioneer3at(robot_id, world_name, x_pos, y_pos, z_pos, yaw, spawn_delay):
     cmd = [
-        "ros2", "launch", "pepper_adapters", "pepper_sim.launch.py",
+        "ros2", "launch", "pioneer3at_adapters", "pioneer3at_sim.launch.py",
         f"robot_name:={robot_id}",
+        f"world_name:={world_name}",
         f"x_pos:={x_pos}",
         f"y_pos:={y_pos}",
         f"z_pos:={z_pos}",
         f"yaw:={yaw}",
         f"spawn_delay:={spawn_delay}",
     ]
-    print(f"[Robot] Launching Pepper: {' '.join(cmd)}")
-    return subprocess.Popen(cmd)
-
+    print(f"[Robot] Launching Pioneer3AT: {' '.join(cmd)}")
+    return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
 def _launch_human(robot_id, world_name, actor_type, color, x_pos, y_pos, yaw):
     cmd = [
@@ -134,15 +133,16 @@ def _launch_human(robot_id, world_name, actor_type, color, x_pos, y_pos, yaw):
 # ---------------------------------------------------------------------------
 # Agent instantiation (no spawn logic here — spawn is done above)
 # ---------------------------------------------------------------------------
-
+# For now are the agents have the same parameters, but in the future they may have different ones.
 def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
                 skill_weights, contexts, agent_role, teamsize,
                 use_sim, result_timeout, workspace, party_duration, guests, run_id):
     """Instantiate the correct agent class with its specific parameters."""
 
-    if robot_model == "Pepper":
+    if robot_model == "Pioneer3AT":
         return AgentClass(
             robot_name    = robot_id,
+            world_name    = world_name,
             constraints    = constraints,
             skill_weights = skill_weights,
             contexts      = contexts,
@@ -154,6 +154,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
             guests         = guests,
             run_id         = run_id,
         )
+
 
     if robot_model == "FrankaResearch3":
         return AgentClass(
@@ -345,7 +346,7 @@ def main():
     args = parser.parse_args()
 
     # ── Load configs ─────────────────────────────────────────────────────────
-    with open('configs/robots/backyard_b/' + args.robot + ".yaml") as f:
+    with open('configs/robots/' + args.robot + ".yaml") as f:
     #with open('generate_experiments/barbecue_experiments_v2/Set_G_Agent_Scaling/exp_scale_5_tiago_arm1_host1_arm2_tiago2/' + args.robot + ".yaml") as f:
         robot_config = yaml.safe_load(f)
     with open('configs/exps/' + args.exp + ".yaml") as f:
@@ -405,14 +406,14 @@ def main():
             launch_process = _launch_tiago(
                 robot_id, world_name, x_pos, y_pos, z_pos, yaw, spawn_delay)
 
-        elif robot_model == "Pepper":
-            launch_process = _launch_pepper(
-                robot_id, x_pos, y_pos, z_pos, yaw, spawn_delay)
-
         elif robot_model == "Human":
             launch_process = _launch_human(
                 robot_id, world_name, actor_type, actor_color,
                 x_pos, y_pos, yaw)
+
+        elif robot_model == "Pioneer3AT":
+            launch_process = _launch_pioneer3at(
+                robot_id, world_name, x_pos, y_pos, z_pos, yaw, spawn_delay)
 
         bridge_process = _launch_gz_ros2_bridge(world_name)
 
@@ -426,7 +427,7 @@ def main():
             #
             # Human: poll until robot_state_publisher is up (no controller_manager).
             #
-            # Pepper (and unknown models): fall back to the YAML spawn_delay.
+            #  unknown models: fall back to the YAML spawn_delay.
             if robot_model in ("FrankaResearch3", "Tiago"):
                 _wait_for_spawner_chain(launch_process)
 
@@ -435,7 +436,7 @@ def main():
                 time.sleep(2.0)
 
             else:
-                # Pepper / unknown — no reliable ROS2 readiness signal
+                # unknown — no reliable ROS2 readiness signal
                 print(f"[Robot] Waiting {spawn_delay:.0f} s for Gazebo to settle ...")
                 time.sleep(spawn_delay)
 

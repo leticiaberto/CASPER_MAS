@@ -1,11 +1,20 @@
 <?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>pioneer3at_adapters</name>
-  <version>1.0.0</version>
+  <version>0.0.0</version>
   <description>Pioneer 3-AT description and Gazebo Fortress integration for ROS 2 Humble.</description>
-
   <maintainer email="leticia.berto@manchester.ac.uk">Leticia Berto</maintainer>
-  <license>BSD</license>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+  
+  <depend>rclpy</depend> <!-- Core ROS2 Python runtime -->
+  <depend>geometry_msgs</depend> <!-- Twist (cmd_vel) -->
+  <depend>nav_msgs</depend> <!-- Odometry (fallback pose feed) -->
+  <depend>tf2_msgs</depend> <!-- TFMessage (ground-truth pose bridge topic) -->
+
+  <depend>ament_index_python</depend> <!-- get_package_share_directory() -->
 
   <exec_depend>xacro</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>

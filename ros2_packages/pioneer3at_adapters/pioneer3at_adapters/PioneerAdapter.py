@@ -22,7 +22,7 @@ TiagoAdapter so the two robot families are interchangeable at the call site:
 Command topic
 -------------
 Twist commands are published on ``/<robot_name>/cmd_vel``, which is the
-topic name the pioneer3at_sim.launch.py bridge remaps
+topic name the pioneer3at.launch.py bridge remaps
 ``/model/<robot_name>/cmd_vel`` to (see pioneer3at_adapters launch file).
 
 Usage
@@ -81,9 +81,8 @@ _MAX_LINEAR       = 0.7     # m/s — matches model.sdf DiffDrive max_linear_vel
 _MAX_ANGULAR      = 2.0     # rad/s — matches model.sdf DiffDrive max_angular_velocity
 _K_LINEAR         = 1.0
 _K_ANGULAR        = 2.0
-_HEADING_BLEND_DIST = 0.5   # m — start blending toward final theta within this range
+_HEADING_BLEND_DIST = 0.5   # m — start blending toward final theta near the goal
 _NAV_TIMEOUT      = 120.0   # s — default; overridable per-call
-
 
 class PioneerAdapter(Node):
     """
@@ -386,7 +385,20 @@ class PioneerAdapter(Node):
         self._cmd_vel.publish(twist)
 
     def _stop_base(self) -> None:
-        self._cmd_vel.publish(Twist())
+        """Zero the robot's velocity.
+
+        Publishes several times rather than once. The DiffDrive plugin
+        holds the last received Twist and keeps applying it indefinitely —
+        there's no timeout that zeroes velocity on its own. If a single
+        stop message is lost (QoS hiccup, bridge timing, DDS discovery
+        blip), the robot keeps coasting at whatever it last had.
+        A short burst makes losing the stop command require losing every
+        message in the burst, not just one.
+        """
+        stop = Twist()
+        for _ in range(5):
+            self._cmd_vel.publish(stop)
+            time.sleep(0.02)
 
     def _finish(self, success: bool, message: str) -> None:
         icon   = "✓" if success else "✗"

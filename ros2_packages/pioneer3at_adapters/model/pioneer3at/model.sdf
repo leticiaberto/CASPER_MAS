@@ -57,7 +57,7 @@
             <ode>
               <mu>1</mu>
               <mu2>1</mu2>
-              <slip1>0.5</slip1>
+              <slip1>0.0</slip1>
               <slip2>0</slip2>
             </ode>
           </friction>
@@ -98,7 +98,7 @@
             <ode>
               <mu>1</mu>
               <mu2>1</mu2>
-              <slip1>0.5</slip1>
+              <slip1>0.0</slip1>
               <slip2>0</slip2>
             </ode>
           </friction>
@@ -139,7 +139,7 @@
             <ode>
               <mu>1</mu>
               <mu2>1</mu2>
-              <slip1>0.5</slip1>
+              <slip1>0.0</slip1>
               <slip2>0</slip2>
             </ode>
           </friction>
@@ -180,7 +180,7 @@
             <ode>
               <mu>1</mu>
               <mu2>1</mu2>
-              <slip1>0.5</slip1>
+              <slip1>0.0</slip1>
               <slip2>0</slip2>
             </ode>
           </friction>
@@ -201,6 +201,17 @@
       <axis>
         <xyz>0 1 0</xyz>
         <use_parent_model_frame>true</use_parent_model_frame>
+        <limit>
+          <!-- Sanity bound only (SDF defaults <effort>/<velocity> to
+               unlimited when <limit> is omitted). The real fix for the
+               "wheels stop but chassis keeps sliding" issue was zeroing
+               <slip1> on the collision surface below, not this. -->
+          <effort>20.0</effort>
+          <velocity>20.0</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.1</damping>
+        </dynamics>
       </axis>
     </joint>
     <joint type="revolute" name="right_rear">
@@ -210,6 +221,17 @@
       <axis>
         <xyz>0 1 0</xyz>
         <use_parent_model_frame>true</use_parent_model_frame>
+        <limit>
+          <!-- Sanity bound only (SDF defaults <effort>/<velocity> to
+               unlimited when <limit> is omitted). The real fix for the
+               "wheels stop but chassis keeps sliding" issue was zeroing
+               <slip1> on the collision surface below, not this. -->
+          <effort>20.0</effort>
+          <velocity>20.0</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.1</damping>
+        </dynamics>
       </axis>
     </joint>
     <joint type="revolute" name="left_front">
@@ -219,6 +241,17 @@
       <axis>
         <xyz>0 1 0</xyz>
         <use_parent_model_frame>true</use_parent_model_frame>
+        <limit>
+          <!-- Sanity bound only (SDF defaults <effort>/<velocity> to
+               unlimited when <limit> is omitted). The real fix for the
+               "wheels stop but chassis keeps sliding" issue was zeroing
+               <slip1> on the collision surface below, not this. -->
+          <effort>20.0</effort>
+          <velocity>20.0</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.1</damping>
+        </dynamics>
       </axis>
     </joint>
     <joint type="revolute" name="left_rear">
@@ -228,16 +261,27 @@
       <axis>
         <xyz>0 1 0</xyz>
         <use_parent_model_frame>true</use_parent_model_frame>
+        <limit>
+          <!-- Sanity bound only (SDF defaults <effort>/<velocity> to
+               unlimited when <limit> is omitted). The real fix for the
+               "wheels stop but chassis keeps sliding" issue was zeroing
+               <slip1> on the collision surface below, not this. -->
+          <effort>20.0</effort>
+          <velocity>20.0</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.1</damping>
+        </dynamics>
       </axis>
     </joint>
     <plugin filename="libignition-gazebo-diff-drive-system.so"
-        name="ignition::gazebo::systems::DiffDrive">
+            name="ignition::gazebo::systems::DiffDrive">
       <left_joint>left_front</left_joint>
       <left_joint>left_rear</left_joint>
       <right_joint>right_front</right_joint>
       <right_joint>right_rear</right_joint>
 
-      <wheel_separation>0.402</wheel_separation>  <!-- 2 * 0.201 from your joint poses -->
+      <wheel_separation>0.402</wheel_separation>
       <wheel_radius>0.110</wheel_radius>
 
       <max_linear_velocity>0.7</max_linear_velocity>
@@ -247,5 +291,22 @@
 
       <odom_publish_frequency>30</odom_publish_frequency>
     </plugin>
+    <!--    
+      <include>
+        <uri>model://hokuyo</uri>
+        <pose>0.2 0 0.13 0 0 0</pose>
+      </include>
+      <joint name="hokuyo_joint" type="revolute">
+        <child>hokuyo::link</child>
+        <parent>chassis</parent>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <upper>0</upper>
+            <lower>0</lower>
+          </limit>
+        </axis>
+      </joint>
+    -->
   </model>
 </sdf>

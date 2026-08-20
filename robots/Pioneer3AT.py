@@ -295,8 +295,18 @@ class Pioneer3AT(Agent):
                 logger.info(f"[Pioneer3AT] navigate result: {msg}")
             else:
                 logger.error(f"[Pioneer3AT] navigate result: {msg}")
-        elif action == "sleep":
-            time.sleep(task.get("time"))
+        elif action == "transport_to":
+            target  = task.get("target_name") or task.get("target_xyz")
+            timeout = task.get("timeout")
+            if target is None:
+                print("[Pioneer3AT] transport_to subtask missing 'target_name' or 'target_xyz'.")
+                return
+            ok, msg = self.navigate_to(target, timeout=timeout)
+            logger = self._adapter.get_logger()
+            if ok:
+                logger.info(f"[Pioneer3AT] transport result: {msg}")
+            else:
+                logger.error(f"[Pioneer3AT] transport result: {msg}")
         else:
             print(f"[Pioneer3AT] Unknown task action: '{action}'")
 

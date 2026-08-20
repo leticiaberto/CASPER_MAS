@@ -1,0 +1,367 @@
+{
+  "tasks": [
+    {
+      "id": "DeliverOrder",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "PickItens",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "ItemA",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "PickItemA",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "TransportItemA",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "PlaceItemAPackStation",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "ItemB",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "PickItemB",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "TransportItemB",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "PlaceItemBPackStation",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "ItemC",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "PickItemC",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "TransportItemC",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "PlaceItemCPackStation",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "VerifyOrder",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+    {
+      "id": "PackOrder",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    },
+        {
+      "id": "DeliverOrder",
+      "context": "Store",
+      "required_skills": {
+        "supervise": 0.3,
+        "planning": 0.5
+      },
+      "required_constraints": {
+        "can_move": true,
+        "can_manipulate": false,
+        "can_transport_objects": false,
+        "max_payload_kg": 0.5,
+        "workspace": [
+          "House_Entrance",
+          "Garden"
+        ]
+      },
+      "duration": 800,
+      "priority": 19,
+      "subgoal_level": 1
+    }
+  ],
+  "dependencies": [
+    [
+      "PickSaladIngredients",
+      "ChopSaladIngredients"
+    ]
+  ]
+}

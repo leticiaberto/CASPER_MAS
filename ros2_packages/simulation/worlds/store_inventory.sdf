@@ -1,0 +1,618 @@
+<?xml version='1.0'?>
+<!--
+  store_inventory.sdf
+  Based on backyard.sdf (same coordinate + pose conventions).
+
+  Coordinate convention (ROS2 / SDFormat)
+      X  =  forward
+      Y  =  left
+      Z  =  up
+
+  Layout (top-down, matches the requested ASCII sketch)
+
+      ┌───────────────────────────────────────────┐
+      │                                             │
+      │   [C]                       [A]             │   <- back of store, y ≈ +3
+      │  shelf                     shelf             │
+      │ (heavy,                  (small,             │
+      │  floor                    Tiago-              │
+      │  level -                  reachable)          │
+      │  Pioneer)                                     │
+      │                                     [D]        │  <- checkout counter, y ≈ 0
+      │                                   counter       │
+      │                                                 │
+      │  [B]══stairs         [S]                       │   <- front of store, y ≈ -3
+      │ shelf (heavy,       packing                    │
+      │  TOP shelf,          desk                       │
+      │  needs stairs)                                  │
+      │                                             │
+      └───────────────────────────────────────────┘
+
+  Shelf design
+  ────────────
+  Every shelf is one <model> with two (or three) upright side-panel links
+  and four horizontal board links (z = 0.4 / 0.9 / 1.4 / 1.9, board
+  thickness 0.04 m ⇒ top faces at 0.42 / 0.92 / 1.42 / 1.92 m).
+  Model pose is identity; every link pose below is an absolute world pose
+  (same pattern the original file used for the "grill" model).
+
+  Object world-Z placement
+  ─────────────────────────────────────────────────────────
+  small pick object   (0.08 cube, half=0.04)   on shelf A board2 (top .92) -> z=0.96
+                                                on shelf A board1 (top .42) -> z=0.46
+  heavy box - shelf B (0.30 cube, half=0.15)   on shelf B board4 (top 1.92, TOP shelf) -> z=2.07
+  heavy box - shelf C (0.40x0.35x0.30,half.15) on shelf C board1 (top .42, floor-level) -> z=0.57
+  package on counter D(0.10 cube,half=0.05)    counter top (1.00) -> z=1.05
+  package on desk S   (0.20 cube,half=0.10)    desk top (0.85)   -> z=0.95
+-->
+
+<sdf version="1.7">
+  <world name="store_inventory">
+
+    <!-- ── Physics ─────────────────────────────────────────────────── -->
+    <physics name="default_physics" type="dart">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+
+    <plugin name="gz::sim::systems::Physics"          filename="ignition-gazebo-physics-system"/>
+    <plugin name="gz::sim::systems::UserCommands"     filename="ignition-gazebo-user-commands-system"/>
+    <plugin name="gz::sim::systems::SceneBroadcaster" filename="ignition-gazebo-scene-broadcaster-system"/>
+    <plugin name="gz::sim::systems::Contact"          filename="ignition-gazebo-contact-system"/>
+
+    <gravity>0 0 -9.8</gravity>
+    <atmosphere type="adiabatic"/>
+
+    <!-- ── Scene ───────────────────────────────────────────────────── -->
+    <scene>
+      <ambient>0.6 0.6 0.6 1</ambient>
+      <background>0.85 0.85 0.85 1</background>
+      <shadows>false</shadows>
+    </scene>
+
+    <!-- ── Sun / indoor light ─────────────────────────────────────── -->
+    <light name="sun" type="directional">
+      <cast_shadows>false</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>1 1 1 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.5 -1</direction>
+    </light>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         FLOOR
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="ground">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>100 100</size></plane>
+          </geometry>
+          <surface>
+            <friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction>
+            <contact><ode><min_depth>0.001</min_depth></ode></contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>12 10</size></plane>
+          </geometry>
+          <material>
+            <ambient>0.75 0.75 0.72 1</ambient>
+            <diffuse>0.75 0.75 0.72 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         WALLS  (2.5 m tall, front wall split to leave a doorway)
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="wall_back">
+      <static>true</static>
+      <pose>0 5 1.25 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>12 0.2 2.5</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>12 0.2 2.5</size></box></geometry>
+          <material><ambient>0.85 0.85 0.8 1</ambient><diffuse>0.85 0.85 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_left">
+      <static>true</static>
+      <pose>-6 0 1.25 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.2 10 2.5</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.2 10 2.5</size></box></geometry>
+          <material><ambient>0.85 0.85 0.8 1</ambient><diffuse>0.85 0.85 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_right">
+      <static>true</static>
+      <pose>6 0 1.25 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.2 10 2.5</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.2 10 2.5</size></box></geometry>
+          <material><ambient>0.85 0.85 0.8 1</ambient><diffuse>0.85 0.85 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- front wall, split around a 3 m wide doorway at x∈[-1.5,1.5] -->
+    <model name="wall_front_left">
+      <static>true</static>
+      <pose>-3.75 -5 1.25 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>4.5 0.2 2.5</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>4.5 0.2 2.5</size></box></geometry>
+          <material><ambient>0.85 0.85 0.8 1</ambient><diffuse>0.85 0.85 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_front_right">
+      <static>true</static>
+      <pose>3.75 -5 1.25 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>4.5 0.2 2.5</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>4.5 0.2 2.5</size></box></geometry>
+          <material><ambient>0.85 0.85 0.8 1</ambient><diffuse>0.85 0.85 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         SHELF C  — floor-level heavy boxes, transported by Pioneer
+         centre (-4, 3), side panels at x=-4.7 / -3.3, depth 0.5 (y 2.75..3.25)
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="shelf_C">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name="post_L">
+        <pose>-4.7 3 1.0 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
+          <material><ambient>0.45 0.45 0.5 1</ambient><diffuse>0.45 0.45 0.5 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="post_R">
+        <pose>-3.3 3 1.0 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
+          <material><ambient>0.45 0.45 0.5 1</ambient><diffuse>0.45 0.45 0.5 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="board_1">
+        <pose>-4 3 0.4 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
+          <material><ambient>0.55 0.55 0.6 1</ambient><diffuse>0.55 0.55 0.6 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="board_2">
+        <pose>-4 3 0.9 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
+          <material><ambient>0.55 0.55 0.6 1</ambient><diffuse>0.55 0.55 0.6 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="board_3">
+        <pose>-4 3 1.4 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
+          <material><ambient>0.55 0.55 0.6 1</ambient><diffuse>0.55 0.55 0.6 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="board_4">
+        <pose>-4 3 1.9 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
+          <material><ambient>0.55 0.55 0.6 1</ambient><diffuse>0.55 0.55 0.6 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         SHELF A  — small pickable objects, Tiago-reachable height
+         centre (3.5, 3), side panels at x=2.8 / 4.2
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="shelf_A">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name="post_L">
+        <pose>2.8 3 1.0 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
+          <material><ambient>0.45 0.45 0.5 1</ambient><diffuse>0.45 0.45 0.5 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="post_R">
+        <pose>4.2 3 1.0 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
+          <material><ambient>0.45 0.45 0.5 1</ambient><diffuse>0.45 0.45 0.5 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="board_1">
+        <pose>3.5 3 0.4 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
+          <material><ambient>0.55 0.55 0.6 1</ambient><diffuse>0.55 0.55 0.6 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="board_2">
+        <pose>3.5 3 0.9 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
+          <material><ambient>0.55 0.55 0.6 1</ambient><diffuse>0.55 0.55 0.6 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="board_3">
+        <pose>3.5 3 1.4 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
+          <material><ambient>0.55 0.55 0.6 1</ambient><diffuse>0.55 0.55 0.6 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="board_4">
+        <pose>3.5 3 1.9 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
+          <material><ambient>0.55 0.55 0.6 1</ambient><diffuse>0.55 0.55 0.6 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         COUNTER D  — checkout / packing hand-off counter
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="counter_D">
+      <static>true</static>
+      <pose>5 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.6 1.8 1.0</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.6 1.8 1.0</size></box></geometry>
+          <material><ambient>0.4 0.3 0.2 1</ambient><diffuse>0.4 0.3 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         SHELF B  — heavy objects on the TOP shelf only, needs the stairs
+         centre (-3.5, -3), side panels at x=-5.0 / -2.0, centre post at x=-3.5
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="shelf_B">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name="post_L">
+        <pose>-5.0 -3 1.0 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
+          <material><ambient>0.45 0.45 0.5 1</ambient><diffuse>0.45 0.45 0.5 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="post_M">
+        <pose>-3.5 -3 1.0 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
+          <material><ambient>0.45 0.45 0.5 1</ambient><diffuse>0.45 0.45 0.5 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="post_R">
+        <pose>-2.0 -3 1.0 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
+          <material><ambient>0.45 0.45 0.5 1</ambient><diffuse>0.45 0.45 0.5 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="board_1">
+        <pose>-3.5 -3 0.4 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>3.0 0.5 0.04</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>3.0 0.5 0.04</size></box></geometry>
+          <material><ambient>0.55 0.55 0.6 1</ambient><diffuse>0.55 0.55 0.6 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="board_2">
+        <pose>-3.5 -3 0.9 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>3.0 0.5 0.04</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>3.0 0.5 0.04</size></box></geometry>
+          <material><ambient>0.55 0.55 0.6 1</ambient><diffuse>0.55 0.55 0.6 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="board_3">
+        <pose>-3.5 -3 1.4 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>3.0 0.5 0.04</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>3.0 0.5 0.04</size></box></geometry>
+          <material><ambient>0.55 0.55 0.6 1</ambient><diffuse>0.55 0.55 0.6 1</diffuse></material>
+        </visual>
+      </link>
+      <!-- top (heavy) shelf, reinforced colour to signal load rating -->
+      <link name="board_4">
+        <pose>-3.5 -3 1.9 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>3.0 0.5 0.06</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>3.0 0.5 0.06</size></box></geometry>
+          <material><ambient>0.35 0.35 0.4 1</ambient><diffuse>0.35 0.35 0.4 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         STAIRS next to shelf B — 8 steps, riser 0.24 m, tread 0.28 m,
+         top step reaches z=1.92 m == top face of shelf_B/board_4
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="stairs_B">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name="step_1">
+        <pose>-1.76 -3 0.12 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.28 1.0 0.24</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.28 1.0 0.24</size></box></geometry>
+          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="step_2">
+        <pose>-1.48 -3 0.24 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.28 1.0 0.48</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.28 1.0 0.48</size></box></geometry>
+          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="step_3">
+        <pose>-1.20 -3 0.36 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.28 1.0 0.72</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.28 1.0 0.72</size></box></geometry>
+          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="step_4">
+        <pose>-0.92 -3 0.48 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.28 1.0 0.96</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.28 1.0 0.96</size></box></geometry>
+          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="step_5">
+        <pose>-0.64 -3 0.60 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.28 1.0 1.20</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.28 1.0 1.20</size></box></geometry>
+          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="step_6">
+        <pose>-0.36 -3 0.72 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.28 1.0 1.44</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.28 1.0 1.44</size></box></geometry>
+          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="step_7">
+        <pose>-0.08 -3 0.84 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.28 1.0 1.68</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.28 1.0 1.68</size></box></geometry>
+          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="step_8">
+        <pose>0.20 -3 0.96 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.28 1.0 1.92</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.28 1.0 1.92</size></box></geometry>
+          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         PACKING DESK S
+    ═══════════════════════════════════════════════════════════════════ -->
+    <model name="desk_S">
+      <static>true</static>
+      <pose>1.5 -3 0.80 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>1.8 0.9 0.10</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>1.8 0.9 0.10</size></box></geometry>
+          <material><ambient>0.7 0.5 0.3 1</ambient><diffuse>0.7 0.5 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         MOVABLE INVENTORY OBJECTS  (dynamic, mass + inertia so robots
+         can actually pick/push/transport them)
+    ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Shelf A — small parcels Tiago can pick, board_1 (z=0.46) and board_2 (z=0.96) -->
+    <model name="small_item_1">
+      <pose>3.2 2.9 0.46 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.2</mass>
+          <inertia><ixx>0.000213</ixx><iyy>0.000213</iyy><izz>0.000213</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><box><size>0.08 0.08 0.08</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.08 0.08 0.08</size></box></geometry>
+          <material><ambient>0.2 0.4 0.8 1</ambient><diffuse>0.2 0.4 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="small_item_2">
+      <pose>3.5 3.1 0.46 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.2</mass>
+          <inertia><ixx>0.000213</ixx><iyy>0.000213</iyy><izz>0.000213</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><box><size>0.08 0.08 0.08</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.08 0.08 0.08</size></box></geometry>
+          <material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="small_item_3">
+      <pose>3.8 2.85 0.96 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.2</mass>
+          <inertia><ixx>0.000213</ixx><iyy>0.000213</iyy><izz>0.000213</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><box><size>0.08 0.08 0.08</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.08 0.08 0.08</size></box></geometry>
+          <material><ambient>0.2 0.7 0.3 1</ambient><diffuse>0.2 0.7 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="small_item_4">
+      <pose>3.3 3.15 0.96 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.2</mass>
+          <inertia><ixx>0.000213</ixx><iyy>0.000213</iyy><izz>0.000213</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><box><size>0.08 0.08 0.08</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.08 0.08 0.08</size></box></geometry>
+          <material><ambient>0.9 0.8 0.1 1</ambient><diffuse>0.9 0.8 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Shelf C — heavy boxes at floor level, Pioneer-transportable, board_1 top=0.42 -->
+    <model name="heavy_box_C1">
+      <pose>-4.25 2.9 0.57 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>12</mass>
+          <inertia><ixx>0.2125</ixx><iyy>0.25</iyy><izz>0.2825</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><box><size>0.4 0.35 0.3</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 0.35 0.3</size></box></geometry>
+          <material><ambient>0.5 0.35 0.2 1</ambient><diffuse>0.5 0.35 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="heavy_box_C2">
+      <pose>-3.75 3.05 0.57 0 0 0.3</pose>
+      <link name="link">
+        <inertial>
+          <mass>12</mass>
+          <inertia><ixx>0.2125</ixx><iyy>0.25</iyy><izz>0.2825</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><box><size>0.4 0.35 0.3</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 0.35 0.3</size></box></geometry>
+          <material><ambient>0.5 0.35 0.2 1</ambient><diffuse>0.5 0.35 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Shelf B — heavy boxes on the TOP shelf only (board_4 top=1.92), stairs required -->
+    <model name="heavy_box_B1">
+      <pose>-4.0 -3 2.07 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>6</mass>
+          <inertia><ixx>0.09</ixx><iyy>0.09</iyy><izz>0.09</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><box><size>0.3 0.3 0.3</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.3 0.3 0.3</size></box></geometry>
+          <material><ambient>0.55 0.4 0.22 1</ambient><diffuse>0.55 0.4 0.22 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="heavy_box_B2">
+      <pose>-3.0 -3 2.07 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>6</mass>
+          <inertia><ixx>0.09</ixx><iyy>0.09</iyy><izz>0.09</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><box><size>0.3 0.3 0.3</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.3 0.3 0.3</size></box></geometry>
+          <material><ambient>0.55 0.4 0.22 1</ambient><diffuse>0.55 0.4 0.22 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- A package waiting at the packing desk S (top=0.85) -->
+    <model name="package_on_desk">
+      <pose>1.5 -3 0.95 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>1</mass>
+          <inertia><ixx>0.00667</ixx><iyy>0.00854</iyy><izz>0.00854</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><box><size>0.25 0.2 0.2</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.25 0.2 0.2</size></box></geometry>
+          <material><ambient>0.65 0.5 0.3 1</ambient><diffuse>0.65 0.5 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- A scanned parcel sitting on the checkout counter D (top=1.0) -->
+    <model name="package_on_counter">
+      <pose>5 0 1.05 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.3</mass>
+          <inertia><ixx>0.0005</ixx><iyy>0.0005</iyy><izz>0.0005</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><box><size>0.1 0.1 0.1</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.1 0.1 0.1</size></box></geometry>
+          <material><ambient>0.9 0.9 0.85 1</ambient><diffuse>0.9 0.9 0.85 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

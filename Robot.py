@@ -339,6 +339,7 @@ def main():
 
     # ── Args ────────────────────────────────────────────────────────────────
     parser = argparse.ArgumentParser()
+    parser.add_argument("--config_folder", default="configs")
     parser.add_argument("--robot", default="fr3_arm_1")
     parser.add_argument("--role",  default="member",
                         choices=["member", "supervisor"])
@@ -346,10 +347,10 @@ def main():
     args = parser.parse_args()
 
     # ── Load configs ─────────────────────────────────────────────────────────
-    with open('configs/robots/' + args.robot + ".yaml") as f:
+    with open(f"{args.config_folder}/robots/{args.robot}.yaml") as f:
     #with open('generate_experiments/barbecue_experiments_v2/Set_G_Agent_Scaling/exp_scale_5_tiago_arm1_host1_arm2_tiago2/' + args.robot + ".yaml") as f:
         robot_config = yaml.safe_load(f)
-    with open('configs/exps/' + args.exp + ".yaml") as f:
+    with open(f"{args.config_folder}/exps/{args.exp}.yaml") as f:
     #with open('generate_experiments/barbecue_experiments_v2/Set_G_Agent_Scaling/exp_scale_5_tiago_arm1_host1_arm2_tiago2/' + args.exp + ".yaml") as f:
         exp_config = yaml.safe_load(f)
 

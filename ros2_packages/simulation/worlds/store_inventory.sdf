@@ -177,9 +177,9 @@
     ═══════════════════════════════════════════════════════════════════ -->
     <model name="shelf_C">
       <static>true</static>
-      <pose>0 0 0 0 0 0</pose>
+      <pose>-1.57 4.65 0 0 0 0</pose>
       <link name="post_L">
-        <pose>-4.7 3 1.0 0 0 0</pose>
+        <pose>-0.7 0 1.0 0 0 0</pose>
         <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
@@ -187,7 +187,7 @@
         </visual>
       </link>
       <link name="post_R">
-        <pose>-3.3 3 1.0 0 0 0</pose>
+        <pose>0.7 0 1.0 0 0 0</pose>
         <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
@@ -195,7 +195,7 @@
         </visual>
       </link>
       <link name="board_1">
-        <pose>-4 3 0.4 0 0 0</pose>
+        <pose>0 0 0.4 0 0 0</pose>
         <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
@@ -203,7 +203,7 @@
         </visual>
       </link>
       <link name="board_2">
-        <pose>-4 3 0.9 0 0 0</pose>
+        <pose>0 0 0.9 0 0 0</pose>
         <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
@@ -211,7 +211,7 @@
         </visual>
       </link>
       <link name="board_3">
-        <pose>-4 3 1.4 0 0 0</pose>
+        <pose>0 0 1.4 0 0 0</pose>
         <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
@@ -219,7 +219,7 @@
         </visual>
       </link>
       <link name="board_4">
-        <pose>-4 3 1.9 0 0 0</pose>
+        <pose>0 0 1.9 0 0 0</pose>
         <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
@@ -234,9 +234,9 @@
     ═══════════════════════════════════════════════════════════════════ -->
     <model name="shelf_A">
       <static>true</static>
-      <pose>0 0 0 0 0 0</pose>
+      <pose>4.50 4.50 0 0 0 0</pose>
       <link name="post_L">
-        <pose>2.8 3 1.0 0 0 0</pose>
+        <pose>-0.7 0 1.0 0 0 0</pose>
         <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
@@ -244,7 +244,7 @@
         </visual>
       </link>
       <link name="post_R">
-        <pose>4.2 3 1.0 0 0 0</pose>
+        <pose>0.7 0 1.0 0 0 0</pose>
         <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
@@ -252,7 +252,7 @@
         </visual>
       </link>
       <link name="board_1">
-        <pose>3.5 3 0.4 0 0 0</pose>
+        <pose>0 0 0.4 0 0 0</pose>
         <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
@@ -260,7 +260,7 @@
         </visual>
       </link>
       <link name="board_2">
-        <pose>3.5 3 0.9 0 0 0</pose>
+        <pose>0 0 0.9 0 0 0</pose>
         <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
@@ -268,7 +268,7 @@
         </visual>
       </link>
       <link name="board_3">
-        <pose>3.5 3 1.4 0 0 0</pose>
+        <pose>0 0 1.4 0 0 0</pose>
         <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
@@ -276,7 +276,7 @@
         </visual>
       </link>
       <link name="board_4">
-        <pose>3.5 3 1.9 0 0 0</pose>
+        <pose>0 0 1.9 0 0 0</pose>
         <collision name="collision"><geometry><box><size>1.4 0.5 0.04</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>1.4 0.5 0.04</size></box></geometry>
@@ -306,9 +306,9 @@
     ═══════════════════════════════════════════════════════════════════ -->
     <model name="shelf_B">
       <static>true</static>
-      <pose>0 0 0 0 0 0</pose>
+      <pose>5.61 -1.49 0 0 0 1.57</pose>
       <link name="post_L">
-        <pose>-5.0 -3 1.0 0 0 0</pose>
+        <pose>-1.5 0 1.0 0 0 0</pose>
         <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
@@ -316,7 +316,7 @@
         </visual>
       </link>
       <link name="post_M">
-        <pose>-3.5 -3 1.0 0 0 0</pose>
+        <pose>0 0 1.0 0 0 0</pose>
         <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
@@ -324,7 +324,7 @@
         </visual>
       </link>
       <link name="post_R">
-        <pose>-2.0 -3 1.0 0 0 0</pose>
+        <pose>1.5 0 1.0 0 0 0</pose>
         <collision name="collision"><geometry><box><size>0.05 0.5 2.0</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>0.05 0.5 2.0</size></box></geometry>
@@ -332,7 +332,7 @@
         </visual>
       </link>
       <link name="board_1">
-        <pose>-3.5 -3 0.4 0 0 0</pose>
+        <pose>0 0 0.4 0 0 0</pose>
         <collision name="collision"><geometry><box><size>3.0 0.5 0.04</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>3.0 0.5 0.04</size></box></geometry>
@@ -340,7 +340,7 @@
         </visual>
       </link>
       <link name="board_2">
-        <pose>-3.5 -3 0.9 0 0 0</pose>
+        <pose>0 0 0.9 0 0 0</pose>
         <collision name="collision"><geometry><box><size>3.0 0.5 0.04</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>3.0 0.5 0.04</size></box></geometry>
@@ -348,7 +348,7 @@
         </visual>
       </link>
       <link name="board_3">
-        <pose>-3.5 -3 1.4 0 0 0</pose>
+        <pose>0 0 1.4 0 0 0</pose>
         <collision name="collision"><geometry><box><size>3.0 0.5 0.04</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>3.0 0.5 0.04</size></box></geometry>
@@ -357,7 +357,7 @@
       </link>
       <!-- top (heavy) shelf, reinforced colour to signal load rating -->
       <link name="board_4">
-        <pose>-3.5 -3 1.9 0 0 0</pose>
+        <pose>0 0 1.9 0 0 0</pose>
         <collision name="collision"><geometry><box><size>3.0 0.5 0.06</size></box></geometry></collision>
         <visual name="visual">
           <geometry><box><size>3.0 0.5 0.06</size></box></geometry>
@@ -367,74 +367,124 @@
     </model>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         STAIRS next to shelf B — 8 steps, riser 0.24 m, tread 0.28 m,
-         top step reaches z=1.92 m == top face of shelf_B/board_4
+         STAIRS next to shelf B — compact blue warehouse step-stool.
+         Only 3 steps, top platform at z=1.2 m — intentionally LOWER than
+         shelf_B's top board (z=1.92 m): a person standing on the platform
+         adds their own reach on top of that, so the stairs don't need to
+         match the shelf height. This also shrinks the footprint a lot
+         (0.9 m run instead of 1.2/2.24 m before).
+         Reoriented to run along Y and sit directly in FRONT of shelf_B
+         (same x-center as the shelf, facing its accessible/open side),
+         so the top platform lands right where the shelf's items are,
+         instead of off to one side.
+         Model <pose> sits at the stairs' true center — every link pose
+         below is a small LOCAL offset from that point (not an absolute
+         world coordinate), so the move/rotate gizmo stays on the object.
+         Handle frame (2 back posts + 1 diagonal brace + 1 top bar) is
+         simpler than a full sloped rail and matches the reference photo;
+         rotations were verified numerically, not hand-derived, to avoid
+         the earlier angle mistake. Visual-only (no collision) so it
+         never blocks a robot approaching the shelf.
     ═══════════════════════════════════════════════════════════════════ -->
     <model name="stairs_B">
       <static>true</static>
-      <pose>0 0 0 0 0 0</pose>
+      <pose>5.36 -3.79 0 0 0 1.57</pose>
+
+      <!-- step 1: bottom / entry, farthest from the shelf -->
       <link name="step_1">
-        <pose>-1.76 -3 0.12 0 0 0</pose>
-        <collision name="collision"><geometry><box><size>0.28 1.0 0.24</size></box></geometry></collision>
+        <pose>0 0.30 0.2 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>1.0 0.30 0.4</size></box></geometry></collision>
         <visual name="visual">
-          <geometry><box><size>0.28 1.0 0.24</size></box></geometry>
-          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+          <geometry><box><size>1.0 0.30 0.4</size></box></geometry>
+          <material><ambient>0.12 0.45 0.85 1</ambient><diffuse>0.15 0.5 0.9 1</diffuse><specular>0.4 0.4 0.4 1</specular></material>
         </visual>
       </link>
+      <link name="step_1_nosing">
+        <pose>0 0.15 0.41 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>1.0 0.02 0.02</size></box></geometry>
+          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- step 2: middle -->
       <link name="step_2">
-        <pose>-1.48 -3 0.24 0 0 0</pose>
-        <collision name="collision"><geometry><box><size>0.28 1.0 0.48</size></box></geometry></collision>
+        <pose>0 0 0.4 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>1.0 0.30 0.8</size></box></geometry></collision>
         <visual name="visual">
-          <geometry><box><size>0.28 1.0 0.48</size></box></geometry>
-          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+          <geometry><box><size>1.0 0.30 0.8</size></box></geometry>
+          <material><ambient>0.12 0.45 0.85 1</ambient><diffuse>0.15 0.5 0.9 1</diffuse><specular>0.4 0.4 0.4 1</specular></material>
         </visual>
       </link>
+      <link name="step_2_nosing">
+        <pose>0 -0.15 0.81 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>1.0 0.02 0.02</size></box></geometry>
+          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- step 3: top platform, right against the shelf -->
       <link name="step_3">
-        <pose>-1.20 -3 0.36 0 0 0</pose>
-        <collision name="collision"><geometry><box><size>0.28 1.0 0.72</size></box></geometry></collision>
+        <pose>0 -0.30 0.6 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>1.0 0.30 1.2</size></box></geometry></collision>
         <visual name="visual">
-          <geometry><box><size>0.28 1.0 0.72</size></box></geometry>
-          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+          <geometry><box><size>1.0 0.30 1.2</size></box></geometry>
+          <material><ambient>0.12 0.45 0.85 1</ambient><diffuse>0.15 0.5 0.9 1</diffuse><specular>0.4 0.4 0.4 1</specular></material>
         </visual>
       </link>
-      <link name="step_4">
-        <pose>-0.92 -3 0.48 0 0 0</pose>
-        <collision name="collision"><geometry><box><size>0.28 1.0 0.96</size></box></geometry></collision>
+      <link name="step_3_nosing">
+        <pose>0 -0.45 1.21 0 0 0</pose>
         <visual name="visual">
-          <geometry><box><size>0.28 1.0 0.96</size></box></geometry>
-          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+          <geometry><box><size>1.0 0.02 0.02</size></box></geometry>
+          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
-      <link name="step_5">
-        <pose>-0.64 -3 0.60 0 0 0</pose>
-        <collision name="collision"><geometry><box><size>0.28 1.0 1.20</size></box></geometry></collision>
+
+      <!-- two full side handles, one on each side of the steps and clear of
+           them (steps are 1.0 m wide, x=-0.5..0.5; rails sit outside that
+           at x=∓0.55, not overlapping the step blocks): a diagonal rail
+           from the entry (bottom) up to the top platform, plus a short
+           vertical grip riser at the top — same shape as a real stair
+           handrail, mirrored left/right. -->
+      <link name="handle_rail_left_diag">
+        <pose>-0.55 0 0.95 0.442 0 0</pose>
         <visual name="visual">
-          <geometry><box><size>0.28 1.0 1.20</size></box></geometry>
-          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+          <geometry><cylinder><radius>0.025</radius><length>2.10</length></cylinder></geometry>
+          <material><ambient>0.12 0.45 0.85 1</ambient><diffuse>0.15 0.5 0.9 1</diffuse></material>
         </visual>
       </link>
-      <link name="step_6">
-        <pose>-0.36 -3 0.72 0 0 0</pose>
-        <collision name="collision"><geometry><box><size>0.28 1.0 1.44</size></box></geometry></collision>
+      <link name="handle_rail_right_diag">
+        <pose>0.55 0 0.95 0.442 0 0</pose>
         <visual name="visual">
-          <geometry><box><size>0.28 1.0 1.44</size></box></geometry>
-          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+          <geometry><cylinder><radius>0.025</radius><length>2.10</length></cylinder></geometry>
+          <material><ambient>0.12 0.45 0.85 1</ambient><diffuse>0.15 0.5 0.9 1</diffuse></material>
         </visual>
       </link>
-      <link name="step_7">
-        <pose>-0.08 -3 0.84 0 0 0</pose>
-        <collision name="collision"><geometry><box><size>0.28 1.0 1.68</size></box></geometry></collision>
+
+      <!-- two vertical grip risers at the top, one on each side, outside the
+           steps, floor to grab-handle height, at the end of each side rail -->
+      <link name="back_post_left">
+        <pose>-0.55 -0.45 0.95 0 0 0</pose>
         <visual name="visual">
-          <geometry><box><size>0.28 1.0 1.68</size></box></geometry>
-          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+          <geometry><cylinder><radius>0.025</radius><length>1.9</length></cylinder></geometry>
+          <material><ambient>0.12 0.45 0.85 1</ambient><diffuse>0.15 0.5 0.9 1</diffuse></material>
         </visual>
       </link>
-      <link name="step_8">
-        <pose>0.20 -3 0.96 0 0 0</pose>
-        <collision name="collision"><geometry><box><size>0.28 1.0 1.92</size></box></geometry></collision>
+      <link name="back_post_right">
+        <pose>0.55 -0.45 0.95 0 0 0</pose>
         <visual name="visual">
-          <geometry><box><size>0.28 1.0 1.92</size></box></geometry>
-          <material><ambient>0.5 0.5 0.52 1</ambient><diffuse>0.5 0.5 0.52 1</diffuse></material>
+          <geometry><cylinder><radius>0.025</radius><length>1.9</length></cylinder></geometry>
+          <material><ambient>0.12 0.45 0.85 1</ambient><diffuse>0.15 0.5 0.9 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- top cross-bar tying the two sides together -->
+      <link name="handle_top">
+        <pose>0 -0.45 1.9 0 1.5708 0</pose>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.025</radius><length>1.1</length></cylinder></geometry>
+          <material><ambient>0.12 0.45 0.85 1</ambient><diffuse>0.15 0.5 0.9 1</diffuse></material>
         </visual>
       </link>
     </model>
@@ -444,7 +494,7 @@
     ═══════════════════════════════════════════════════════════════════ -->
     <model name="desk_S">
       <static>true</static>
-      <pose>1.5 -3 0.80 0 0 0</pose>
+      <pose>-5.44 0.56 0.80 0 0 -1.57</pose>
       <link name="link">
         <collision name="collision"><geometry><box><size>1.8 0.9 0.10</size></box></geometry></collision>
         <visual name="visual">
@@ -520,64 +570,159 @@
       </link>
     </model>
 
-    <!-- Shelf C — heavy boxes at floor level, Pioneer-transportable, board_1 top=0.42 -->
-    <model name="heavy_box_C1">
-      <pose>-4.25 2.9 0.57 0 0 0</pose>
+    <!-- Shelf C — visually-heavy gym-weight-plate discs (0.36 m diameter, 0.08 m
+         thick, dark colours) but kept LIGHT in actual mass (1 kg) so a robot can
+         still pick them up — they just need to look heavy, not be physically
+         heavy. floor-level (board_1 top=0.42), Pioneer-transportable.
+         Two stacks of two plates. -->
+    <model name="weight_C1a">
+      <pose>-4.25 2.9 0.46 0 0 0</pose>
       <link name="link">
         <inertial>
-          <mass>12</mass>
-          <inertia><ixx>0.2125</ixx><iyy>0.25</iyy><izz>0.2825</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+          <mass>1.0</mass>
+          <inertia><ixx>0.00863</ixx><iyy>0.00863</iyy><izz>0.0162</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
         </inertial>
-        <collision name="collision"><geometry><box><size>0.4 0.35 0.3</size></box></geometry></collision>
+        <collision name="collision"><geometry><cylinder><radius>0.18</radius><length>0.08</length></cylinder></geometry></collision>
         <visual name="visual">
-          <geometry><box><size>0.4 0.35 0.3</size></box></geometry>
-          <material><ambient>0.5 0.35 0.2 1</ambient><diffuse>0.5 0.35 0.2 1</diffuse></material>
+          <geometry><cylinder><radius>0.18</radius><length>0.08</length></cylinder></geometry>
+          <material><ambient>0.08 0.08 0.09 1</ambient><diffuse>0.1 0.1 0.11 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <model name="heavy_box_C2">
-      <pose>-3.75 3.05 0.57 0 0 0.3</pose>
+    <model name="weight_C1b">
+      <pose>-4.25 2.9 0.54 0 0 0</pose>
       <link name="link">
         <inertial>
-          <mass>12</mass>
-          <inertia><ixx>0.2125</ixx><iyy>0.25</iyy><izz>0.2825</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+          <mass>1.0</mass>
+          <inertia><ixx>0.00863</ixx><iyy>0.00863</iyy><izz>0.0162</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
         </inertial>
-        <collision name="collision"><geometry><box><size>0.4 0.35 0.3</size></box></geometry></collision>
+        <collision name="collision"><geometry><cylinder><radius>0.18</radius><length>0.08</length></cylinder></geometry></collision>
         <visual name="visual">
-          <geometry><box><size>0.4 0.35 0.3</size></box></geometry>
-          <material><ambient>0.5 0.35 0.2 1</ambient><diffuse>0.5 0.35 0.2 1</diffuse></material>
+          <geometry><cylinder><radius>0.18</radius><length>0.08</length></cylinder></geometry>
+          <material><ambient>0.7 0.05 0.05 1</ambient><diffuse>0.75 0.08 0.08 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <!-- Shelf B — heavy boxes on the TOP shelf only (board_4 top=1.92), stairs required -->
-    <model name="heavy_box_B1">
-      <pose>-4.0 -3 2.07 0 0 0</pose>
+    <model name="weight_C2a">
+      <pose>-3.75 3.05 0.46 0 0 0</pose>
       <link name="link">
         <inertial>
-          <mass>6</mass>
-          <inertia><ixx>0.09</ixx><iyy>0.09</iyy><izz>0.09</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+          <mass>1.0</mass>
+          <inertia><ixx>0.00863</ixx><iyy>0.00863</iyy><izz>0.0162</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
         </inertial>
-        <collision name="collision"><geometry><box><size>0.3 0.3 0.3</size></box></geometry></collision>
+        <collision name="collision"><geometry><cylinder><radius>0.18</radius><length>0.08</length></cylinder></geometry></collision>
         <visual name="visual">
-          <geometry><box><size>0.3 0.3 0.3</size></box></geometry>
-          <material><ambient>0.55 0.4 0.22 1</ambient><diffuse>0.55 0.4 0.22 1</diffuse></material>
+          <geometry><cylinder><radius>0.18</radius><length>0.08</length></cylinder></geometry>
+          <material><ambient>0.08 0.08 0.09 1</ambient><diffuse>0.1 0.1 0.11 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <model name="heavy_box_B2">
-      <pose>-3.0 -3 2.07 0 0 0</pose>
+    <model name="weight_C2b">
+      <pose>-3.75 3.05 0.54 0 0 0</pose>
       <link name="link">
         <inertial>
-          <mass>6</mass>
-          <inertia><ixx>0.09</ixx><iyy>0.09</iyy><izz>0.09</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+          <mass>1.0</mass>
+          <inertia><ixx>0.00863</ixx><iyy>0.00863</iyy><izz>0.0162</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
         </inertial>
-        <collision name="collision"><geometry><box><size>0.3 0.3 0.3</size></box></geometry></collision>
+        <collision name="collision"><geometry><cylinder><radius>0.18</radius><length>0.08</length></cylinder></geometry></collision>
         <visual name="visual">
-          <geometry><box><size>0.3 0.3 0.3</size></box></geometry>
-          <material><ambient>0.55 0.4 0.22 1</ambient><diffuse>0.55 0.4 0.22 1</diffuse></material>
+          <geometry><cylinder><radius>0.18</radius><length>0.08</length></cylinder></geometry>
+          <material><ambient>0.05 0.35 0.1 1</ambient><diffuse>0.08 0.4 0.12 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Shelf B — small can-shaped objects on the TOP shelf only (board_4 top=1.92, z=1.97),
+         stairs required to reach them. Same small scale as shelf-A items, just cylindrical. -->
+    <model name="can_B1">
+      <pose>-4.7 -3 1.97 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.2</mass>
+          <inertia><ixx>0.0002467</ixx><iyy>0.0002467</iyy><izz>0.00016</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><cylinder><radius>0.04</radius><length>0.10</length></cylinder></geometry></collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.04</radius><length>0.10</length></cylinder></geometry>
+          <material><ambient>0.75 0.1 0.15 1</ambient><diffuse>0.75 0.1 0.15 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="can_B2">
+      <pose>-4.3 -3 1.97 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.2</mass>
+          <inertia><ixx>0.0002467</ixx><iyy>0.0002467</iyy><izz>0.00016</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><cylinder><radius>0.04</radius><length>0.10</length></cylinder></geometry></collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.04</radius><length>0.10</length></cylinder></geometry>
+          <material><ambient>0.1 0.4 0.75 1</ambient><diffuse>0.1 0.4 0.75 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="can_B3">
+      <pose>-3.9 -3 1.97 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.2</mass>
+          <inertia><ixx>0.0002467</ixx><iyy>0.0002467</iyy><izz>0.00016</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><cylinder><radius>0.04</radius><length>0.10</length></cylinder></geometry></collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.04</radius><length>0.10</length></cylinder></geometry>
+          <material><ambient>0.15 0.6 0.2 1</ambient><diffuse>0.15 0.6 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="can_B4">
+      <pose>-3.5 -3 1.97 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.2</mass>
+          <inertia><ixx>0.0002467</ixx><iyy>0.0002467</iyy><izz>0.00016</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><cylinder><radius>0.04</radius><length>0.10</length></cylinder></geometry></collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.04</radius><length>0.10</length></cylinder></geometry>
+          <material><ambient>0.8 0.6 0.05 1</ambient><diffuse>0.8 0.6 0.05 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="can_B5">
+      <pose>-3.1 -3 1.97 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.2</mass>
+          <inertia><ixx>0.0002467</ixx><iyy>0.0002467</iyy><izz>0.00016</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><cylinder><radius>0.04</radius><length>0.10</length></cylinder></geometry></collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.04</radius><length>0.10</length></cylinder></geometry>
+          <material><ambient>0.75 0.1 0.15 1</ambient><diffuse>0.75 0.1 0.15 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="can_B6">
+      <pose>-2.7 -3 1.97 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.2</mass>
+          <inertia><ixx>0.0002467</ixx><iyy>0.0002467</iyy><izz>0.00016</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+        </inertial>
+        <collision name="collision"><geometry><cylinder><radius>0.04</radius><length>0.10</length></cylinder></geometry></collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.04</radius><length>0.10</length></cylinder></geometry>
+          <material><ambient>0.1 0.4 0.75 1</ambient><diffuse>0.1 0.4 0.75 1</diffuse></material>
         </visual>
       </link>
     </model>
@@ -598,18 +743,53 @@
       </link>
     </model>
 
-    <!-- A scanned parcel sitting on the checkout counter D (top=1.0) -->
-    <model name="package_on_counter">
-      <pose>5 0 1.05 0 0 0</pose>
-      <link name="link">
-        <inertial>
-          <mass>0.3</mass>
-          <inertia><ixx>0.0005</ixx><iyy>0.0005</iyy><izz>0.0005</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
-        </inertial>
-        <collision name="collision"><geometry><box><size>0.1 0.1 0.1</size></box></geometry></collision>
+    <!-- Open collection bin on the checkout counter D (top=1.0) — an open-top
+         crate (bottom + 4 walls, no lid), sized just a bit bigger than a shelf-C
+         weight plate (0.36 m dia) so a plate can sit inside with a shelf-A parcel
+         and/or a shelf-B can stacked on top of it.
+         External footprint 0.46 x 0.46 m, interior clear floor ~0.40 x 0.40 m,
+         interior clear height ~0.28 m. Fixed to the counter (static). -->
+    <model name="counter_bin">
+      <static>true</static>
+      <pose>5 0 1.0 0 0 0</pose>
+      <link name="bottom">
+        <pose>0 0 0.015 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.46 0.46 0.03</size></box></geometry></collision>
         <visual name="visual">
-          <geometry><box><size>0.1 0.1 0.1</size></box></geometry>
-          <material><ambient>0.9 0.9 0.85 1</ambient><diffuse>0.9 0.9 0.85 1</diffuse></material>
+          <geometry><box><size>0.46 0.46 0.03</size></box></geometry>
+          <material><ambient>0.65 0.45 0.25 1</ambient><diffuse>0.65 0.45 0.25 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="wall_pos_x">
+        <pose>0.215 0 0.18 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.03 0.46 0.3</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.03 0.46 0.3</size></box></geometry>
+          <material><ambient>0.65 0.45 0.25 1</ambient><diffuse>0.65 0.45 0.25 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="wall_neg_x">
+        <pose>-0.215 0 0.18 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.03 0.46 0.3</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.03 0.46 0.3</size></box></geometry>
+          <material><ambient>0.65 0.45 0.25 1</ambient><diffuse>0.65 0.45 0.25 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="wall_pos_y">
+        <pose>0 0.215 0.18 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.46 0.03 0.3</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.46 0.03 0.3</size></box></geometry>
+          <material><ambient>0.65 0.45 0.25 1</ambient><diffuse>0.65 0.45 0.25 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="wall_neg_y">
+        <pose>0 -0.215 0.18 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>0.46 0.03 0.3</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.46 0.03 0.3</size></box></geometry>
+          <material><ambient>0.65 0.45 0.25 1</ambient><diffuse>0.65 0.45 0.25 1</diffuse></material>
         </visual>
       </link>
     </model>

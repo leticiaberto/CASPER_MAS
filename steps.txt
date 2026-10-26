@@ -60,7 +60,11 @@ ros2 run ros_gz_bridge parameter_bridge \
 
  
 
-ros2 launch pioneer3at_adapters pioneer3at_sim.launch.py robot_name:=pioneer3at_1 x:=0.0 y:=0.0
+ros2 launch pioneer3at_adapters pioneer3at_sim.launch.py robot_name:=pioneer3at_1 x_pos:=0.0 y_pos:=0.0
 ros2 topic pub /pioneer3at_1/cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.3}}"
 
 python3 Robot.py --robot pioneer3at_1
+
+ros2 launch pioneer3at_adapters pioneer3at_sim.launch.py robot_name:=pioneer3at_1 x_pos:=0.0 y_pos:=0.0
+
+python3 ros2_packages/pioneer3at_adapters/pioneer3at_adapters/PioneerAdapter.py --world-name backyard

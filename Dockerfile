@@ -184,7 +184,7 @@ ENV EGL_PLATFORM=device
 ENV __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
 # ------------------------------
-# ROS workspace
+# ROS workspace 
 # ------------------------------
 WORKDIR /ros2_ws
 RUN mkdir src

@@ -1,19 +1,35 @@
-from src.entities.ContextualSkill import ContextualSkillModel
+from src.models.ContextualSkill import ContextualSkillModel
+from src.models.Trust import TrustModel
 
 # It is a class because I'm modeling beliefs about other agents, not the agents themselves.
 class PartnerAgent:
-    def __init__(self, skills, contexts, role, init_trust=0.5):
+    def __init__(self, skills, contexts, role):
         self.skills = ContextualSkillModel(skills, contexts)
-        self.trust = {c: init_trust for c in contexts}
+        self.trust = TrustModel(skills, contexts)
         self.constraints = {} 
         self.workspace = []
         self.role = role
     
     def print_partner_info(self):
-        self.skills.print_skills_preferences()
-        print("\nTrust Levels:")
-        for context, trust_level in self.trust.items():
-            print(f"  Context: {context}, Trust Level: {trust_level}")
+        def fmt(value):
+            return f"{value:.2f}" if value is not None else "  - "
+
+        all_pairs = self.skills.pairs() | self.trust.pairs()
+
+        current_skill = None
+        for skill, context in sorted(all_pairs):
+            if skill != current_skill:
+                print(f"\nSkill: {skill}")
+                current_skill = skill
+
+            level, pref = self.skills.get(skill, context)
+            trust = self.trust.get(skill, context)
+            print(
+                f"  {context:<10} | "
+                f"Level: {fmt(level)} | "
+                f"Pref: {fmt(pref)} | "
+                f"Trust: {fmt(trust)}"
+            )
 
         print("\nConstraints:")
         for constraint in self.constraints.items():
@@ -26,7 +42,7 @@ class PartnerAgent:
     def get_partner_info(self):
         info = {
             "skills": self.skills.export_skill_weights(),
-            "trust": self.trust,
+            "trust": self.trust.export_trust_scores(),
             "constraints": self.constraints,
             "workspace": self.workspace,
             "role": self.role

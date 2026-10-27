@@ -132,6 +132,8 @@ class FrankaResearch3(Agent):
         workspace:            List[str]     = None,
         party_duration:       float         = 3600.0, #1h default
         guests:               int           = 0,
+        trust_enabled:        bool          = True,
+        episodic_memory_enabled: bool       = True,
         franky_ip:            Optional[str] = None,
         franky_gripper_speed: float         = 0.05,
         franky_gripper_force: float         = 10.0,
@@ -152,6 +154,8 @@ class FrankaResearch3(Agent):
             teamsize,
             party_duration,
             guests,
+            trust_enabled,
+            episodic_memory_enabled,
             run_id,
         )
 

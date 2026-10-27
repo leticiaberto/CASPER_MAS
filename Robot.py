@@ -136,7 +136,7 @@ def _launch_human(robot_id, world_name, actor_type, color, x_pos, y_pos, yaw):
 # For now are the agents have the same parameters, but in the future they may have different ones.
 def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
                 skill_weights, contexts, agent_role, teamsize,
-                use_sim, result_timeout, workspace, party_duration, guests, run_id):
+                use_sim, result_timeout, workspace, party_duration, guests, trust_enabled, episodic_memory_enabled, run_id):
     """Instantiate the correct agent class with its specific parameters."""
 
     if robot_model == "Pioneer3AT":
@@ -152,6 +152,8 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
             workspace     = workspace,
             party_duration = party_duration,
             guests         = guests,
+            trust_enabled   = trust_enabled,
+            episodic_memory_enabled = episodic_memory_enabled,
             run_id         = run_id,
         )
 
@@ -169,6 +171,8 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
             workspace     = workspace,
             party_duration = party_duration,
             guests         = guests,
+            trust_enabled   = trust_enabled,
+            episodic_memory_enabled = episodic_memory_enabled,
             run_id         = run_id,
         )
 
@@ -185,6 +189,8 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
             workspace     = workspace,
             party_duration = party_duration,
             guests         = guests,
+            trust_enabled   = trust_enabled,
+            episodic_memory_enabled = episodic_memory_enabled,
             run_id         = run_id,
         )
 
@@ -202,6 +208,8 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
             workspace     = workspace,
             party_duration = party_duration,
             guests         = guests,
+            trust_enabled   = trust_enabled,
+            episodic_memory_enabled = episodic_memory_enabled,
             run_id         = run_id,
         )
 
@@ -390,6 +398,8 @@ def main():
     party_duration = exp_config.get("party_duration", 3600)
     supervisor_team = exp_config.get("supervisor_team", True)
     guests        = exp_config.get("guests", 0)
+    trust_enabled = exp_config.get("trust_enabled", True)
+    episodic_memory_enabled = exp_config.get("episodic_memory_enabled", True)
     
     agent_role   = args.role
 
@@ -459,6 +469,8 @@ def main():
         workspace      = workspace,
         party_duration  = party_duration,
         guests         = guests,
+        trust_enabled   = trust_enabled,
+        episodic_memory_enabled = episodic_memory_enabled,
         run_id =        args.exp,
     )
 
@@ -505,7 +517,7 @@ def main():
             if not ready:
                 if len(agent.partners) == agent.teamSize - 1:
                     team_complete = True
-                    #agent.print_partners()
+                    agent.print_partners()
                 if team_complete:
                     if supervisor_team:# Supervisor has tasks too -- Add yourself as agent to be considered in the task allocation
                         all_agents = {agent.id: agent.skills} | agent.partners

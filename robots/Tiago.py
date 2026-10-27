@@ -261,6 +261,8 @@ class Tiago(Agent):
         contexts:       List[str]       = None,
         role:           str             = "member",
         teamsize:       int             = 1,
+        trust_enabled:  bool            = True,
+        episodic_memory_enabled: bool   = True,
         run_id:         str             = "test",
         use_sim:        bool            = True,
         workspace:      List[str]       = None,
@@ -282,6 +284,8 @@ class Tiago(Agent):
             teamsize, 
             party_duration, 
             guests, 
+            trust_enabled,
+            episodic_memory_enabled,
             run_id
         )
 

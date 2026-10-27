@@ -1,7 +1,7 @@
 import os
 import queue
 from src.graph.RealTimeGraphVisualizer import RealTimeGraphVisualizer
-from src.entities.ContextualSkill import ContextualSkillModel
+from src.models.ContextualSkill import ContextualSkillModel
 from src.entities.Partner import PartnerAgent
 from src.communication.CommunicationHandler import CommunicationHandler
 from src.communication.RobotCommunication import RobotComm
@@ -11,6 +11,7 @@ from src.graph.GraphVisualizer import GraphVisualizer
 from src.graph.Local_Graph import LocalGraph
 from src.graph.TaskAssignment import TaskAssignment, TaskStatus
 from src.analysis.ExperimentLogger import ExperimentLogger
+from src.memory import EpisodicMemory
 from abc import abstractmethod
 from utils import Roles
 import time
@@ -18,7 +19,7 @@ import csv
 from datetime import datetime
 
 class Agent:
-    def __init__(self, id, constraints, workspace, skills, contexts, role, teamsize, party_duration, guests, run_id, log_dir="experiment_logs"):
+    def __init__(self, id, constraints, workspace, skills, contexts, role, teamsize, party_duration, guests, trust_enabled, episodic_memory_enabled, run_id, log_dir="experiment_logs"):
         self.id = id
         self.constraints = constraints  # Task independent      
         self.workspace = workspace
@@ -28,6 +29,8 @@ class Agent:
         self.teamSize = teamsize
         self.party_duration = party_duration
         self.guests = guests
+        self.trust_enabled = trust_enabled
+        self.episodic_memory_enabled = episodic_memory_enabled
 
         # Create communication
         self.comm = RobotComm(self.id, self.teamSize)
@@ -66,6 +69,9 @@ class Agent:
         # Message queue: listener thread enqueues, main thread drains in step()
         self._msg_queue = queue.Queue()
 
+        if self.episodic_memory_enabled:
+            self.load_episodic_memory()
+
     # ----------------------------
     # Partners
     # ----------------------------
@@ -80,6 +86,27 @@ class Agent:
             print(f"\nPartner_ID: {pid}")
             partner.print_partner_info()
             print("------------------------------------")
+
+    # ----------------------------
+    # Trust in each Partner
+    # ----------------------------
+
+
+    # ----------------------------
+    # Agent Memory (Episodic)
+    # ----------------------------
+    def load_episodic_memory(self):
+        self.memory = EpisodicMemory(self.id + ".jsonl") # loads everything once       
+        
+        self.memory.get("exp_0042")                   # by id
+        self.memory.with_skill("navigation")          # all experiments using that skill
+        self.memory.with_agent("planner")             # all experiments involving that agent
+        self.memory.search(lambda r: "warehouse" in r["context"])  # any custom filter
+        self.memory.recent(5)                         # last 5 experiments
+
+        self.memory.add({"id": "exp_0043", "context": "...", "agents": [...], "goal_tree": {...}})
+        self.memory.print_all()               # pretty
+        self.memory.print_all(pretty=False)   # one line each
 
     # ----------------------------
     # Load/Save data

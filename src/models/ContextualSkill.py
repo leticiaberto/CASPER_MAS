@@ -30,7 +30,7 @@ class ContextualSkillModel:
                 if context not in self.skill_preference[skill]:
                     self.skill_preference[skill][context] = default
 
-    def update_skills_and_preferences(self, skill_updates, contexts=None, clamp=True):
+    def update(self, episode, skill_updates, contexts=None, clamp=True):
         """
         Updates existing skill levels and preferences.
 
@@ -61,6 +61,13 @@ class ContextualSkillModel:
                 self.skill_level[skill][context] = level
                 self.skill_preference[skill][context] = preference
 
+    def set(self, skill, context, level, pref=None):
+        """Set one level (and optionally preference) directly, e.g. when restoring from memory."""
+        self.skill_level[skill][context] = level
+        if pref is None:
+            pref = self.skill_preference.get(skill, {}).get(context, 0.1)
+        self.skill_preference[skill][context] = pref
+
     def get(self, skill, context):
         level = self.skill_level.get(skill, {}).get(context)
         pref = self.skill_preference.get(skill, {}).get(context)
@@ -68,16 +75,6 @@ class ContextualSkillModel:
 
     def pairs(self):
         return {(s, c) for s, ctxs in self.skill_level.items() for c in ctxs}
-
-    def print_skills_preferences(self):# Not in use anymore, but left in case I change my mind
-        for skill, contexts in self.skill_level.items():
-            print(f"\nSkill: {skill}")
-            for context in contexts:
-                print(
-                    f"  {context:<10} | "
-                    f"Level: {self.skill_level[skill][context]:.2f} | "
-                    f"Pref: {self.skill_preference[skill][context]:.2f}"
-                )
 
     def export_skill_weights(self):
         """
@@ -141,7 +138,17 @@ class ContextualSkillModel:
 
     def has_context(self, context):
         return any(context in contexts for contexts in self.skill_level.values())
-    
+
+    def print_skills_preferences(self):
+        for skill, contexts in self.skill_level.items():
+            print(f"\nSkill: {skill}")
+            for context in contexts:
+                print(
+                    f"  {context:<10} | "
+                    f"Level: {self.skill_level[skill][context]:.2f} | "
+                    f"Pref: {self.skill_preference[skill][context]:.2f}"
+                )
+                
     #TODO: Its here to be used as based in the future if using adaptive learning
     def adjust_skills_and_preferences_learning(self, skill_updates, alpha=0.1):
         """
@@ -161,8 +168,3 @@ class ContextualSkillModel:
                 self.skill_preference[skill][context] = (
                     old_pref + alpha * (target_pref - old_pref)
                 )
-
-class Context:
-    def __init__(self, name, relevance):
-        self.name = name
-        self.relevance = relevance  # dict[skill] -> R(s|c) = Skill relevance for task: [0.0, 1.0]

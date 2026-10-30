@@ -5,11 +5,34 @@ from src.models.Trust import TrustModel
 class PartnerAgent:
     def __init__(self, skills, contexts, role):
         self.skills = ContextualSkillModel(skills, contexts)
-        self.trust = TrustModel(skills, contexts)
+        self.trust = TrustModel(contexts)
         self.constraints = {} 
         self.workspace = []
         self.role = role
+        self.contexts = contexts
+
+    def update_from(self, episode):
+        self.trust.update(episode)
+        #self.skills.update(episode)
     
+    def restore_from(self, entries):
+        """
+        Load stored beliefs (chronological) from episodic memory. Works for the initial load and for
+        new entries added later, because the evidence count continues from what is already known.
+        Skill values are restored only when learned from evidence, so a fresh self-report from the
+        partner is not overwritten by an old self-report.
+        """
+        for e in entries:
+            skill, context = e["skill"], e["context"]
+            if self.contexts is not None and context not in self.contexts:
+                continue
+            n = self.trust.get_count(skill, context) + (1 if e["is_evidence"] else 0)
+            if n > 0 and e["skill_value"] is not None:
+                self.skills.set(skill, context, e["skill_value"], e["preference"])
+            if e["trust"] is not None:
+                self.trust.restore(skill, context, e["trust"],
+                                   source="direct" if n > 0 else "prior", count=n)
+                
     def print_partner_info(self):
         def fmt(value):
             return f"{value:.2f}" if value is not None else "  - "
@@ -48,13 +71,6 @@ class PartnerAgent:
             "role": self.role
         }
         return info
-            
-    def update_trust_level(self, context, reward, lr=0.05):
-        """
-        Update trust level of a partner agent based on task outcomes
-        Increase trust if tasks are successful, decrease if they fail.
-        """
-        self.trust[context] += lr * (reward - self.trust[context])
 
     def update_partner_skills(self, other_agent):
         """ 

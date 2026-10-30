@@ -16,10 +16,14 @@ from abc import abstractmethod
 from utils import Roles
 import time
 import csv
-from datetime import datetime
+from datetime import datetime, timezone
+
+def _utc_now():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 class Agent:
-    def __init__(self, id, constraints, workspace, skills, contexts, role, teamsize, party_duration, guests, trust_enabled, episodic_memory_enabled, run_id, log_dir="experiment_logs"):
+    def __init__(self, id, constraints, workspace, skills, contexts, role, teamsize, party_duration, guests, trust_enabled, 
+                 episodic_memory_enabled, memory_path,run_id, log_dir="experiment_logs"):
         self.id = id
         self.constraints = constraints  # Task independent      
         self.workspace = workspace
@@ -31,6 +35,7 @@ class Agent:
         self.guests = guests
         self.trust_enabled = trust_enabled
         self.episodic_memory_enabled = episodic_memory_enabled
+        self.memory_path = memory_path
 
         # Create communication
         self.comm = RobotComm(self.id, self.teamSize)
@@ -69,15 +74,233 @@ class Agent:
         # Message queue: listener thread enqueues, main thread drains in step()
         self._msg_queue = queue.Queue()
 
-        if self.episodic_memory_enabled:
-            self.load_episodic_memory()
+        # What I learn during the interaction, written once by save_interaction()
+        self._observations = {}        # task_id -> observation
+        self._partner_updates = {}     # partner_id -> [updates]
+        self._interaction_saved = False
 
+        self.memory = None
+        if self.episodic_memory_enabled:
+            self.load_episodic_memory(self.memory_path)
+    
+    # ----------------------------
+    # Agent Memory (Episodic)
+    # ----------------------------
+    def load_episodic_memory(self, memory_path=None):
+        self.memory = EpisodicMemory(memory_path or f"data/agents/{self.id}/memory/episodic.jsonl") # loads everything once       
+
+    # ----------------------------
+    # Saving the interaction (once, at the end)
+    # ----------------------------
+    _DEFAULT_EVIDENCE = {
+        "partner_self_report": "partner_self_report",
+        "observation_update": "direct_observation",
+        "outcome_feedback": "task_outcome_feedback",
+        "report_update": "partner_report",
+    }
+ 
+    def note_observation(self, task_id, assigned_agent, context, outcome=None,
+                         observed=False, evidence_source=None):
+        """
+        Remember what I learned about a task during this interaction.
+        outcome: "success" | "failure" | None (not known yet). Calling again for the same task replaces it.
+        """
+        self._observations[task_id] = {
+            "task_id": task_id,
+            "context": context,
+            "assigned_agent": assigned_agent,
+            "observed": observed,
+            "known_outcome": outcome,
+            "evidence_source": evidence_source or ("direct_observation" if observed else "partner_report"),
+            "evidence_timestamp": _utc_now(),
+        }
+ 
+    def note_partner_update(self, partner_id, event_type, task_id=None, context=None,
+                            skills=None, evidence_source=None):
+        """
+        Log my CURRENT belief about a partner (skill, preference, trust). Call it right after the belief
+        changed, so the file always matches the in-memory state.
+          event_type: "partner_self_report" | "observation_update" | "outcome_feedback" | "report_update"
+          context / skills: optional filters, e.g. only the skills of the task that just finished.
+        """
+        partner = self.partners.get(partner_id)
+        if partner is None:
+            return
+        values = []
+        for skill, ctx in sorted(partner.skills.pairs() | partner.trust.pairs()):
+            if context is not None and ctx != context:
+                continue
+            if skills is not None and skill not in skills:
+                continue
+            level, pref = partner.skills.get(skill, ctx)
+            values.append({"context": ctx, "skill": skill, "skill_value": level,
+                           "preference": pref, "trust": partner.trust.get(skill, ctx)})
+        if not values:
+            return
+ 
+        updates = self._partner_updates.setdefault(partner_id, [])
+        update = {
+            "update_id": f"{self.id}_{partner_id}_update_{len(updates) + 1:03d}",
+            "timestamp": _utc_now(),
+            "event_type": event_type,
+        }
+        if task_id is not None:
+            update["task_id"] = task_id
+        if context is not None:
+            update["context"] = context
+        update["evidence_source"] = evidence_source or self._DEFAULT_EVIDENCE.get(event_type, event_type)
+        update["values"] = values
+        updates.append(update)
+ 
+    def save_interaction(self, interaction_id=None, context=None,
+                         ground_truth_path="data/interactions.jsonl", ground_truth_tasks=None):
+        """
+        Call ONCE, when the interaction ends.
+          - Every agent: appends its own record (observations + partner updates) to its episodic memory.
+          - Supervisor only: also appends the ground truth to ground_truth_path.
+        interaction_id defaults to the run_id, which all agents of a run share, so the agent files and the
+        ground truth can be joined. Returns what was written, or None if it was already saved.
+        """
+        if self._interaction_saved:
+            return None
+        interaction_id = interaction_id or self.experiment_logger.run_id # TODO: consider using a separate interaction_id (e.g. timestamp) so multiple interactions can be logged under the same run_id
+        timestamp = _utc_now()
+        written = {}
+ 
+        # 1. my own memory (what I observed and believed)
+        if self.memory is not None and (self._observations or self._partner_updates):
+            record = {
+                "interaction_id": interaction_id,
+                "sequence": len(self.memory.interactions) + 1,
+                "agent_id": self.id,
+                "timestamp": timestamp,
+            }
+            record["observations"] = list(self._observations.values())
+            record["partner_models"] = {
+                pid: {"role": getattr(self.partners[pid].role, "value", self.partners[pid].role),
+                      "updates": updates}
+                for pid, updates in self._partner_updates.items() if pid in self.partners
+            }
+            self.memory.add(record)
+            written["memory"] = record
+ 
+        # 2. ground truth (supervisor only)
+        if self.role == Roles.SUPERVISOR:
+            tasks = ground_truth_tasks if ground_truth_tasks is not None else self._ground_truth_tasks()
+            truth = {"interaction_id": interaction_id, "timestamp": timestamp}
+            if context is not None:
+                truth["context"] = context
+            truth["agents"] = sorted({self.id, *self.partners})
+            truth["tasks"] = tasks
+            append_jsonl(ground_truth_path, truth)
+            written["ground_truth"] = truth
+ 
+        self._observations.clear()
+        self._partner_updates.clear()
+        self._interaction_saved = True
+        return written
+ 
+    def _ground_truth_tasks(self):
+        """
+        GRAPH ADAPTER: the only place that depends on how GlobalGraph / TaskAssignment store things.
+        Names assumed below (adjust):
+          node["context"], node["required_skills"] (skill -> level), node["status"] or node["outcome"]
+          assignment.selected_agent (known), assignment.score, assignment.candidates
+        Anything not found is written as null and reported once, so wrong names are easy to spot.
+        """
+        def outcome_of(data):
+            if data.get("outcome") in ("success", "failure"):
+                return data["outcome"]
+            status = data.get("status")
+            name = str(getattr(status, "name", status) or "").upper()
+            if name in ("DONE", "COMPLETED", "FINISHED", "SUCCESS"):
+                return "success"
+            if name in ("FAILED", "FAILURE", "ERROR"):
+                return "failure"
+            return None
+ 
+        def candidates_of(raw):
+            if raw is None:
+                return None
+            if isinstance(raw, dict):
+                raw = list(raw.items())
+            out = []
+            for c in raw:
+                if isinstance(c, dict):
+                    out.append(c)
+                else:
+                    out.append({"agent_id": c[0], "score": c[1]})
+            return sorted(out, key=lambda c: -(c.get("score") or 0))
+ 
+        tasks, missing = [], set()
+        for task_id, data in self.global_graph.G.nodes(data=True):
+            assignment = data.get("assignment")
+            task = {
+                "task_id": task_id,
+                "context": data.get("context"),
+                "required_skills": data.get("required_skills"),
+                "assigned_agent": getattr(assignment, "selected_agent", None),
+                "assignment_score": getattr(assignment, "score", None),
+                "outcome": outcome_of(data),
+                "top_k_candidates": candidates_of(getattr(assignment, "candidates", None)),
+            }
+            missing |= {k for k, v in task.items() if v is None}
+            tasks.append(task)
+        if missing:
+            print(f"[{self.id}] ground truth: no value found for {sorted(missing)} "
+                  f"(written as null). Check _ground_truth_tasks().")
+        return tasks
+    
     # ----------------------------
     # Partners
     # ----------------------------
     def add_partner(self, partner_id, skills, contexts, role):
-        self.partners[partner_id] = PartnerAgent(skills, contexts, role)
-
+        profile = PartnerAgent(skills, contexts, role)
+ 
+        if self.memory is not None:
+            # 1. what I already believe about this partner (stored trust and learned skills)
+            profile.restore_from(self.memory.with_partner(partner_id))
+ 
+            # 2. for every (skill, context) still unknown, borrow from a similar past partner
+            self.borrow_missing_trust(profile, partner_id)
+ 
+        # 3. anything still unset stays None (unknown)
+        self.partners[partner_id] = profile
+    
+    def borrow_missing_trust(self, profile, partner_id, tolerance=0.15):
+        for skill, context in profile.skills.pairs():
+            if profile.trust.get(skill, context) is not None:
+                continue                                   # already has trust (stored or prior)
+ 
+            new_level, _ = profile.skills.get(skill, context)
+            if new_level is None:
+                continue
+ 
+            candidates = []  # (count, prev_level, prev_trust)
+            for pid, s in self.memory.pair_summary(skill, context).items():
+                if pid == partner_id:
+                    continue
+                # level check: new partner is not clearly worse than the previous one
+                if new_level - s["level"] < -tolerance:
+                    continue
+                candidates.append((s["count"], s["level"], s["trust"]))
+ 
+            if not candidates:
+                continue                                   # stays unknown (None)
+ 
+            # most evidence first; ties go to the closest skill level
+            _, prev_level, prev_trust = max(
+                candidates,
+                key=lambda c: (c[0], -abs(new_level - c[1]))
+            )
+ 
+            if new_level >= prev_level or prev_level == 0:
+                value = prev_trust                         # same or better: same trust
+            else:
+                value = prev_trust * (new_level / prev_level)   # slightly worse: scale down
+ 
+            profile.trust.set_prior(skill, context, value)
+         
     def print_partners(self):
         print("# --------------------------------------------------------")
         print("# Partners of ", self.id)
@@ -92,21 +315,7 @@ class Agent:
     # ----------------------------
 
 
-    # ----------------------------
-    # Agent Memory (Episodic)
-    # ----------------------------
-    def load_episodic_memory(self):
-        self.memory = EpisodicMemory(self.id + ".jsonl") # loads everything once       
-        
-        self.memory.get("exp_0042")                   # by id
-        self.memory.with_skill("navigation")          # all experiments using that skill
-        self.memory.with_agent("planner")             # all experiments involving that agent
-        self.memory.search(lambda r: "warehouse" in r["context"])  # any custom filter
-        self.memory.recent(5)                         # last 5 experiments
-
-        self.memory.add({"id": "exp_0043", "context": "...", "agents": [...], "goal_tree": {...}})
-        self.memory.print_all()               # pretty
-        self.memory.print_all(pretty=False)   # one line each
+    
 
     # ----------------------------
     # Load/Save data
@@ -318,19 +527,6 @@ class Agent:
             assignment = TaskAssignment.deserialize(assignment_data)
             self.global_graph.G.nodes[task_id]["assignment"] = assignment
             #print(f"[{self.id}] Task {task_id} assigned to {assignment.selected_agent}")
-
-    # ----------------------------
-    # Not used yet
-    # ----------------------------
-    def evaluate(self, context):
-        return sum(
-            self.skills.contribution(
-                skill=s,
-                context=context.name,
-                relevance=context.relevance.get(s, 0.0)
-            )
-            for s in context.relevance
-        )
     
     # ----------------------------
 
@@ -430,6 +626,8 @@ class Agent:
         self.shutdown_unassigned_tasks = unassigned_tasks or []
         self.goal_finished = True
 
+        self.save_interaction(interaction_id=time.time(), ground_truth_tasks=self._ground_truth_tasks())
+
     def release_task(self, task_id):
         """
         Supervisor-side convenience: look up the assigned agent and send clearance.
@@ -488,3 +686,17 @@ class Agent:
     
     def closeComm(self):
         self.comm.close()
+
+'''
+Two small helpers you need to call earlier. An agent can only save what it collected, so these gather the data during 
+the interaction:
+
+note_observation(task_id, assigned_agent, context, outcome, observed): call it when you learn a task’s outcome.
+note_partner_update(partner_id, event_type, ...): call it right after a belief about a partner changes. It reads the current skill, preference and trust from the partner model. For a self-report, call it with "partner_self_report" in partners_skills_update. For a task result, call it after the trust update with "outcome_feedback", plus task_id, context and skills.
+
+
+Check these names: _ground_truth_tasks() is the only place that depends on how your graph stores tasks. It assumes:
+- node attributes context, required_skills, and status or outcome
+- assignment.score and assignment.candidates
+- assignment.selected_agent, which your code already uses
+'''

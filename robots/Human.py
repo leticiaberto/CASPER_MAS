@@ -148,6 +148,7 @@ class Human(Agent):
         guests:         int             = 0,
         trust_enabled:  bool            = True,
         episodic_memory_enabled: bool   = True,
+        memory_path:    Optional[str]   = None,
     ) -> None:
 
         super().__init__(
@@ -162,6 +163,7 @@ class Human(Agent):
             guests, 
             trust_enabled, 
             episodic_memory_enabled,
+            memory_path,
             run_id
         )
 

@@ -136,7 +136,7 @@ def _launch_human(robot_id, world_name, actor_type, color, x_pos, y_pos, yaw):
 # For now are the agents have the same parameters, but in the future they may have different ones.
 def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
                 skill_weights, contexts, agent_role, teamsize,
-                use_sim, result_timeout, workspace, party_duration, guests, trust_enabled, episodic_memory_enabled, run_id):
+                use_sim, result_timeout, workspace, party_duration, guests, trust_enabled, episodic_memory_enabled, memory_path,run_id):
     """Instantiate the correct agent class with its specific parameters."""
 
     if robot_model == "Pioneer3AT":
@@ -154,6 +154,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
             guests         = guests,
             trust_enabled   = trust_enabled,
             episodic_memory_enabled = episodic_memory_enabled,
+            memory_path     = memory_path,
             run_id         = run_id,
         )
 
@@ -173,6 +174,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
             guests         = guests,
             trust_enabled   = trust_enabled,
             episodic_memory_enabled = episodic_memory_enabled,
+            memory_path     = memory_path,
             run_id         = run_id,
         )
 
@@ -191,6 +193,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
             guests         = guests,
             trust_enabled   = trust_enabled,
             episodic_memory_enabled = episodic_memory_enabled,
+            memory_path     = memory_path,
             run_id         = run_id,
         )
 
@@ -210,6 +213,7 @@ def _make_agent(robot_model, AgentClass, robot_id, world_name, constraints,
             guests         = guests,
             trust_enabled   = trust_enabled,
             episodic_memory_enabled = episodic_memory_enabled,
+            memory_path     = memory_path,
             run_id         = run_id,
         )
 
@@ -383,6 +387,8 @@ def main():
     skill_weights = robot_config["skill_weights"]
     contexts      = list(skill_weights.keys())
 
+    memory_path = robot_config.get("memory_path", None)
+
     # Human-specific (ignored by other models)
     actor_type   = robot_config.get("actor_type", "WalkingActor")
     actor_color  = robot_config.get("color",      "")
@@ -471,6 +477,7 @@ def main():
         guests         = guests,
         trust_enabled   = trust_enabled,
         episodic_memory_enabled = episodic_memory_enabled,
+        memory_path     = memory_path,
         run_id =        args.exp,
     )
 

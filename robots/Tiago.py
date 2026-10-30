@@ -263,6 +263,7 @@ class Tiago(Agent):
         teamsize:       int             = 1,
         trust_enabled:  bool            = True,
         episodic_memory_enabled: bool   = True,
+        memory_path:    Optional[str]   = None,
         run_id:         str             = "test",
         use_sim:        bool            = True,
         workspace:      List[str]       = None,
@@ -286,6 +287,7 @@ class Tiago(Agent):
             guests, 
             trust_enabled,
             episodic_memory_enabled,
+            memory_path,
             run_id
         )
 

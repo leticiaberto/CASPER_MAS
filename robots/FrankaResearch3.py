@@ -134,6 +134,7 @@ class FrankaResearch3(Agent):
         guests:               int           = 0,
         trust_enabled:        bool          = True,
         episodic_memory_enabled: bool       = True,
+        memory_path:          Optional[str] = None,
         franky_ip:            Optional[str] = None,
         franky_gripper_speed: float         = 0.05,
         franky_gripper_force: float         = 10.0,
@@ -156,6 +157,7 @@ class FrankaResearch3(Agent):
             guests,
             trust_enabled,
             episodic_memory_enabled,
+            memory_path,
             run_id,
         )
 

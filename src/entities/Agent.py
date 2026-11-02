@@ -1,5 +1,6 @@
 import os
 import queue
+from typing import Optional
 from src.graph.RealTimeGraphVisualizer import RealTimeGraphVisualizer
 from src.models.ContextualSkill import ContextualSkillModel
 from src.entities.Partner import PartnerAgent
@@ -436,7 +437,7 @@ class Agent:
             #  READY announce used for explainability/trust on the receiving end (other agents)
             for task in ready_tasks:
                 #print(f"Ready task: {t} with priority {self.local_graph.graph.nodes[t].get('priority', 'N/A')}")
-                self.task_update_status_and_publish(task, TaskStatus.READY, ignore=True)# Do not need to update local because get_ready_tasks() does
+                self.task_update_status_and_publish(task, TaskStatus.READY, outcome=None,ignore=True)# Do not need to update local because get_ready_tasks() does
                 time.sleep(5)
 
             # Pick the single highest-priority (lowest number) ready task
@@ -452,6 +453,7 @@ class Agent:
             time.sleep(5)
             task_finished_at = time.time()
 
+            print(f"---\n[{self.id}] Finished executing task {task} with result: {result}\n---")
             outcome = None
             if isinstance(result, TaskResult):
                 outcome = TaskOutcome(result=result, attribution=Attribution.AGENT,
@@ -531,14 +533,14 @@ class Agent:
                 time.sleep(5)
                 self.goal_finished = True
 
-    def task_update_status_and_publish(self, task, new_status, ignore=False, outcome=None):
+    def task_update_status_and_publish(self, task, new_status, outcome=None, ignore=False):
         if not ignore:
             self.local_graph.update_status(task, new_status)
         
         if new_status == TaskStatus.DONE and outcome is not None:
             self.local_graph.update_outcome(task, outcome)
         
-        self.publish_task_status_update(task, new_status)
+        self.publish_task_status_update(task, new_status, outcome)
         self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
 
     def check_all_tasks_done(self):
@@ -549,8 +551,11 @@ class Agent:
         return all_done
 
     @abstractmethod
-    def _execute_task_specific(self, task):
-        """Robot-specific implementation."""
+    def _execute_task_specific(self, task)-> Optional[TaskResult]:
+        """
+        Robot-specific implementation.
+        returning None means “no self-report”
+        """
         pass
     
     # ----------------------------
@@ -573,7 +578,7 @@ class Agent:
             self.add_partner(sender, received_weights, contexts, role)
             print(f"Created partner {sender} skills!")
         else:
-            self.partners[sender].skills.update_skills_and_preferences(received_weights)
+            self.partners[sender].skills.update(received_weights)
             print(f"Updated partner {sender} skills!")
         
         self.partners[sender].constraints = constraints  # <-- always apply
@@ -608,7 +613,7 @@ class Agent:
         for agent_id in self.local_graph.get_successors(task_id):
             self.comm_handler.publish("task_status_update", payload, agent_id)
         
-    def update_task_status_received_general(self, task_id, task_status):
+    def update_task_status_received_general(self, task_id, task_status, outcome=None):
         #print(f"Received update that task {task_id} is now {task_status.value}")
         if self.local_graph.depends_on_external(task_id):
             self.local_graph.handle_external_completion(task_id, task_status)

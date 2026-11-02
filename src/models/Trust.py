@@ -14,6 +14,7 @@ class TrustModel:
         self.trust_scores = defaultdict(dict)   # skill -> context -> trust
         self.source = defaultdict(dict)         # skill -> context -> "direct" | "similar"
         self.count = defaultdict(dict)          # skill -> context -> number of episodes
+        self.episodes = defaultdict(lambda: defaultdict(list))  # skill -> context -> [episode log]
  
     def get(self, skill, context):
         return self.trust_scores.get(skill, {}).get(context)
@@ -45,6 +46,7 @@ class TrustModel:
             return
  
         outcome = float(episode["outcome"])
+        weight = float(episode.get("weight", 1.0))
         if clamp:
             outcome = max(0.0, min(1.0, outcome))
  
@@ -52,13 +54,38 @@ class TrustModel:
         if old is None:
             old = self.neutral      # first evidence: start neutral, not at 0
  
-        new = old + self.lr * (outcome - old)
+        new = old + self.lr * weight * (outcome - old)
         if clamp:
             new = max(0.0, min(1.0, new))
  
         self.trust_scores[skill][context] = new
         self.source[skill][context] = "direct"
         self.count[skill][context] = self.count[skill].get(context, 0) + 1
+        if episode.get("task_id") is not None:
+            self.episodes[skill][context].append(
+                {"task_id": episode["task_id"], "outcome": outcome, "weight": weight, "old": old})
+
+    def revise(self, skill, context, task_id, outcome=None, weight=1.0, clamp=True):
+        """Replace (or remove, if outcome is None) the episode of task_id and replay later ones."""
+        eps = self.episodes.get(skill, {}).get(context, [])
+        idx = next((i for i, e in enumerate(eps) if e["task_id"] == task_id), None)
+        if idx is None:
+            return False
+        value = eps[idx]["old"]                    # trust just before that episode
+        if outcome is None:                        # judgment withdrawn
+            del eps[idx]
+            self.count[skill][context] -= 1
+        else:
+            if clamp:
+                outcome = max(0.0, min(1.0, float(outcome)))
+            eps[idx]["outcome"] = outcome
+            eps[idx]["weight"] = weight
+        for e in eps[idx:]:                        # replay this and all later episodes
+            e["old"] = value
+            value += self.lr * e["weight"] * (e["outcome"] - value) # Change here if update formula is different
+        if clamp:
+            value = max(0.0, min(1.0, value))
+        self.trust_scores[skill][context] = value
  
     def pairs(self):
         return {(s, c) for s, ctxs in self.trust_scores.items() for c in ctxs}

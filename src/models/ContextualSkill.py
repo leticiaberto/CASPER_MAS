@@ -30,7 +30,7 @@ class ContextualSkillModel:
                 if context not in self.skill_preference[skill]:
                     self.skill_preference[skill][context] = default
 
-    def update(self, episode, skill_updates, contexts=None, clamp=True):
+    def update(self, skill_updates, contexts=None, clamp=True):
         """
         Updates existing skill levels and preferences.
 

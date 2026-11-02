@@ -43,6 +43,7 @@ from src.entities.Agent import Agent
 from fr3_adapters.FrankaAdapter import FrankaAdapter, RobotMode
 from robot_common.object_world_to_robot import ObjectToRobot
 from robot_common.sdf_surface_resolver import SdfSurfaceResolver
+from src.graph.TaskAssignment import TaskResult
 from utils import ROSUtils
 from locations import get_scene
 
@@ -462,14 +463,14 @@ class FrankaResearch3(Agent):
     # ------------------------------------------------------------------
     # Agent interface (task-graph dispatch)
     # ------------------------------------------------------------------
-    def _execute_task_specific(self, task: dict) -> None:
+    def _execute_task_specific(self, task: dict) -> TaskResult:
         """
         Called by the Agent base class task dispatcher.
         """
         sequence = self.define_subtask(task)
         if sequence is None:
             print(f"[FrankaResearch3] No sequence defined for action: '{task}'")
-            return
+            return TaskResult.FAILURE
     
         for subtask in sequence:
             action = subtask["action"]
@@ -501,6 +502,8 @@ class FrankaResearch3(Agent):
                 print(f"[FrankaResearch3] '{action}' not yet implemented.")
             else:
                 print(f"[FrankaResearch3] Unknown task action: '{action}'")
+                return TaskResult.FAILURE
+        return TaskResult.SUCCESS
 
     def shutdown(self) -> None:
         """Cleanly stop executor, destroy nodes, shut down ROS2."""

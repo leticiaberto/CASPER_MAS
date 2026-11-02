@@ -60,6 +60,7 @@ from typing import Callable, List, Optional, Tuple
 
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
+from src.graph.TaskAssignment import TaskResult
 from std_msgs.msg import String
 
 from human_adapters.HumanAdapter import HumanAdapter
@@ -373,7 +374,7 @@ class Human(Agent):
     # Agent interface (task-graph dispatch)
     # ------------------------------------------------------------------
 
-    def _execute_task_specific(self, task: dict) -> None:
+    def _execute_task_specific(self, task: dict) -> TaskResult:
         print(f"[Human] Executing task: {task}")
         action = task.get("action") if isinstance(task, dict) else task
 
@@ -617,6 +618,8 @@ class Human(Agent):
             time.sleep(25)
         else:
             print(f"[Human] Unknown task action: {action}")
+            return TaskResult.FAILURE
+        return TaskResult.SUCCESS
 
     def _action_welcome_guests(self) -> None:
         ok, msg = self.goto(location="MainEntrance")

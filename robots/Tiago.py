@@ -90,6 +90,7 @@ import rclpy
 import rclpy.parameter
 from rclpy.executors import MultiThreadedExecutor
 
+from src.graph.TaskAssignment import TaskResult
 import tf2_ros
 
 from src.entities.Agent import Agent
@@ -957,11 +958,11 @@ class Tiago(Agent):
     # Agent interface (called by base class task dispatch)
     # ------------------------------------------------------------------
 
-    def _execute_task_specific(self, task: dict) -> None:
+    def _execute_task_specific(self, task: dict) -> TaskResult:
         sequence = self.define_subtask(task)
         if sequence is None:
             print(f"[Tiago] No sequence defined for action: '{task}'")
-            return
+            return TaskResult.FAILURE
     
         for subtask in sequence:
             action = subtask["action"]
@@ -994,6 +995,8 @@ class Tiago(Agent):
                 time.sleep(subtask.get("time"))
             else:
                 print(f"[Tiago] Unknown task action: '{action}'")
+                return TaskResult.FAILURE
+        return TaskResult.SUCCESS
 
     def shutdown(self) -> None:
         """Cleanly shut down ROS2 executor and nodes."""

@@ -53,7 +53,7 @@ class GraphVisualizer:
 
         return width, height
 
-    def _build_node_label_global(self, name, duration, status_text, context, workspace, selected_agent, selected_score, top_candidates):
+    def _build_node_label_global(self, name, duration, status_text, outcome, context, workspace, selected_agent, selected_score, top_candidates):
         selected_text = (
             f"{selected_agent} ({selected_score:.2f})"
             if selected_agent else "None"
@@ -78,12 +78,13 @@ class GraphVisualizer:
             f"Context: {context}\\n"
             f"Workspace: {ws_text}\\n"
             f"Status: {status_text}\\n"
+            f"Outcome: {outcome if outcome else 'None'}\\n"
             f"Selected: {selected_text}\\n"
             f"Top candidates:\\n"
             f"{top_text}"
         )
 
-    def _build_node_label_local(self, name, duration, status_text, workspace, selected_agent):
+    def _build_node_label_local(self, name, duration, status_text, outcome, workspace, selected_agent):
         if isinstance(workspace, list):
             ws_text = ", ".join(str(w) for w in workspace)
         elif workspace:
@@ -95,20 +96,21 @@ class GraphVisualizer:
             f"{name}\\n"
             f"{duration}s\\n"
             f"{status_text}\\n"
+            f"{outcome if outcome else 'None'}\\n"
             f"WS: {ws_text}\\n"
             f"{selected_agent}"
         )
     
-    def _render_node(self, dot_node, palette, name, duration, status_text, context, workspace, selected_agent, selected_score, top_candidates, fillType, graphType="global"):
+    def _render_node(self, dot_node, palette, name, duration, status_text, outcome, context, workspace, selected_agent, selected_score, top_candidates, fillType, graphType="global"):
         if graphType == "global":
-            label = self._build_node_label_global(name, duration, status_text, context, workspace, selected_agent, selected_score, top_candidates)
+            label = self._build_node_label_global(name, duration, status_text, outcome, context, workspace, selected_agent, selected_score, top_candidates)
             if fillType == "context":
                 fillcolor = palette.get_color(context)
             else:
                 key = selected_agent if selected_agent else None
                 fillcolor = palette.get_color(key)
         else:
-            label = self._build_node_label_local(name, duration, status_text, workspace, selected_agent)
+            label = self._build_node_label_local(name, duration, status_text, outcome, workspace, selected_agent)
             fillcolor = TaskStatus._status_color(TaskStatus(status_text.lower()))  # Use status text to determine color
 
 
@@ -148,21 +150,24 @@ class GraphVisualizer:
             context = task.get("context", "none")
             duration = float(task.get("duration", 1))
             workspace = task.get("required_constraints", {}).get("workspace")
-    
+
+            outcome = None
             assignment = task.get("assignment")
             if assignment:
                 selected_agent = assignment.selected_agent
                 selected_score = assignment.selected_score
                 top_candidates = assignment.top_candidates
                 status_text = assignment.status.value.upper()
+                if assignment.outcome is not None:
+                    outcome = assignment.outcome.result.value
             else:
                 selected_agent = None
                 selected_score = None
                 top_candidates = []
-                status_text = TaskStatus.NOT_ASSIGNED
+                status_text = TaskStatus.NOT_ASSIGNED.value.upper() #changed this in WP2
 
             # --- Rendering ---
-            self._render_node(node, palette, name, duration, status_text, context, workspace, selected_agent, selected_score, top_candidates, fillType, graphType)
+            self._render_node(node, palette, name, duration, status_text, outcome, context, workspace, selected_agent, selected_score, top_candidates, fillType, graphType)
 
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         dot.write_png(f"data/{output_name}{timestamp}.png")
@@ -233,7 +238,14 @@ class GraphVisualizer:
                 else:
                     ws_text = "—"
 
-                label = f"{node}\\n{data['status'].value}\\nWS: {ws_text}"
+                outcome_obj = graph.nodes[node].get("outcome")
+                outcome = outcome_obj.result.value if outcome_obj is not None else "None"
+
+                # If also want to see who the result came from (self-report vs supervisor verdict), use instead:
+                #outcome = (f"{outcome_obj.result.value} ({outcome_obj.evidence_source})"
+                #        if outcome_obj is not None else "None")
+
+                label = f"{node}\\n{data['status'].value}\\n{outcome}\\nWS: {ws_text}"
                 dot.node(
                     str(node),
                     label=label,

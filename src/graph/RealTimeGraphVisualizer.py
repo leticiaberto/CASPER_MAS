@@ -82,12 +82,19 @@ class RealTimeGraphVisualizer:
             else:
                 ws_text = "—"
 
+            outcome = None
+            if assignment.outcome is not None:
+                #print(f"Assignment outcome for task {assignment.task_id}: {assignment.outcome}")
+                outcome = assignment.outcome.result.value
+
             labels[n] = (
                 f"{assignment.task_id}\n"
                 f"{node_data['duration']:.1f}s\n"
                 f"WS: {ws_text}\n"
                 f"{assignment.status.value}\n"
+                f"{outcome}\n"
                 f"{assignment.selected_agent}"
+                
             )
 
         node_sizes = []

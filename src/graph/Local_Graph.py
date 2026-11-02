@@ -1,5 +1,5 @@
 import networkx as nx
-from src.graph.TaskAssignment import TaskStatus
+from src.graph.TaskAssignment import TaskStatus, TaskOutcome
 
 class LocalGraph:
     def __init__(self, agent_id, global_graph):
@@ -7,6 +7,7 @@ class LocalGraph:
         self.global_graph = global_graph
         self.external_done = set()
         self.task_to_agent = {}
+        self.external_outcomes = {}          # external task_id -> TaskOutcome
 
         self.graph = nx.DiGraph()
         self.build_local_graph()
@@ -54,6 +55,7 @@ class LocalGraph:
                     workspace=required_constraints.get("workspace"),
                     priority=priority,
                     time_to_clean=time_to_clean,
+                    outcome=None,
                 )
         if not tasks_assigned:
             print(f"[{self.agent_id}] Warning: No tasks assigned for me.")
@@ -229,3 +231,25 @@ class LocalGraph:
             return True
  
         return False
+
+    def update_outcome(self, task_id, outcome):
+        """Outcome of one of MY tasks. Only allowed once DONE."""
+        if task_id not in self.graph:
+            raise ValueError(f"Task {task_id} not found.")
+        if not isinstance(outcome, TaskOutcome):
+            raise TypeError("outcome must be a TaskOutcome.")
+        node = self.graph.nodes[task_id]
+        if node["status"] != TaskStatus.DONE:
+            raise ValueError(f"[{task_id}] outcome only allowed when DONE "
+                            f"(is {node['status'].name}).")
+        previous = node.get("outcome")
+        node["outcome"] = outcome
+        return previous
+
+    def update_external_outcome(self, task_id, outcome):
+        """Outcome of a task owned by someone else that I depend on."""
+        if task_id not in self.external_done:
+            raise ValueError(f"External task {task_id} is not DONE yet.")
+        previous = self.external_outcomes.get(task_id)
+        self.external_outcomes[task_id] = outcome
+        return previous

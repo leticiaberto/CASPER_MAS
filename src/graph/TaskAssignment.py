@@ -1,6 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import List, Optional
+import time
 
 class TaskStatus(Enum):
     PENDING = "pending"
@@ -41,6 +42,51 @@ class TaskStatus(Enum):
             TaskStatus.NOT_ASSIGNED: "snow"
         }.get(status, "red")  # default to red for unknown statuses
 
+
+class TaskResult(Enum):
+    SUCCESS = "success"
+    FAILURE = "failure"
+    PARTIAL = "partial"
+
+class Attribution(Enum):
+    AGENT = "agent"
+    DEPENDENCY = "dependency"
+    ENVIRONMENT = "environment"
+    UNKNOWN = "unknown"
+
+@dataclass
+class TaskOutcome:
+    result: TaskResult
+    attribution: Attribution = Attribution.UNKNOWN
+    evidence_source: str = "direct_observation"   # same strings Agent already uses
+    evidence_detail: Optional[str] = None         # optional free text / log reference
+    evaluated_by: Optional[str] = None
+    evaluated_at: float = field(default_factory=time.time)
+    score: Optional[float] = None
+
+    def serialize(self):
+        return {
+            "result": self.result.name,
+            "attribution": self.attribution.name,
+            "evaluated_by": self.evaluated_by,
+            "evaluated_at": self.evaluated_at,
+            "score": self.score,
+            "evidence_source": self.evidence_source,
+            "evidence_detail": self.evidence_detail
+        }
+
+    @classmethod
+    def deserialize(cls, data):
+        return cls(
+            result=TaskResult[data["result"]],
+            attribution=Attribution[data["attribution"]],
+            evaluated_by=data.get("evaluated_by"),
+            evaluated_at=data["evaluated_at"],
+            score=data.get("score"),
+            evidence_source=data.get("evidence_source"),
+            evidence_detail=data.get("evidence_detail"),
+        )
+    
 @dataclass
 class TaskAssignment:
     task_id: str
@@ -48,6 +94,16 @@ class TaskAssignment:
     selected_score: Optional[float]
     top_candidates: List[object] = field(default_factory=list)
     status: TaskStatus = TaskStatus.NOT_ASSIGNED
+    outcome: Optional[TaskOutcome] = None
+    outcome_history: List[TaskOutcome] = field(default_factory=list)
+
+    def set_outcome(self, outcome: TaskOutcome) -> Optional[TaskOutcome]:
+        """Set (or revise) the outcome. Returns the previous one, if any."""
+        previous = self.outcome
+        if previous is not None:
+            self.outcome_history.append(previous)
+        self.outcome = outcome
+        return previous
 
     def start(self):
         if self.selected_agent:
@@ -77,7 +133,8 @@ class TaskAssignment:
             "selected_agent": self.selected_agent,
             "selected_score": self.selected_score,
             "top_candidates": self.top_candidates,
-            "status": self.status.name  # convert enum to string
+            "status": self.status.name,  # convert enum to string
+            "outcome": self.outcome.serialize() if self.outcome else None,
         }
     
     @classmethod
@@ -85,10 +142,13 @@ class TaskAssignment:
         """
         Reconstruct a TaskAssignment object from a serialized dict.
         """
+        outcome_data = data.get("outcome")
         return cls(
             task_id=data["task_id"],
             selected_agent=data["selected_agent"],
             selected_score=data["selected_score"],
             top_candidates=data["top_candidates"],
-            status=TaskStatus[data["status"]]  # string → enum
+            status=TaskStatus[data["status"]],  # string → enum
+            outcome=TaskOutcome.deserialize(outcome_data) if outcome_data else None,
         )
+

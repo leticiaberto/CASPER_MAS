@@ -1,11 +1,12 @@
 import json
 from matplotlib.style import context
 import networkx as nx
-from src.graph.TaskAssignment import TaskStatus
+from src.graph.TaskAssignment import TaskStatus, TaskOutcome
 
 class GlobalGraph:
     def __init__(self):
         self.G = nx.DiGraph()
+        self._outcome_listeners = []
     # -----------------------------
     # Safe node ID
     # -----------------------------
@@ -78,3 +79,28 @@ class GlobalGraph:
             self.G.nodes[task_id]["assignment"].status = status
 
             #print("UPDATED: ", self.G.nodes[task_id]["assignment"].status)
+    
+    def on_outcome(self, callback):
+        """Register callback(task_id, agent, previous_outcome, new_outcome)."""
+        self._outcome_listeners.append(callback)
+
+    def update_outcome(self, task_id, outcome):
+        if task_id not in self.G:
+            raise ValueError(f"Task {task_id} not found.")
+        if not isinstance(outcome, TaskOutcome):
+            raise TypeError("outcome must be a TaskOutcome.")
+
+        assignment = self.G.nodes[task_id].get("assignment")
+        if assignment is None:
+            raise ValueError(f"Task {task_id} has no assignment.")
+        if assignment.status != TaskStatus.DONE:
+            raise ValueError(
+                f"Task {task_id} is {assignment.status.name}, "
+                f"outcome can only be set once DONE."
+            )
+
+        previous = assignment.set_outcome(outcome)# also appends to outcome_history
+        for cb in self._outcome_listeners:
+            cb(task_id, assignment.selected_agent, previous, outcome)
+        
+        return previous

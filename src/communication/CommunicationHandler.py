@@ -1,12 +1,16 @@
 from utils import Roles
-from src.graph.TaskAssignment import TaskStatus
+from src.graph.TaskAssignment import TaskStatus, TaskOutcome
 
 class CommunicationHandler:
     def __init__(self, agent, comm):
         self.agent = agent
         # Create communication
         self.comm = comm
-    
+
+    def _outcome_in(self, data):
+        raw = data.get("outcome")
+        return TaskOutcome.deserialize(raw) if raw else None
+
     # ----------------------------
     # Messaging Protocol
     # ----------------------------
@@ -124,7 +128,7 @@ class CommunicationHandler:
             if target is not None and target != self.agent.id:
                 return
 
-            self.agent.update_task_status_received_general(task_id, task_status)
+            self.agent.update_task_status_received_general(task_id, task_status, outcome=self._outcome_in(msg["data"]))
 
         elif msg_type == "task_status_update_supervisor":
             task_id = msg["data"]["task_id"]
@@ -134,7 +138,7 @@ class CommunicationHandler:
              # Ignore if not meant for me
             if target is not None and target != self.agent.id:
                 return
-            self.agent.update_task_status_received_supervisor(task_id, task_status)
+            self.agent.update_task_status_received_supervisor(task_id, task_status, outcome=self._outcome_in(msg["data"]))
 
         elif msg_type == "task_ready_clearance":
             task_id = msg["data"]["task_id"]
@@ -153,6 +157,15 @@ class CommunicationHandler:
 
         elif msg_type == "SUPERVISOR":
             self.agent.set_supervisor(msg["data"]["supervisor_id"])
+
+        elif msg_type == "task_outcome_revision":
+            target = msg["data"].get("target")
+            if target is not None and target != self.agent.id:
+                return
+            if sender != self.agent.supervisor_id:
+                return
+            self.agent.receive_outcome_revision(msg["data"]["task_id"], self._outcome_in(msg["data"]))
+
 
         elif msg_type == "all_tasks_done": 
             if sender == self.agent.supervisor_id:

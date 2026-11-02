@@ -9,7 +9,7 @@ from src.entities.Supervisor import Supervisor
 from src.graph.Global_Graph import GlobalGraph
 from src.graph.GraphVisualizer import GraphVisualizer
 from src.graph.Local_Graph import LocalGraph
-from src.graph.TaskAssignment import TaskAssignment, TaskStatus
+from src.graph.TaskAssignment import TaskAssignment, TaskStatus, TaskOutcome, TaskResult, Attribution
 from src.analysis.ExperimentLogger import ExperimentLogger
 from src.memory import EpisodicMemory
 from abc import abstractmethod
@@ -36,6 +36,7 @@ class Agent:
         self.trust_enabled = trust_enabled
         self.episodic_memory_enabled = episodic_memory_enabled
         self.memory_path = memory_path
+        self._pending_outcomes = {}     # outcome arrived before the DONE status did
 
         # Create communication
         self.comm = RobotComm(self.id, self.teamSize)
@@ -98,6 +99,13 @@ class Agent:
         "outcome_feedback": "task_outcome_feedback",
         "report_update": "partner_report",
     }
+
+    EVIDENCE_WEIGHT = {
+            "partner_self_report": 0.2,
+            "direct_observation": 1.0,
+            "task_outcome_feedback": 1.0,
+            "partner_report": 0.5,
+        }
  
     def note_observation(self, task_id, assigned_agent, context, outcome=None,
                          observed=False, evidence_source=None):
@@ -192,7 +200,7 @@ class Agent:
                 truth["context"] = context
             truth["agents"] = sorted({self.id, *self.partners})
             truth["tasks"] = tasks
-            append_jsonl(ground_truth_path, truth)
+            EpisodicMemory.append_jsonl(ground_truth_path, truth)
             written["ground_truth"] = truth
  
         self._observations.clear()
@@ -201,23 +209,9 @@ class Agent:
         return written
  
     def _ground_truth_tasks(self):
-        """
-        GRAPH ADAPTER: the only place that depends on how GlobalGraph / TaskAssignment store things.
-        Names assumed below (adjust):
-          node["context"], node["required_skills"] (skill -> level), node["status"] or node["outcome"]
-          assignment.selected_agent (known), assignment.score, assignment.candidates
-        Anything not found is written as null and reported once, so wrong names are easy to spot.
-        """
         def outcome_of(data):
-            if data.get("outcome") in ("success", "failure"):
-                return data["outcome"]
-            status = data.get("status")
-            name = str(getattr(status, "name", status) or "").upper()
-            if name in ("DONE", "COMPLETED", "FINISHED", "SUCCESS"):
-                return "success"
-            if name in ("FAILED", "FAILURE", "ERROR"):
-                return "failure"
-            return None
+            o = getattr(data.get("assignment"), "outcome", None)
+            return o.result.value if o else None
  
         def candidates_of(raw):
             if raw is None:
@@ -313,7 +307,36 @@ class Agent:
     # ----------------------------
     # Trust in each Partner
     # ----------------------------
+    def handle_outcome(self, task_id, agent_id, previous, new):
+        partner = self.partners.get(agent_id)
+        if partner is None:
+            return                                   # my own task, or unknown agent
+        node = self.global_graph.G.nodes[task_id]
+        context = node.get("context")
+        skills = list((node.get("required_skills") or {}).keys())
 
+        applied_before = previous is not None and previous.attribution == Attribution.AGENT
+        applies_now = new.attribution == Attribution.AGENT
+        if not (applied_before or applies_now):
+            return
+
+        value = {TaskResult.SUCCESS: 1.0, TaskResult.FAILURE: 0.0}.get(
+            new.result, new.score if new.score is not None else 0.5)
+        weight = self.EVIDENCE_WEIGHT.get(new.evidence_source, 0.5)
+
+        for skill in skills:
+            if applied_before:
+                partner.trust.revise(skill, context, task_id,
+                                    value if applies_now else None, weight)
+            else:
+                partner.update_from({"skill": skill, "context": context, "outcome": value,
+                                    "weight": weight, "task_id": task_id})
+
+        self.note_observation(task_id, agent_id, context, outcome=new.result.value,
+                            observed=(new.evidence_source == "direct_observation"),
+                            evidence_source=new.evidence_source)
+        self.note_partner_update(agent_id, "outcome_feedback", task_id=task_id, context=context,
+                                skills=skills, evidence_source=new.evidence_source)
 
     
 
@@ -324,6 +347,7 @@ class Agent:
         # All agents know the task graph, but only the supervisor will score agents
         self.global_graph = GlobalGraph() # full DAG (read-only knowledge)
         self.global_graph.load_task_graph(task_file)
+        self.global_graph.on_outcome(self.handle_outcome)
 
     def export_data(self):
         filename = "experiment_logs/skills_preferences_" + self.id + ".csv"
@@ -424,12 +448,18 @@ class Agent:
             task_started_at = time.time()
             self.task_update_status_and_publish(task, TaskStatus.RUNNING)
             time.sleep(5)
-            self._execute_task_specific(task)# Physical execution
+            result = self._execute_task_specific(task)# Physical execution - # subclass may return a TaskResult
             time.sleep(5)
             task_finished_at = time.time()
-            self.task_update_status_and_publish(task, TaskStatus.DONE)
 
-            # Experiment analytics: record the order in which THIS agent
+            outcome = None
+            if isinstance(result, TaskResult):
+                outcome = TaskOutcome(result=result, attribution=Attribution.AGENT,
+                                    evidence_source="partner_self_report", evaluated_by=self.id)
+    
+            self.task_update_status_and_publish(task, TaskStatus.DONE, outcome=outcome)
+
+            # Experiment analytics: record the order in which THIS agent 
             # executed its tasks, plus a "supervisor view" snapshot of the
             # task's position in the global DAG (predecessors/successors,
             # bottleneck/source/leaf, how many downstream tasks it just
@@ -501,12 +531,16 @@ class Agent:
                 time.sleep(5)
                 self.goal_finished = True
 
-    def task_update_status_and_publish(self, task, new_status, ignore=False):
+    def task_update_status_and_publish(self, task, new_status, ignore=False, outcome=None):
         if not ignore:
             self.local_graph.update_status(task, new_status)
+        
+        if new_status == TaskStatus.DONE and outcome is not None:
+            self.local_graph.update_outcome(task, outcome)
+        
         self.publish_task_status_update(task, new_status)
         self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
-                
+
     def check_all_tasks_done(self):
         all_done = all(
             self.global_graph.G.nodes[n]["assignment"].status == TaskStatus.DONE
@@ -561,22 +595,78 @@ class Agent:
         print(supervisor_id)
         self.supervisor_id = supervisor_id
 
-    def publish_task_status_update(self, task_id, task_status):
-        # Always notify supervisor
-        self.comm_handler.publish("task_status_update_supervisor", {"task_id": task_id, "agent_id": self.id, "status":task_status.to_wire()}, self.supervisor_id)
+    def publish_task_status_update(self, task_id, task_status, outcome=None):
+        payload = {"task_id": task_id, "agent_id": self.id, "status": task_status.to_wire()}
         
-        # Notify only agents that depend on this task
-        successor_agents = self.local_graph.get_successors(task_id)
-        # Send one message per agent
-        for agent_id in successor_agents:
-            self.comm_handler.publish("task_status_update", {"task_id": task_id, "agent_id": self.id, "status": task_status.to_wire()}, agent_id)
+        if outcome is not None:
+            payload["outcome"] = outcome.serialize()
+
+        # Always notify supervisor
+        self.comm_handler.publish("task_status_update_supervisor", payload, self.supervisor_id)
+
+        # Notify only agents that depend on this task - Send one message per agent
+        for agent_id in self.local_graph.get_successors(task_id):
+            self.comm_handler.publish("task_status_update", payload, agent_id)
         
     def update_task_status_received_general(self, task_id, task_status):
         #print(f"Received update that task {task_id} is now {task_status.value}")
         if self.local_graph.depends_on_external(task_id):
             self.local_graph.handle_external_completion(task_id, task_status)
+            if task_status == TaskStatus.DONE:
+                outcome = self._pending_outcomes.pop(task_id, outcome)  # supervisor verdict that arrived first wins
+                if outcome is not None:
+                    self._set_external_outcome(task_id, outcome)
 
-    def update_task_status_received_supervisor(self, task_id, task_status):
+    def _set_external_outcome(self, task_id, outcome):
+        existing = self.local_graph.external_outcomes.get(task_id)
+        if (existing is not None
+                and existing.evidence_source == "task_outcome_feedback"
+                and outcome.evidence_source != "task_outcome_feedback"):
+            return    # a late self-report must never overwrite the supervisor's verdict
+        previous = self.local_graph.update_external_outcome(task_id, outcome)
+        doer = self.local_graph.task_to_agent.get(task_id)
+        self.handle_outcome(task_id, doer, previous, outcome)    # trust update (or revision)
+
+    def receive_outcome_revision(self, task_id, outcome):
+            lg = self.local_graph
+            if task_id in lg.graph:                                   # my own task
+                if lg.graph.nodes[task_id]["status"] == TaskStatus.DONE:
+                    lg.update_outcome(task_id, outcome)               # no trust update about myself
+                else:
+                    self._pending_outcomes[task_id] = outcome
+            elif task_id in lg.external_done:                         # a partner's task I depend on
+                self._set_external_outcome(task_id, outcome)          # replaces report, revises trust
+            else:
+                self._pending_outcomes[task_id] = outcome             # revision beat the DONE message
+
+    def _review_outcome(self, task_id):
+        G = self.global_graph.G
+        assignment = G.nodes[task_id]["assignment"]
+        reported = assignment.outcome
+        verdict = self._judge_outcome(task_id, reported)         # None = agree
+        if verdict is None:
+            return
+        if reported and (verdict.result, verdict.attribution) == (reported.result, reported.attribution):
+            return
+
+        self.global_graph.update_outcome(task_id, verdict)       # previous = self-report -> trust revised
+        targets = {assignment.selected_agent}
+        targets |= {G.nodes[s]["assignment"].selected_agent for s in G.successors(task_id)}
+        targets.discard(self.id)
+        for agent_id in targets:
+            self.comm_handler.publish("task_outcome_revision",
+                                    {"task_id": task_id, "outcome": verdict.serialize()},
+                                    target=agent_id)
+    
+    def _judge_outcome(self, task_id, reported): #TO DO: implement a more sophisticated logic for judging the outcome
+        """
+        Override this in a subclass to implement your own logic for
+        judging whether a reported outcome is correct. Return None if
+        you agree with the report, or a TaskOutcome if you disagree.
+        """
+        return None 
+           
+    def update_task_status_received_supervisor(self, task_id, task_status, outcome=None):
             self.vis_queue.put(("refresh",))
             self.global_graph.update_status(task_id, task_status)
             self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="["+self.id+"] Global_Supervisor_StatusUpdated", palette_mode="pastel", graphType="updated")
@@ -590,6 +680,10 @@ class Agent:
             if(task_status == TaskStatus.RUNNING): # it makes sense only check for other idle agent if the message is that someone is running something
                 self.experiment_logger.check_and_log_idle_agents(self.global_graph.G, trigger_task_id=task_id, trigger_agent_id=self.id)
 
+            elif task_status == TaskStatus.DONE and outcome is not None:
+                self.global_graph.update_outcome(task_id, outcome)   # fires handle_outcome (supervisor's own trust)
+                self._review_outcome(task_id)
+    
     def handle_task_clearance(self, task_id):
         """
         Called by CommunicationHandler when a task_ready_clearance message arrives.

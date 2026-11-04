@@ -34,16 +34,42 @@ from tkinter.filedialog import test
 import yaml
 from pathlib import Path
 import fcntl
+import re
 
 import ros2_path_setup
 from utils import Roles  # noqa: F401 — registers all ROS2 adapter packages
 
+# ---------------------------------------------------------------------------
+# Scans data/ from newest to oldest and picks the first experiment folder that contains the robot
+# ---------------------------------------------------------------------------
+# Names look like exp_1, exp_2, ... exp_10
+def _natural_key(name: str):
+    return [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", name)]
+
+def find_latest_exp_id(robot_id: str, max_exp: str | None = None, data_dir: str = "data") -> str | None:
+    """Return the most recent exp folder (<= max_exp, if given) that has agents/<robot_id>, or None."""
+    data_path = Path(data_dir)
+    if not data_path.is_dir():
+        return None
+
+    exp_dirs = [p for p in data_path.iterdir() if p.is_dir()]
+
+    if max_exp is not None:
+        limit = _natural_key(max_exp)
+        exp_dirs = [p for p in exp_dirs if _natural_key(p.name) <= limit]
+
+    exp_dirs.sort(key=lambda p: _natural_key(p.name), reverse=True)  # newest first
+
+    for exp_dir in exp_dirs:
+        if (exp_dir / "agents" / robot_id).is_dir():
+            return exp_dir.name
+
+    return None
 
 # ---------------------------------------------------------------------------
 # Lazy imports — only load what's needed so missing packages don't crash
 # unrelated models.
 # ---------------------------------------------------------------------------
-
 def _import_agent(robot_model: str):
     if robot_model == "FrankaResearch3":
         from robots.FrankaResearch3 import FrankaResearch3
@@ -369,6 +395,10 @@ def main():
     print(f"[Robot] Loaded robot config : {args.robot}")
     print(f"[Robot] Loaded exp config   : {args.exp}")
 
+    # Create the data folder for this experiment (if it doesn't exist)
+    exp_id = args.exp
+    Path(f"data/{exp_id}").mkdir(parents=True, exist_ok=True)
+
     # ── Robot config ─────────────────────────────────────────────────────────
     robot_model  = robot_config["robot_model"]
     robot_id     = robot_config["robot_id"]
@@ -387,12 +417,18 @@ def main():
     skill_weights = robot_config["skill_weights"]
     contexts      = list(skill_weights.keys())
 
-    memory_path = robot_config.get("memory_path", None)
+    episodic_memory_enabled = robot_config.get("episodic_memory_enabled", True)
 
     # Human-specific (ignored by other models)
     actor_type   = robot_config.get("actor_type", "WalkingActor")
     actor_color  = robot_config.get("color",      "")
     result_timeout = float(robot_config.get("result_timeout", 120.0))
+
+    if "memory_path" in robot_config:
+        memory_path = robot_config["memory_path"]
+    else:
+        exp_id = find_latest_exp_id(robot_id, max_exp=args.exp) or args.exp
+        memory_path = f"data/{exp_id}/agents/{robot_id}/memory/episodic.jsonl"
 
     # ── Exp config ───────────────────────────────────────────────────────────
     task_file    = exp_config["task"]
@@ -405,9 +441,8 @@ def main():
     supervisor_team = exp_config.get("supervisor_team", True)
     guests        = exp_config.get("guests", 0)
     trust_enabled = exp_config.get("trust_enabled", True)
-    episodic_memory_enabled = exp_config.get("episodic_memory_enabled", True)
     
-    agent_role   = args.role
+    agent_role = args.role
 
     print(f"[Robot] model={robot_model}  id={robot_id}  role={agent_role}  "
           f"use_sim={use_sim}  world={world_name}")
@@ -478,7 +513,7 @@ def main():
         trust_enabled   = trust_enabled,
         episodic_memory_enabled = episodic_memory_enabled,
         memory_path     = memory_path,
-        run_id =        args.exp,
+        run_id          = args.exp,
     )
 
     print(f"[Robot] Agent '{robot_id}' instantiated.")
@@ -538,7 +573,7 @@ def main():
                     agent.allocate_task(all_agents, optimizeMode, top_k, debug)
                     time.sleep(5)
                     ready = True
-                    agent.export_data()
+                    agent.save_data_end()
             else:
                 time.sleep(5)
                 agent.step()
@@ -550,7 +585,7 @@ def main():
         print("[Robot] KeyboardInterrupt — stopping agent.")
 
     finally:
-        agent.export_data()
+        agent.save_data_end()
         agent.closeComm()
         agent.shutdown()
         if launch_process is not None:

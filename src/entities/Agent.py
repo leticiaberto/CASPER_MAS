@@ -12,7 +12,7 @@ from src.graph.GraphVisualizer import GraphVisualizer
 from src.graph.Local_Graph import LocalGraph
 from src.graph.TaskAssignment import TaskAssignment, TaskStatus, TaskOutcome, TaskResult, Attribution
 from src.analysis.ExperimentLogger import ExperimentLogger
-from src.memory import EpisodicMemory
+from src.memory.EpisodicMemory import EpisodicMemory, append_jsonl
 from abc import abstractmethod
 from utils import Roles
 import time
@@ -24,7 +24,7 @@ def _utc_now():
 
 class Agent:
     def __init__(self, id, constraints, workspace, skills, contexts, role, teamsize, party_duration, guests, trust_enabled, 
-                 episodic_memory_enabled, memory_path,run_id, log_dir="experiment_logs"):
+                 episodic_memory_enabled, memory_path, run_id, log_dir="experiment_logs"):
         self.id = id
         self.constraints = constraints  # Task independent      
         self.workspace = workspace
@@ -38,6 +38,8 @@ class Agent:
         self.episodic_memory_enabled = episodic_memory_enabled
         self.memory_path = memory_path
         self._pending_outcomes = {}     # outcome arrived before the DONE status did
+
+        self.run_id = run_id
 
         # Create communication
         self.comm = RobotComm(self.id, self.teamSize)
@@ -83,13 +85,7 @@ class Agent:
 
         self.memory = None
         if self.episodic_memory_enabled:
-            self.load_episodic_memory(self.memory_path)
-    
-    # ----------------------------
-    # Agent Memory (Episodic)
-    # ----------------------------
-    def load_episodic_memory(self, memory_path=None):
-        self.memory = EpisodicMemory(memory_path or f"data/agents/{self.id}/memory/episodic.jsonl") # loads everything once       
+            self.memory = EpisodicMemory(memory_path) # loads everything once     
 
     # ----------------------------
     # Saving the interaction (once, at the end)
@@ -160,91 +156,6 @@ class Agent:
         update["evidence_source"] = evidence_source or self._DEFAULT_EVIDENCE.get(event_type, event_type)
         update["values"] = values
         updates.append(update)
- 
-    def save_interaction(self, interaction_id=None, context=None,
-                         ground_truth_path="data/interactions.jsonl", ground_truth_tasks=None):
-        """
-        Call ONCE, when the interaction ends.
-          - Every agent: appends its own record (observations + partner updates) to its episodic memory.
-          - Supervisor only: also appends the ground truth to ground_truth_path.
-        interaction_id defaults to the run_id, which all agents of a run share, so the agent files and the
-        ground truth can be joined. Returns what was written, or None if it was already saved.
-        """
-        if self._interaction_saved:
-            return None
-        interaction_id = interaction_id or self.experiment_logger.run_id # TODO: consider using a separate interaction_id (e.g. timestamp) so multiple interactions can be logged under the same run_id
-        timestamp = _utc_now()
-        written = {}
- 
-        # 1. my own memory (what I observed and believed)
-        if self.memory is not None and (self._observations or self._partner_updates):
-            record = {
-                "interaction_id": interaction_id,
-                "sequence": len(self.memory.interactions) + 1,
-                "agent_id": self.id,
-                "timestamp": timestamp,
-            }
-            record["observations"] = list(self._observations.values())
-            record["partner_models"] = {
-                pid: {"role": getattr(self.partners[pid].role, "value", self.partners[pid].role),
-                      "updates": updates}
-                for pid, updates in self._partner_updates.items() if pid in self.partners
-            }
-            self.memory.add(record)
-            written["memory"] = record
- 
-        # 2. ground truth (supervisor only)
-        if self.role == Roles.SUPERVISOR:
-            tasks = ground_truth_tasks if ground_truth_tasks is not None else self._ground_truth_tasks()
-            truth = {"interaction_id": interaction_id, "timestamp": timestamp}
-            if context is not None:
-                truth["context"] = context
-            truth["agents"] = sorted({self.id, *self.partners})
-            truth["tasks"] = tasks
-            EpisodicMemory.append_jsonl(ground_truth_path, truth)
-            written["ground_truth"] = truth
- 
-        self._observations.clear()
-        self._partner_updates.clear()
-        self._interaction_saved = True
-        return written
- 
-    def _ground_truth_tasks(self):
-        def outcome_of(data):
-            o = getattr(data.get("assignment"), "outcome", None)
-            return o.result.value if o else None
- 
-        def candidates_of(raw):
-            if raw is None:
-                return None
-            if isinstance(raw, dict):
-                raw = list(raw.items())
-            out = []
-            for c in raw:
-                if isinstance(c, dict):
-                    out.append(c)
-                else:
-                    out.append({"agent_id": c[0], "score": c[1]})
-            return sorted(out, key=lambda c: -(c.get("score") or 0))
- 
-        tasks, missing = [], set()
-        for task_id, data in self.global_graph.G.nodes(data=True):
-            assignment = data.get("assignment")
-            task = {
-                "task_id": task_id,
-                "context": data.get("context"),
-                "required_skills": data.get("required_skills"),
-                "assigned_agent": getattr(assignment, "selected_agent", None),
-                "assignment_score": getattr(assignment, "score", None),
-                "outcome": outcome_of(data),
-                "top_k_candidates": candidates_of(getattr(assignment, "candidates", None)),
-            }
-            missing |= {k for k, v in task.items() if v is None}
-            tasks.append(task)
-        if missing:
-            print(f"[{self.id}] ground truth: no value found for {sorted(missing)} "
-                  f"(written as null). Check _ground_truth_tasks().")
-        return tasks
     
     # ----------------------------
     # Partners
@@ -350,6 +261,14 @@ class Agent:
         self.global_graph.load_task_graph(task_file)
         self.global_graph.on_outcome(self.handle_outcome)
 
+    def save_data_end(self):
+        self.export_data()
+        self.save_interaction(
+            interaction_id=self.run_id,
+            ground_truth_path=f"data/{self.run_id}/GroundTruth/interactions.jsonl",
+            ground_truth_tasks=self._ground_truth_tasks(),
+        )
+
     def export_data(self):
         filename = "experiment_logs/skills_preferences_" + self.id + ".csv"
         filename_const = "experiment_logs/constraints_workspace_" + self.id + ".csv"
@@ -384,6 +303,91 @@ class Agent:
                 workspace
             ])
 
+    def save_interaction(self, interaction_id=None, context=None,
+                             ground_truth_path=None, ground_truth_tasks=None):
+            """
+            Call ONCE, when the interaction ends.
+              - Every agent: appends its own record (observations + partner updates) to its episodic memory.
+              - Supervisor only: also appends the ground truth to ground_truth_path.
+            interaction_id defaults to the run_id, which all agents of a run share, so the agent files and the
+            ground truth can be joined. Returns what was written, or None if it was already saved.
+            """
+            if self._interaction_saved:
+                return None
+            interaction_id = interaction_id or self.experiment_logger.run_id # TODO: consider using a separate interaction_id (e.g. timestamp) so multiple interactions can be logged under the same run_id
+            timestamp = _utc_now()
+            written = {}
+     
+            # 1. my own memory (what I observed and believed)
+            if self.memory is not None and (self._observations or self._partner_updates):
+                record = {
+                    "interaction_id": interaction_id,
+                    "sequence": len(self.memory.interactions) + 1,
+                    "agent_id": self.id,
+                    "timestamp": timestamp,
+                }
+                record["observations"] = list(self._observations.values())
+                record["partner_models"] = {
+                    pid: {"role": getattr(self.partners[pid].role, "value", self.partners[pid].role),
+                          "updates": updates}
+                    for pid, updates in self._partner_updates.items() if pid in self.partners
+                }
+                self.memory.add(record)
+                written["memory"] = record
+     
+            # 2. ground truth (supervisor only)
+            if self.role == Roles.SUPERVISOR:
+                tasks = ground_truth_tasks if ground_truth_tasks is not None else self._ground_truth_tasks()
+                truth = {"interaction_id": interaction_id, "timestamp": timestamp}
+                if context is not None:
+                    truth["context"] = context
+                truth["agents"] = sorted({self.id, *self.partners})
+                truth["tasks"] = tasks
+                append_jsonl(ground_truth_path, truth)
+                written["ground_truth"] = truth
+     
+            self._observations.clear()
+            self._partner_updates.clear()
+            self._interaction_saved = True
+            return written
+     
+    def _ground_truth_tasks(self):
+            def outcome_of(data):
+                o = getattr(data.get("assignment"), "outcome", None)
+                return o.result.value if o else None
+     
+            def candidates_of(raw):
+                if raw is None:
+                    return None
+                if isinstance(raw, dict):
+                    raw = list(raw.items())
+                out = []
+                for c in raw:
+                    if isinstance(c, dict):
+                        out.append(c)
+                    else:
+                        out.append({"agent_id": c[0], "score": c[1]})
+                return sorted(out, key=lambda c: -(c.get("score") or 0))
+     
+            tasks, missing = [], set()
+            for task_id, data in self.global_graph.G.nodes(data=True):
+                assignment = data.get("assignment")
+                task = {
+                    "task_id": task_id,
+                    "context": data.get("context"),
+                    "required_skills": data.get("required_skills"),
+                    "assigned_agent": getattr(assignment, "selected_agent", None),
+                    "assignment_score": getattr(assignment, "score", None),
+                    "outcome": outcome_of(data),
+                    "top_k_candidates": candidates_of(getattr(assignment, "candidates", None)),
+                }
+                missing |= {k for k, v in task.items() if v is None}
+                tasks.append(task)
+            if missing:
+                print(f"[{self.id}] ground truth: no value found for {sorted(missing)} "
+                      f"(written as null). Check _ground_truth_tasks().")
+            return tasks
+    
     # ----------------------------
     # Task allocation/execution
     # ----------------------------
@@ -392,7 +396,7 @@ class Agent:
             self.comm_handler.publish("SUPERVISOR", {"supervisor_id": self.id})
             self.supervisor_id = self.id
             self.supervisor.assign_agents_to_tasks(self.global_graph.G, agents, mode, top_k, debug, self.id)
-            self.graph_visualizer.export_multiagent_graph(self.global_graph.G, output_name=f"["+self.id+"] Global_Supervisor_Allocation", palette_mode="pastel")
+            self.graph_visualizer.export_multiagent_graph(self.global_graph.G, f"data/{self.run_id}/agents/{self.id}/GlobalGraphs/", output_name=f"["+self.id+"] Global_Supervisor_Allocation", palette_mode="pastel")
             self.vis_queue = queue.Queue()
             visualizer = RealTimeGraphVisualizer(
                 self.global_graph.G,
@@ -404,7 +408,7 @@ class Agent:
 
     def get_assigned_tasks(self):
         self.local_graph = LocalGraph(self.id, self.global_graph.G)
-        self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
+        self.graph_visualizer.plot_task_graph(self.local_graph.graph, f"data/{self.run_id}/agents/{self.id}/LocalGraphs/", f"[{self.id}] Local_")
         for node_id in self.local_graph.graph.nodes:
             self.publish_task_status_update(node_id, self.local_graph.graph.nodes[node_id]["status"])
             print(f"Published initial status of task {node_id} as {self.local_graph.graph.nodes[node_id]['status'].value}")
@@ -530,8 +534,8 @@ class Agent:
             if self.check_all_tasks_done():# Check everytime in case one can change the status back
                 print("All tasks are done!")
                 self.comm_handler.publish("all_tasks_done", {"agent_id": self.id})
-                time.sleep(5)
                 self.goal_finished = True
+                time.sleep(5)
 
     def task_update_status_and_publish(self, task, new_status, outcome=None, ignore=False):
         if not ignore:
@@ -541,7 +545,7 @@ class Agent:
             self.local_graph.update_outcome(task, outcome)
         
         self.publish_task_status_update(task, new_status, outcome)
-        self.graph_visualizer.plot_task_graph(self.local_graph.graph, "["+self.id+"] Local_")
+        self.graph_visualizer.plot_task_graph(self.local_graph.graph, f"data/{self.run_id}/agents/{self.id}/LocalGraphs/", f"[{self.id}] Local_")
 
     def check_all_tasks_done(self):
         all_done = all(
@@ -593,7 +597,7 @@ class Agent:
 
     def get_task_assignment_batch(self, msg):
             self.update_global_graph(msg)
-            self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="["+self.id+"] Global_Member_Allocation", palette_mode="pastel")
+            self.graph_visualizer.export_multiagent_graph(self.global_graph.G, f"data/{self.run_id}/agents/{self.id}/GlobalGraphs/", output_name="["+self.id+"] Global_Member_Allocation", palette_mode="pastel")
             self.get_assigned_tasks()       
 
     def set_supervisor(self, supervisor_id):
@@ -674,7 +678,7 @@ class Agent:
     def update_task_status_received_supervisor(self, task_id, task_status, outcome=None):
             self.vis_queue.put(("refresh",))
             self.global_graph.update_status(task_id, task_status)
-            self.graph_visualizer.export_multiagent_graph(self.global_graph.G,output_name="["+self.id+"] Global_Supervisor_StatusUpdated", palette_mode="pastel", graphType="updated")
+            self.graph_visualizer.export_multiagent_graph(self.global_graph.G, f"data/{self.run_id}/agents/{self.id}/GlobalGraphs/", output_name="["+self.id+"] Global_Supervisor_StatusUpdated", palette_mode="pastel", graphType="updated")
 
             # Runtime idle check: every time any task's status changes
             # anywhere on the team, re-evaluate whether some agent now has
@@ -699,7 +703,7 @@ class Agent:
         if became_ready:
             print(f"[{self.id}] Task '{task_id}' cleared by supervisor and is now READY.")
             self.publish_task_status_update(task_id, TaskStatus.READY)
-            self.graph_visualizer.plot_task_graph(self.local_graph.graph, "[" + self.id + "] Local_")
+            self.graph_visualizer.plot_task_graph(self.local_graph.graph, f"data/{self.run_id}/agents/{self.id}/LocalGraphs/", f"[{self.id}] Local_")
         else:
             print(f"[{self.id}] Task '{task_id}' received clearance but is not yet READY (deps still pending).")
  
@@ -725,7 +729,7 @@ class Agent:
         self.shutdown_unassigned_tasks = unassigned_tasks or []
         self.goal_finished = True
 
-        self.save_interaction(interaction_id=time.time(), ground_truth_tasks=self._ground_truth_tasks())
+        self.save_interaction(interaction_id=time.time(), ground_truth_path=f"data/{self.run_id}/GroundTruth/interactions.jsonl", ground_truth_tasks=self._ground_truth_tasks())
 
     def release_task(self, task_id):
         """

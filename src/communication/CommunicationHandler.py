@@ -9,7 +9,7 @@ class CommunicationHandler:
 
     def _outcome_in(self, data):
         raw = data.get("outcome")
-        print(f"[{self.agent.id}] Received outcome: {raw}")
+        #print(f"[{self.agent.id}] Received outcome: {raw}")
         return TaskOutcome.deserialize(raw) if raw else None
 
     # ----------------------------

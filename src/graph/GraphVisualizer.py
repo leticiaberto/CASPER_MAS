@@ -7,6 +7,8 @@ from src.graph.TaskAssignment import TaskStatus
 import networkx as nx
 from graphviz import Digraph
 
+from pathlib import Path
+
 class GraphVisualizer:
     def graphviz_safe_graph(self, G):
         """
@@ -129,12 +131,12 @@ class GraphVisualizer:
     # -----------------------------
     # Multi-agent capability graph
     # -----------------------------
-    def export_multiagent_graph(self, G, output_name="task_graph_multiagent", palette_mode="distinct", fillType="agent", graphType="global"):
+    def export_multiagent_graph(self, G, filepath, output_name="task_graph_multiagent", palette_mode="distinct", fillType="agent", graphType="global"):
         G_viz = self.graphviz_safe_graph(G)
         dot = to_pydot(G_viz)
         dot.set_rankdir("TB")
         dot.set_splines("ortho")
-
+        
         contexts = [G.nodes[n].get("context", "none") for n in G.nodes]
         palette = PastelPalette() if palette_mode == "pastel" else DistinctPalette(contexts)
 
@@ -170,8 +172,11 @@ class GraphVisualizer:
             self._render_node(node, palette, name, duration, status_text, outcome, context, workspace, selected_agent, selected_score, top_candidates, fillType, graphType)
 
         timestamp = time.strftime("%Y%m%d-%H%M%S")
-        dot.write_png(f"data/{output_name}{timestamp}.png")
-        dot.write_pdf(f"data/{output_name}{timestamp}.pdf")
+        out_dir = Path(filepath)
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        dot.write_png(str(out_dir / f"{output_name}{timestamp}.png"))
+        dot.write_pdf(str(out_dir / f"{output_name}{timestamp}.pdf"))
         print(f"Exported multi-agent graph: {output_name}.png / .pdf")
 
 
@@ -211,7 +216,7 @@ class GraphVisualizer:
 
         return Gp
 
-    def plot_task_graph(self, graph, filename="task_graph"):
+    def plot_task_graph(self, graph, filepath, filename="task_graph"):
         """
         Render the local task graph with:
         - solid rectangles for local tasks (with workspace shown)
@@ -272,7 +277,9 @@ class GraphVisualizer:
 
         # --- Save outputs ---
         timestamp = time.strftime("%Y%m%d-%H%M%S")
-        base = "data/" + filename + timestamp
+        out_dir = Path(filepath)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        base = str(out_dir / f"{filename}{timestamp}")
 
         dot.format = "png"
         dot.render(base, cleanup=False)# Keep source
